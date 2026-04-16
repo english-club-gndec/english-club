@@ -17,8 +17,8 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
           <div>
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-900 to-purple-700 flex items-center justify-center">
-                <span className="text-white text-xl" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700 }}>EC</span>
+              <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center bg-white shadow-sm">
+                <img src="/images/logo.png" alt="English Club Logo" className="w-full h-full object-contain p-0.5" />
               </div>
               <span className="text-xl text-white" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700 }}>English Club</span>
             </div>
