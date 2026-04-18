@@ -14,4 +14,12 @@ router.get('/:user_id', userController.getUserById);
 // Path: /api/users/:user_id/createUser
 router.post('/:user_id/createUser', userController.createUser);
 
+// PATCH update user details
+// Path: /api/users/:user_id/updateUser
+router.patch('/:user_id/updateUser', userController.updateUser);
+
+// PATCH update user password
+// Path: /api/users/:user_id/updatePassword
+// router.patch('/:user_id/updatePassword', userController.updatePassword);
+
 module.exports = router;

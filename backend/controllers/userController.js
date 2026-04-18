@@ -75,6 +75,48 @@ const userController = {
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
+  },
+
+  // PATCH /api/users/:user_id/updateUser
+  updateUser: async (req, res) => {
+    try {
+      const { user_id } = req.params;
+
+      // Check if user exists first
+      const { data: existingUser, error: existError } = await supabase
+        .from('users')
+        .select('user_id, user_name, user_role, user_image_key, linkedin, github, instagram, portfolio')
+        .eq('user_id', user_id)
+        .single();
+
+      if (existError || !existingUser) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      // Allow editing any fields except restricted ones (user_id, user_role, password)
+      const updateData = { ...req.body };
+      delete updateData.user_id;
+      delete updateData.user_role;
+      delete updateData.user_password;
+      delete updateData.password;
+
+      if (Object.keys(updateData).length === 0) {
+        // If no key-value pairs are sent, return the current user details
+        return res.json({ message: 'No changes provided', user: existingUser });
+      }
+
+      const { data, error } = await supabase
+        .from('users')
+        .update(updateData)
+        .eq('user_id', user_id)
+        .select();
+
+      if (error) throw error;
+
+      res.json({ message: 'User details updated successfully', user: data[0] });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
   }
 };
 
