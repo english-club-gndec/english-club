@@ -1,14 +1,33 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, Bell, User, LogOut, Settings as SettingsIcon } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useTheme } from "../ThemeProvider";
 import { useAuth } from "../../context/AuthContext";
+import { supabase } from "../../../lib/supabase";
 import { Moon, Sun } from "lucide-react";
 
 export function AdminNavbar() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [adminName, setAdminName] = useState("Admin User");
   const { theme, toggleTheme } = useTheme();
-  const { logout } = useAuth();
+  const { logout, userId } = useAuth();
+
+  useEffect(() => {
+    async function fetchAdminName() {
+      if (userId) {
+        const { data, error } = await supabase
+          .from("users")
+          .select("user_name")
+          .eq("user_id", userId)
+          .single();
+        
+        if (data && !error) {
+          setAdminName(data.user_name);
+        }
+      }
+    }
+    fetchAdminName();
+  }, [userId]);
 
 
   return (
@@ -55,7 +74,7 @@ export function AdminNavbar() {
                 </div>
                 <div className="hidden md:block text-left">
                   <div className="text-sm text-gray-900 dark:text-white" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                    Admin User
+                    {adminName}
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-400" style={{ fontFamily: 'Open Sans, sans-serif' }}>
                     admin@englishclub.edu

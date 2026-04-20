@@ -1,14 +1,54 @@
+import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { Users, Calendar, ClipboardList, TrendingUp, UserPlus, FileText } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { supabase } from "../../../lib/supabase";
 
 export function AdminDashboard() {
+  const [statsData, setStatsData] = useState({
+    totalMembers: 0,
+    totalEvents: 0,
+    avgParticipants: 0,
+  });
+
+  useEffect(() => {
+    async function fetchStats() {
+      // Fetch Total Members
+      const { count: usersCount } = await supabase
+        .from("users")
+        .select("*", { count: "exact", head: true });
+
+      // Fetch Total Events
+      const { count: eventsCount } = await supabase
+        .from("events")
+        .select("*", { count: "exact", head: true });
+
+      // Fetch Total Participants and unique events
+      const { data: participants } = await supabase
+        .from("participants")
+        .select("registered_event");
+
+      const totalParticipants = participants?.length || 0;
+      const uniqueEvents = new Set(participants?.map(p => p.registered_event)).size || 1;
+      const avg = totalParticipants / uniqueEvents;
+
+      setStatsData({
+        totalMembers: usersCount || 0,
+        totalEvents: eventsCount || 0,
+        avgParticipants: parseFloat(avg.toFixed(1)),
+      });
+    }
+
+    fetchStats();
+  }, []);
+
   const stats = [
-    { label: "Total Members", value: "248", change: "+12%", icon: Users, color: "from-blue-500 to-blue-600" },
-    { label: "Total Events", value: "42", change: "+8%", icon: Calendar, color: "from-purple-500 to-purple-600" },
-    { label: "Registrations", value: "186", change: "+24%", icon: ClipboardList, color: "from-green-500 to-green-600" },
+    { label: "Total Members", value: statsData.totalMembers.toString(), change: "+12%", icon: Users, color: "from-blue-500 to-blue-600" },
+    { label: "Total Events", value: statsData.totalEvents.toString(), change: "+8%", icon: Calendar, color: "from-purple-500 to-purple-600" },
+    { label: "Avg Participants", value: statsData.avgParticipants.toString(), change: "+24%", icon: ClipboardList, color: "from-green-500 to-green-600" },
     { label: "Active Users", value: "203", change: "+5%", icon: TrendingUp, color: "from-orange-500 to-orange-600" },
   ];
+
 
   const engagementData = [
     { name: "Mon", users: 45 },
