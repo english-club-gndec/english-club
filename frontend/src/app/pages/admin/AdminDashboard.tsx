@@ -10,6 +10,7 @@ export function AdminDashboard() {
     totalEvents: 0,
     avgParticipants: 0,
   });
+  const [engagementData, setEngagementData] = useState<{ name: string; users: number }[]>([]);
 
   useEffect(() => {
     async function fetchStats() {
@@ -23,14 +24,32 @@ export function AdminDashboard() {
         .from("events")
         .select("*", { count: "exact", head: true });
 
-      // Fetch Total Participants and unique events
-      const { data: participants } = await supabase
+      // Fetch Total Participants and unique events for average
+      const { data: participantsData } = await supabase
         .from("participants")
         .select("registered_event");
 
-      const totalParticipants = participants?.length || 0;
-      const uniqueEvents = new Set(participants?.map(p => p.registered_event)).size || 1;
-      const avg = totalParticipants / uniqueEvents;
+      const totalParticipants = participantsData?.length || 0;
+      const uniqueEventsWithParticipants = new Set(participantsData?.map(p => p.registered_event)).size || 1;
+      const avg = totalParticipants / uniqueEventsWithParticipants;
+
+      // Fetch Events with Participant Counts for the chart
+      const { data: eventsWithParticipants, error: eventsError } = await supabase
+        .from("events")
+        .select(`
+          event_name,
+          participants:participants(count)
+        `)
+        .order("created_at", { ascending: false })
+        .limit(7);
+
+      if (eventsWithParticipants && !eventsError) {
+        const chartData = eventsWithParticipants.map((event: any) => ({
+          name: event.event_name.length > 10 ? event.event_name.substring(0, 10) + "..." : event.event_name,
+          users: event.participants[0]?.count || 0
+        })).reverse(); // Reverse to show chronological order if sorted by descending
+        setEngagementData(chartData);
+      }
 
       setStatsData({
         totalMembers: usersCount || 0,
@@ -50,16 +69,6 @@ export function AdminDashboard() {
   ];
 
 
-  const engagementData = [
-    { name: "Mon", users: 45 },
-    { name: "Tue", users: 52 },
-    { name: "Wed", users: 48 },
-    { name: "Thu", users: 61 },
-    { name: "Fri", users: 55 },
-    { name: "Sat", users: 38 },
-    { name: "Sun", users: 42 },
-  ];
-
   const eventData = [
     { name: "Jan", events: 3 },
     { name: "Feb", events: 5 },
@@ -69,13 +78,6 @@ export function AdminDashboard() {
     { name: "Jun", events: 7 },
   ];
 
-  const recentActivities = [
-    { type: "registration", name: "Sarah Wilson", event: "Public Speaking Workshop", time: "2 hours ago", icon: UserPlus },
-    { type: "member", name: "James Chen", action: "joined the club", time: "5 hours ago", icon: Users },
-    { type: "submission", name: "Emma Davis", action: "submitted an article", time: "1 day ago", icon: FileText },
-    { type: "registration", name: "Michael Brown", event: "Creative Writing Competition", time: "1 day ago", icon: UserPlus },
-    { type: "member", name: "Olivia Martinez", action: "joined the club", time: "2 days ago", icon: Users },
-  ];
 
   const container = {
     hidden: { opacity: 0 },
@@ -135,17 +137,17 @@ export function AdminDashboard() {
         ))}
       </motion.div>
 
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6">
         <motion.div
           className="rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6"
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.4 }}
         >
           <h2 className="text-xl text-gray-900 dark:text-white mb-6" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 600 }}>
-            Weekly Engagement
+            Event Engagement
           </h2>
-          <ResponsiveContainer width="100%" height={300}>
+          <ResponsiveContainer width="100%" height={350}>
             <LineChart data={engagementData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.2} />
               <XAxis dataKey="name" stroke="#9CA3AF" style={{ fontSize: '12px' }} />
@@ -162,40 +164,8 @@ export function AdminDashboard() {
             </LineChart>
           </ResponsiveContainer>
         </motion.div>
-
-        <motion.div
-          className="rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6"
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-        >
-          <h2 className="text-xl text-gray-900 dark:text-white mb-6" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 600 }}>
-            Event Participation
-          </h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={eventData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.2} />
-              <XAxis dataKey="name" stroke="#9CA3AF" style={{ fontSize: '12px' }} />
-              <YAxis stroke="#9CA3AF" style={{ fontSize: '12px' }} />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: '#1F2937',
-                  border: 'none',
-                  borderRadius: '12px',
-                  color: '#fff'
-                }}
-              />
-              <Bar dataKey="events" fill="url(#colorGradient)" radius={[8, 8, 0, 0]} />
-              <defs>
-                <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#1E3A8A" />
-                  <stop offset="100%" stopColor="#7C3AED" />
-                </linearGradient>
-              </defs>
-            </BarChart>
-          </ResponsiveContainer>
-        </motion.div>
       </div>
+
 
       <motion.div
         className="rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6"
@@ -206,33 +176,40 @@ export function AdminDashboard() {
         <h2 className="text-xl text-gray-900 dark:text-white mb-6" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 600 }}>
           Recent Activity
         </h2>
-        <div className="space-y-4">
-          {recentActivities.map((activity, index) => (
-            <div
-              key={index}
-              className="flex items-start gap-4 p-4 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-            >
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-900 to-purple-700 flex items-center justify-center flex-shrink-0">
-                <activity.icon className="w-5 h-5 text-white" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-gray-900 dark:text-white" style={{ fontFamily: 'Open Sans, sans-serif' }}>
-                  <span className="font-semibold">{activity.name}</span>{" "}
-                  {activity.event ? (
-                    <>
-                      registered for <span className="font-semibold">{activity.event}</span>
-                    </>
-                  ) : (
-                    activity.action
-                  )}
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1" style={{ fontFamily: 'Open Sans, sans-serif' }}>
-                  {activity.time}
-                </p>
-              </div>
+        <div className="relative overflow-hidden rounded-xl bg-gray-50 dark:bg-gray-800/50 p-12 flex flex-col items-center justify-center text-center border-2 border-dashed border-gray-200 dark:border-gray-700">
+          <motion.div
+            animate={{ 
+              scale: [1, 1.1, 1],
+              rotate: [0, 5, -5, 0]
+            }}
+            transition={{ 
+              duration: 4,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+            className="w-20 h-20 bg-gradient-to-br from-blue-900/20 to-purple-700/20 rounded-full flex items-center justify-center mb-6"
+          >
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-900 to-purple-700 rounded-full flex items-center justify-center shadow-lg">
+              <TrendingUp className="w-6 h-6 text-white" />
             </div>
-          ))}
+          </motion.div>
+          
+          <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            Real-time Activity Feed
+          </h3>
+          <p className="text-gray-500 dark:text-gray-400 max-w-sm" style={{ fontFamily: 'Open Sans, sans-serif' }}>
+            We're currently building a live synchronization system to track every club activity as it happens.
+          </p>
+          
+          <div className="mt-8 flex items-center gap-2 px-4 py-1.5 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs font-bold uppercase tracking-wider">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-purple-500"></span>
+            </span>
+            Coming Soon
+          </div>
         </div>
+
       </motion.div>
     </div>
   );
