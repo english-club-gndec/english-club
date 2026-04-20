@@ -22,4 +22,8 @@ router.get('/:event_id/getParticipationCountByEventId', registrationController.g
 // Path: /api/registration/:participant_id/updateParticipant
 router.patch('/:participant_id/updateParticipant', registrationController.updateParticipant);
 
+//In future will add new API where we'll se if that participant really participated in that event or not.
+//Path: /api/registration/:participant_id/checkParticipation
+//TODO: router.get('/:participant_id/checkParticipation', registrationController.checkParticipation);
+
 module.exports = router;
