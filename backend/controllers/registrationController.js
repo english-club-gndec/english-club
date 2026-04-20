@@ -163,6 +163,24 @@ const registrationController = {
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
+  },
+  
+  // GET /api/registration/:event_id/getParticipationCountByEventId
+  getParticipationCountByEventId: async (req, res) => {
+    try {
+      const { event_id } = req.params;
+      
+      const { count, error } = await supabase
+        .from('participants')
+        .select('*', { count: 'exact', head: true })
+        .eq('registered_event', event_id);
+
+      if (error) throw error;
+
+      res.json({ event_id, total_participants: count || 0 });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
   }
 };
 
