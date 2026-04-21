@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "motion/react";
 import { useState, useEffect } from "react";
-import { Plus, Edit2, Trash2, X, Instagram, Linkedin, Mail, Github, Loader2 } from "lucide-react";
+import { Plus, Edit2, Trash2, X, Instagram, Linkedin, Mail, Github, Loader2, User as UserIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Toaster } from "sonner";
 import { useAuth } from "../../context/AuthContext";
@@ -11,6 +11,7 @@ interface User {
   name: string;
   role: "MASTER" | "ADMIN" | "MANAGER";
   email: string;
+  profilePicture?: string;
   socials: {
     instagram?: string;
     linkedin?: string;
@@ -33,6 +34,7 @@ export function AdminUsers() {
             name: u.user_name,
             email: u.user_email,
             role: u.user_role,
+            profilePicture: u.user_image_key,
             socials: {
               instagram: u.instagram,
               linkedin: u.linkedin,
@@ -87,6 +89,7 @@ export function AdminUsers() {
           name: u.user_name,
           email: u.user_email,
           role: u.user_role,
+          profilePicture: u.user_image_key,
           socials: {
             instagram: u.instagram,
             linkedin: u.linkedin,
@@ -119,6 +122,7 @@ export function AdminUsers() {
           name: u.user_name,
           email: u.user_email,
           role: u.user_role,
+          profilePicture: u.user_image_key,
           socials: {
             instagram: u.instagram,
             linkedin: u.linkedin,
@@ -244,6 +248,9 @@ export function AdminUsers() {
                   <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
                     <tr>
                       <th className="px-6 py-4 text-left text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wider" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
+                        Profile
+                      </th>
+                      <th className="px-6 py-4 text-left text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wider" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
                         Name
                       </th>
                       <th className="px-6 py-4 text-left text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wider" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
@@ -268,6 +275,15 @@ export function AdminUsers() {
                         animate={{ opacity: 1 }}
                         className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                       >
+                        <td className="px-6 py-4">
+                          <div className="w-10 h-10 rounded-full border border-gray-200 dark:border-gray-700 overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                            {user.profilePicture ? (
+                              <img src={user.profilePicture} alt={user.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <UserIcon className="w-6 h-6 text-gray-400" />
+                            )}
+                          </div>
+                        </td>
                         <td className="px-6 py-4">
                           <div className="text-sm text-gray-900 dark:text-white" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
                             {user.name}
