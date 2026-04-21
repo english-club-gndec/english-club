@@ -1,8 +1,10 @@
 import { motion, AnimatePresence } from "motion/react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Edit2, Trash2, X, Instagram, Linkedin, Mail, Github } from "lucide-react";
 import { toast } from "sonner";
 import { Toaster } from "sonner";
+import { useAuth } from "../../context/AuthContext";
+import { userService } from "../../../services/userService";
 
 interface User {
   id: number;
@@ -17,29 +19,37 @@ interface User {
 }
 
 export function AdminUsers() {
-  const [users, setUsers] = useState<User[]>([
-    {
-      id: 1,
-      name: "John Doe",
-      role: "MASTER",
-      email: "john@englishclub.edu",
-      socials: { instagram: "#", linkedin: "#", github: "#" }
-    },
-    {
-      id: 2,
-      name: "Jane Smith",
-      role: "ADMIN",
-      email: "jane@englishclub.edu",
-      socials: { instagram: "#", linkedin: "#" }
-    },
-    {
-      id: 3,
-      name: "Mike Johnson",
-      role: "MANAGER",
-      email: "mike@englishclub.edu",
-      socials: { linkedin: "#" }
-    },
-  ]);
+  const { userId } = useAuth();
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchUsers() {
+      if (userId) {
+        try {
+          const data = await userService.getUsers(userId);
+          const transformedUsers = data.map((u: any) => ({
+            id: u.user_id,
+            name: u.user_name,
+            email: u.user_email,
+            role: u.user_role,
+            socials: {
+              instagram: u.instagram_link,
+              linkedin: u.linkedin_link,
+              github: u.github_link
+            }
+          }));
+          setUsers(transformedUsers);
+        } catch (error) {
+          toast.error("Failed to fetch users");
+        } finally {
+          setLoading(false);
+        }
+      }
+    }
+    fetchUsers();
+  }, [userId]);
+
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -51,9 +61,11 @@ export function AdminUsers() {
     instagram: "",
     linkedin: "",
     github: "",
+    description: "",
+    profileImage: ""
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (editingUser) {
@@ -70,19 +82,37 @@ export function AdminUsers() {
       } : u));
       toast.success("User updated successfully!");
     } else {
-      const newUser: User = {
-        id: Math.max(...users.map(u => u.id)) + 1,
-        name: formData.name,
-        email: formData.email,
-        role: formData.role,
-        socials: {
+      if (!userId) return;
+      try {
+        const payload = {
+          user_name: formData.name,
+          user_password: formData.password,
+          user_role: formData.role,
           instagram: formData.instagram || undefined,
           linkedin: formData.linkedin || undefined,
           github: formData.github || undefined,
-        }
-      };
-      setUsers([...users, newUser]);
-      toast.success("User added successfully!");
+        };
+        await userService.createUser(userId, payload);
+        toast.success("User added successfully!");
+        
+        // Refresh users list
+        const data = await userService.getUsers(userId);
+        const transformedUsers = data.map((u: any) => ({
+          id: u.user_id,
+          name: u.user_name,
+          email: u.user_email,
+          role: u.user_role,
+          socials: {
+            instagram: u.instagram_link,
+            linkedin: u.linkedin_link,
+            github: u.github_link
+          }
+        }));
+        setUsers(transformedUsers);
+      } catch (error: any) {
+        toast.error(error.message || "Failed to create user");
+        return;
+      }
     }
 
     closeModal();
@@ -106,6 +136,8 @@ export function AdminUsers() {
         instagram: user.socials.instagram || "",
         linkedin: user.socials.linkedin || "",
         github: user.socials.github || "",
+        description: "",
+        profileImage: ""
       });
     } else {
       setEditingUser(null);
@@ -117,6 +149,8 @@ export function AdminUsers() {
         instagram: "",
         linkedin: "",
         github: "",
+        description: "",
+        profileImage: ""
       });
     }
     setIsModalOpen(true);
@@ -280,33 +314,62 @@ export function AdminUsers() {
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
                     <label htmlFor="name" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                      Full Name
+                      Username (for now)
                     </label>
                     <input
                       type="text"
                       id="name"
+                      placeholder="firstname_lastname_position"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       required
-                      className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                      autoComplete="off"
+                      className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all placeholder:text-gray-400 dark:placeholder:text-gray-600"
                       style={{ fontFamily: 'Open Sans, sans-serif' }}
                     />
                   </div>
 
                   <div>
                     <label htmlFor="email" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                      Email Address
+                      Email Address (api connection left)
                     </label>
                     <input
                       type="email"
                       id="email"
+                      placeholder="abc123@gmail.com"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       required
-                      className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                      className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all placeholder:text-gray-400 dark:placeholder:text-gray-600"
                       style={{ fontFamily: 'Open Sans, sans-serif' }}
                     />
                   </div>
+                </div>
+
+                <div>
+                  <label htmlFor="description" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
+                    Description (api connection left)
+                  </label>
+                  <textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all min-h-[100px]"
+                    style={{ fontFamily: 'Open Sans, sans-serif' }}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="profileImage" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
+                    Profile Image (api connection left)
+                  </label>
+                  <input
+                    type="file"
+                    id="profileImage"
+                    onChange={(e) => setFormData({ ...formData, profileImage: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                    style={{ fontFamily: 'Open Sans, sans-serif' }}
+                  />
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-6">
@@ -320,6 +383,7 @@ export function AdminUsers() {
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                       required={!editingUser}
+                      autoComplete="new-password"
                       className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                       style={{ fontFamily: 'Open Sans, sans-serif' }}
                     />

@@ -25,5 +25,26 @@ export const userService = {
       console.error('Failed to fetch users:', error);
       throw error;
     }
+  },
+
+  createUser: async (adminId: string, userData: any) => {
+    try {
+      const response = await fetch(`${BASE_URL}/user/${adminId}/createUser`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Error: ${response.statusText}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Failed to create user:', error);
+      throw error;
+    }
   }
 };
+
