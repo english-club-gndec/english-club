@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion } from "motion/react";
 import { Users, Calendar, ClipboardList, TrendingUp, UserPlus, FileText, Loader2 } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
@@ -11,7 +11,7 @@ import { userService } from "../../../services/userService";
 
 export function AdminDashboard() {
   const { userId } = useAuth();
-  const [adminName, setAdminName] = useState("Admin");
+  const [adminName, setAdminName] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [statsData, setStatsData] = useState({
     totalMembers: 0,
@@ -145,6 +145,36 @@ export function AdminDashboard() {
     show: { opacity: 1, y: 0 }
   };
 
+  const typewriterContainer = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+    },
+  };
+
+  const typewriterChar = {
+    hidden: { opacity: 0, display: "none" },
+    visible: { opacity: 1, display: "inline-block" },
+  };
+
+  const welcomeText = `Welcome back, ${adminName} 👋`;
+
+  const characterDelays = useMemo(() => {
+    let currentDelay = 0;
+    return Array.from(welcomeText).map((char) => {
+      // Base typing speed (0.03s - 0.08s)
+      const jitter = Math.random() * 0.05 + 0.03;
+      
+      // Add extra pause for punctuation or spaces
+      let pause = 0;
+      if (char === ",") pause = 0.4;
+      else if (char === " ") pause = 0.15;
+      
+      currentDelay += jitter + pause;
+      return currentDelay;
+    });
+  }, [welcomeText]);
+
   return (
     <div className="space-y-6">
       <motion.div
@@ -152,8 +182,35 @@ export function AdminDashboard() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <h1 className="text-3xl text-gray-900 dark:text-white mb-2" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700 }}>
-          Welcome back, {adminName} 👋
+        <h1 className="text-3xl text-gray-900 dark:text-white mb-2 min-h-[40px]" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700 }}>
+          <AnimatePresence>
+            {adminName && (
+              <motion.span
+                variants={typewriterContainer}
+                initial="hidden"
+                animate="visible"
+                className="flex flex-wrap"
+              >
+                {Array.from(welcomeText).map((char, index) => (
+                  <motion.span 
+                    key={index} 
+                    variants={typewriterChar}
+                    transition={{ 
+                      duration: 0.1, 
+                      delay: characterDelays[index] 
+                    }}
+                  >
+                    {char === " " ? "\u00A0" : char}
+                  </motion.span>
+                ))}
+                <motion.span
+                  animate={{ opacity: [1, 0] }}
+                  transition={{ repeat: Infinity, duration: 0.4, repeatType: "reverse", ease: "linear" }}
+                  className="inline-block w-1 h-8 bg-purple-500 ml-1 self-center"
+                />
+              </motion.span>
+            )}
+          </AnimatePresence>
         </h1>
         <p className="text-gray-600 dark:text-gray-400" style={{ fontFamily: 'Open Sans, sans-serif' }}>
           Here's what's happening with your English Club today.
