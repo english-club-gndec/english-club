@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react";
-import { Search, Bell, User, LogOut, Settings as SettingsIcon } from "lucide-react";
+import { Search, Bell, User, LogOut, Settings as SettingsIcon, Moon, Sun } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useTheme } from "../ThemeProvider";
 import { useAuth } from "../../context/AuthContext";
-import { supabase } from "../../../lib/supabase";
-import { Moon, Sun } from "lucide-react";
+import { userService } from "../../../services/userService";
 
 export function AdminNavbar() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -15,14 +14,13 @@ export function AdminNavbar() {
   useEffect(() => {
     async function fetchAdminName() {
       if (userId) {
-        const { data, error } = await supabase
-          .from("users")
-          .select("user_name")
-          .eq("user_id", userId)
-          .single();
-        
-        if (data && !error) {
-          setAdminName(data.user_name);
+        try {
+          const userData = await userService.getUserById(userId);
+          if (userData && userData.user_name) {
+            setAdminName(userData.user_name);
+          }
+        } catch (err) {
+          console.error("Failed to fetch admin name:", err);
         }
       }
     }
@@ -59,10 +57,10 @@ export function AdminNavbar() {
               )}
             </button>
 
-            <button className="p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors relative">
+            {/* <button className="p-3 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors relative">
               <Bell className="w-5 h-5 text-gray-600 dark:text-gray-400" />
               <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
-            </button>
+            </button> */}
 
             <div className="relative">
               <button

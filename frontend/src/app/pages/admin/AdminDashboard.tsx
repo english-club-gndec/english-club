@@ -4,57 +4,107 @@ import { Users, Calendar, ClipboardList, TrendingUp, UserPlus, FileText } from "
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { supabase } from "../../../lib/supabase";
 
+import { useAuth } from "../../context/AuthContext";
+
+import { userService } from "../../../services/userService";
+
 export function AdminDashboard() {
+  const { userId } = useAuth();
+  const [adminName, setAdminName] = useState("Admin");
   const [statsData, setStatsData] = useState({
     totalMembers: 0,
     totalEvents: 0,
     avgParticipants: 0,
+    membersChange: "+0%",
+    eventsChange: "+0%",
+    participantsChange: "+0%",
   });
   const [engagementData, setEngagementData] = useState<{ name: string; users: number }[]>([]);
 
   useEffect(() => {
     async function fetchStats() {
-      // Fetch Total Members
-      const { count: usersCount } = await supabase
-        .from("users")
-        .select("*", { count: "exact", head: true });
+      if (userId) {
+        try {
+          const userData = await userService.getUserById(userId);
+          if (userData && userData.user_name) {
+            setAdminName(userData.user_name);
+          }
+        } catch (err) {
+          console.error("Failed to fetch admin name:", err);
+        }
+      }
 
-      // Fetch Total Events
-      const { count: eventsCount } = await supabase
-        .from("events")
-        .select("*", { count: "exact", head: true });
+      const now = new Date();
 
-      // Fetch Total Participants and unique events for average
-      const { data: participantsData } = await supabase
-        .from("participants")
-        .select("registered_event");
+      const firstDayOfYear = new Date(now.getFullYear(), 0, 1).toISOString();
+      const firstDayOfLastYear = new Date(now.getFullYear() - 1, 0, 1).toISOString();
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000).toISOString();
 
+      // 1. Total Members & Year-over-Year Growth
+      const { count: totalMembers } = await supabase.from("users").select("*", { count: "exact", head: true });
+      const { count: membersThisYear } = await supabase.from("users").select("*", { count: "exact", head: true }).gte("created_at", firstDayOfYear);
+      const { count: membersLastYear } = await supabase.from("users").select("*", { count: "exact", head: true }).gte("created_at", firstDayOfLastYear).lt("created_at", firstDayOfYear);
+      
+      const membersPct = membersLastYear && membersLastYear > 0 
+        ? ((membersThisYear! / membersLastYear) * 100).toFixed(0) 
+        : membersThisYear && membersThisYear > 0 ? "100" : "0";
+
+      // 2. Total Events & Month-over-Month Growth
+      const { count: totalEvents } = await supabase.from("events").select("*", { count: "exact", head: true });
+      const { count: eventsThisMonth } = await supabase.from("events").select("*", { count: "exact", head: true }).gte("created_at", thirtyDaysAgo);
+      const { count: eventsLastMonth } = await supabase.from("events").select("*", { count: "exact", head: true }).gte("created_at", sixtyDaysAgo).lt("created_at", thirtyDaysAgo);
+
+      const eventsPct = eventsLastMonth && eventsLastMonth > 0
+        ? (((eventsThisMonth! - eventsLastMonth) / eventsLastMonth) * 100).toFixed(0)
+        : eventsThisMonth && eventsThisMonth > 0 ? "100" : "0";
+
+      // 3. Avg Participants & Latest Event Growth
+      const { data: participantsData } = await supabase.from("participants").select("registered_event");
       const totalParticipants = participantsData?.length || 0;
       const uniqueEventsWithParticipants = new Set(participantsData?.map(p => p.registered_event)).size || 1;
       const avg = totalParticipants / uniqueEventsWithParticipants;
 
-      // Fetch Events with Participant Counts for the chart
-      const { data: eventsWithParticipants, error: eventsError } = await supabase
+      // Get latest 2 events to compare participation
+      const { data: latestEvents } = await supabase
         .from("events")
-        .select(`
-          event_name,
-          participants:participants(count)
-        `)
+        .select(`event_id, participants:participants(count)`)
+        .order("created_at", { ascending: false })
+        .limit(2);
+
+      let participantsPct = "0";
+      if (latestEvents && latestEvents.length >= 2) {
+        const currentCount = latestEvents[0].participants[0]?.count || 0;
+        const prevCount = latestEvents[1].participants[0]?.count || 0;
+        if (prevCount > 0) {
+          participantsPct = (((currentCount - prevCount) / prevCount) * 100).toFixed(0);
+        } else if (currentCount > 0) {
+          participantsPct = "100";
+        }
+      }
+
+      // 4. Engagement Data for Chart
+      const { data: eventsWithParticipants } = await supabase
+        .from("events")
+        .select(`event_name, participants:participants(count)`)
         .order("created_at", { ascending: false })
         .limit(7);
 
-      if (eventsWithParticipants && !eventsError) {
+      if (eventsWithParticipants) {
         const chartData = eventsWithParticipants.map((event: any) => ({
           name: event.event_name.length > 10 ? event.event_name.substring(0, 10) + "..." : event.event_name,
           users: event.participants[0]?.count || 0
-        })).reverse(); // Reverse to show chronological order if sorted by descending
+        })).reverse();
         setEngagementData(chartData);
       }
 
       setStatsData({
-        totalMembers: usersCount || 0,
-        totalEvents: eventsCount || 0,
+        totalMembers: totalMembers || 0,
+        totalEvents: totalEvents || 0,
         avgParticipants: parseFloat(avg.toFixed(1)),
+        membersChange: `${parseInt(membersPct) >= 0 ? "+" : ""}${membersPct}%`,
+        eventsChange: `${parseInt(eventsPct) >= 0 ? "+" : ""}${eventsPct}%`,
+        participantsChange: `${parseInt(participantsPct) >= 0 ? "+" : ""}${participantsPct}%`,
       });
     }
 
@@ -62,11 +112,11 @@ export function AdminDashboard() {
   }, []);
 
   const stats = [
-    { label: "Total Members", value: statsData.totalMembers.toString(), change: "+12%", icon: Users, color: "from-blue-500 to-blue-600" },
-    { label: "Total Events", value: statsData.totalEvents.toString(), change: "+8%", icon: Calendar, color: "from-purple-500 to-purple-600" },
-    { label: "Avg Participants", value: statsData.avgParticipants.toString(), change: "+24%", icon: ClipboardList, color: "from-green-500 to-green-600" },
-    { label: "Active Users", value: "203", change: "+5%", icon: TrendingUp, color: "from-orange-500 to-orange-600" },
+    { label: "Total Members", value: statsData.totalMembers.toString(), change: statsData.membersChange, icon: Users, color: "from-blue-500 to-blue-600" },
+    { label: "Total Events", value: statsData.totalEvents.toString(), change: statsData.eventsChange, icon: Calendar, color: "from-purple-500 to-purple-600" },
+    { label: "Avg Participants", value: statsData.avgParticipants.toString(), change: statsData.participantsChange, icon: ClipboardList, color: "from-green-500 to-green-600" },
   ];
+
 
 
   const eventData = [
@@ -100,7 +150,7 @@ export function AdminDashboard() {
         transition={{ duration: 0.5 }}
       >
         <h1 className="text-3xl text-gray-900 dark:text-white mb-2" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700 }}>
-          Welcome back, Admin 👋
+          Welcome back, {adminName} 👋
         </h1>
         <p className="text-gray-600 dark:text-gray-400" style={{ fontFamily: 'Open Sans, sans-serif' }}>
           Here's what's happening with your English Club today.
@@ -108,7 +158,7 @@ export function AdminDashboard() {
       </motion.div>
 
       <motion.div
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+        className="grid grid-cols-1 md:grid-cols-3 gap-6"
         variants={container}
         initial="hidden"
         animate="show"
@@ -123,9 +173,7 @@ export function AdminDashboard() {
               <div className={`p-3 rounded-xl bg-gradient-to-br ${stat.color}`}>
                 <stat.icon className="w-6 h-6 text-white" />
               </div>
-              <span className="px-2 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                {stat.change}
-              </span>
+
             </div>
             <div className="text-3xl text-gray-900 dark:text-white mb-1" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700 }}>
               {stat.value}
