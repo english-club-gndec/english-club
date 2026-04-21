@@ -34,9 +34,9 @@ export function AdminUsers() {
             email: u.user_email,
             role: u.user_role,
             socials: {
-              instagram: u.instagram_link,
-              linkedin: u.linkedin_link,
-              github: u.github_link
+              instagram: u.instagram,
+              linkedin: u.linkedin,
+              github: u.github
             }
           }));
           setUsers(transformedUsers);
@@ -69,18 +69,35 @@ export function AdminUsers() {
     e.preventDefault();
 
     if (editingUser) {
-      setUsers(users.map(u => u.id === editingUser.id ? {
-        ...u,
-        name: formData.name,
-        email: formData.email,
-        role: formData.role,
-        socials: {
+      if (!userId) return;
+      try {
+        const payload = {
+          user_name: formData.name,
           instagram: formData.instagram || undefined,
           linkedin: formData.linkedin || undefined,
           github: formData.github || undefined,
-        }
-      } : u));
-      toast.success("User updated successfully!");
+        };
+        await userService.updateUser(editingUser.id.toString(), payload);
+        toast.success("User updated successfully!");
+        
+        // Refresh users list
+        const data = await userService.getUsers(userId);
+        const transformedUsers = data.map((u: any) => ({
+          id: u.user_id,
+          name: u.user_name,
+          email: u.user_email,
+          role: u.user_role,
+          socials: {
+            instagram: u.instagram,
+            linkedin: u.linkedin,
+            github: u.github
+          }
+        }));
+        setUsers(transformedUsers);
+      } catch (error: any) {
+        toast.error(error.message || "Failed to update user");
+        return;
+      }
     } else {
       if (!userId) return;
       try {
@@ -103,9 +120,9 @@ export function AdminUsers() {
           email: u.user_email,
           role: u.user_role,
           socials: {
-            instagram: u.instagram_link,
-            linkedin: u.linkedin_link,
-            github: u.github_link
+            instagram: u.instagram,
+            linkedin: u.linkedin,
+            github: u.github
           }
         }));
         setUsers(transformedUsers);
@@ -270,17 +287,17 @@ export function AdminUsers() {
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
                             {user.socials.instagram && (
-                              <a href={user.socials.instagram} className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gradient-to-br hover:from-blue-900 hover:to-purple-700 transition-all group">
+                              <a href={user.socials.instagram} target="_blank" rel="noopener noreferrer" className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gradient-to-br hover:from-blue-900 hover:to-purple-700 transition-all group">
                                 <Instagram className="w-4 h-4 text-gray-600 dark:text-gray-400 group-hover:text-white" />
                               </a>
                             )}
                             {user.socials.linkedin && (
-                              <a href={user.socials.linkedin} className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gradient-to-br hover:from-blue-900 hover:to-purple-700 transition-all group">
+                              <a href={user.socials.linkedin} target="_blank" rel="noopener noreferrer" className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gradient-to-br hover:from-blue-900 hover:to-purple-700 transition-all group">
                                 <Linkedin className="w-4 h-4 text-gray-600 dark:text-gray-400 group-hover:text-white" />
                               </a>
                             )}
                             {user.socials.github && (
-                              <a href={user.socials.github} className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gradient-to-br hover:from-blue-900 hover:to-purple-700 transition-all group">
+                              <a href={user.socials.github} target="_blank" rel="noopener noreferrer" className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gradient-to-br hover:from-blue-900 hover:to-purple-700 transition-all group">
                                 <Github className="w-4 h-4 text-gray-600 dark:text-gray-400 group-hover:text-white" />
                               </a>
                             )}
