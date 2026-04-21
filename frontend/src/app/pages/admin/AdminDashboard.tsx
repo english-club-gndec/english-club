@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { motion } from "motion/react";
-import { Users, Calendar, ClipboardList, TrendingUp, UserPlus, FileText } from "lucide-react";
+import { Users, Calendar, ClipboardList, TrendingUp, UserPlus, FileText, Loader2 } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { AnimatePresence } from "motion/react";
 import { supabase } from "../../../lib/supabase";
 
 import { useAuth } from "../../context/AuthContext";
@@ -11,6 +12,7 @@ import { userService } from "../../../services/userService";
 export function AdminDashboard() {
   const { userId } = useAuth();
   const [adminName, setAdminName] = useState("Admin");
+  const [isLoading, setIsLoading] = useState(true);
   const [statsData, setStatsData] = useState({
     totalMembers: 0,
     totalEvents: 0,
@@ -106,6 +108,7 @@ export function AdminDashboard() {
         eventsChange: `${parseInt(eventsPct) >= 0 ? "+" : ""}${eventsPct}%`,
         participantsChange: `${parseInt(participantsPct) >= 0 ? "+" : ""}${participantsPct}%`,
       });
+      setIsLoading(false);
     }
 
     fetchStats();
@@ -186,32 +189,70 @@ export function AdminDashboard() {
       </motion.div>
 
       <div className="grid grid-cols-1 gap-6">
-        <motion.div
-          className="rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-        >
+        <div className="rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 min-h-[450px] flex flex-col">
           <h2 className="text-xl text-gray-900 dark:text-white mb-6" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 600 }}>
             Event Engagement
           </h2>
-          <ResponsiveContainer width="100%" height={350}>
-            <LineChart data={engagementData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.2} />
-              <XAxis dataKey="name" stroke="#9CA3AF" style={{ fontSize: '12px' }} />
-              <YAxis stroke="#9CA3AF" style={{ fontSize: '12px' }} />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: '#1F2937',
-                  border: 'none',
-                  borderRadius: '12px',
-                  color: '#fff'
-                }}
-              />
-              <Line type="monotone" dataKey="users" stroke="#7C3AED" strokeWidth={3} dot={{ fill: '#7C3AED', r: 4 }} />
-            </LineChart>
-          </ResponsiveContainer>
-        </motion.div>
+          <div className="flex-1 flex items-center justify-center relative">
+            <AnimatePresence mode="wait">
+              {isLoading ? (
+                <motion.div
+                  key="loader"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="flex flex-col items-center gap-4"
+                >
+                  <div className="relative">
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                      className="w-16 h-16 rounded-full border-4 border-purple-500/20 border-t-purple-500"
+                    />
+                    <Loader2 className="w-8 h-8 text-purple-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-spin-slow" />
+                  </div>
+                  <p className="text-gray-500 dark:text-gray-400 animate-pulse" style={{ fontFamily: 'Open Sans, sans-serif' }}>
+                    Gathering engagement insights...
+                  </p>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="chart"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.8 }}
+                  className="w-full h-full"
+                >
+                  <ResponsiveContainer width="100%" height={350}>
+                    <LineChart data={engagementData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
+                      <XAxis dataKey="name" stroke="#9CA3AF" style={{ fontSize: '12px' }} />
+                      <YAxis stroke="#9CA3AF" style={{ fontSize: '12px' }} />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: '#1F2937',
+                          border: 'none',
+                          borderRadius: '12px',
+                          color: '#fff',
+                          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                        }}
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="users" 
+                        stroke="#7C3AED" 
+                        strokeWidth={3} 
+                        dot={{ fill: '#7C3AED', r: 6, strokeWidth: 2, stroke: '#fff' }}
+                        activeDot={{ r: 8, strokeWidth: 0 }}
+                        isAnimationActive={false}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
       </div>
 
 
