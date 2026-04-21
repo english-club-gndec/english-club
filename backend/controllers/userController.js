@@ -1,5 +1,5 @@
 const supabase = require('../config/supabase');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 const userController = {
   // GET /api/users/:user_id/getUsers
