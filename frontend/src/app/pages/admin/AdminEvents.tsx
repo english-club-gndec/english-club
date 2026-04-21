@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "motion/react";
 import { useState, useEffect } from "react";
-import { Plus, Edit2, Trash2, X, Calendar as CalendarIcon, Clock, MapPin, Loader2, Image as ImageIcon } from "lucide-react";
+import { Plus, Edit2, Trash2, X, Calendar as CalendarIcon, Clock, MapPin, Loader2, Image as ImageIcon, LayoutGrid, List } from "lucide-react";
 import { toast } from "sonner";
 import { Toaster } from "sonner";
 import { eventService } from "../../../services/eventService";
@@ -14,12 +14,14 @@ interface Event {
   time: string;
   venue: string;
   createdBy: string;
+  poster?: string;
 }
 
 export function AdminEvents() {
   const { userId } = useAuth();
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -32,7 +34,8 @@ export function AdminEvents() {
           date: ev.event_date,
           time: ev.event_time,
           venue: ev.event_venue,
-          createdBy: ev.creater_name || "System"
+          createdBy: ev.creater_name || "System",
+          poster: ev.event_poster
         }));
         setEvents(transformedEvents);
       } catch (error) {
@@ -85,7 +88,8 @@ export function AdminEvents() {
           date: ev.event_date,
           time: ev.event_time,
           venue: ev.event_venue,
-          createdBy: ev.creater_name || "System"
+          createdBy: ev.creater_name || "System",
+          poster: ev.event_poster
         }));
         setEvents(transformedEvents);
       } catch (error: any) {
@@ -115,7 +119,8 @@ export function AdminEvents() {
           date: ev.event_date,
           time: ev.event_time,
           venue: ev.event_venue,
-          createdBy: ev.creater_name || "System"
+          createdBy: ev.creater_name || "System",
+          poster: ev.event_poster
         }));
         setEvents(transformedEvents);
       } catch (error: any) {
@@ -137,24 +142,50 @@ export function AdminEvents() {
   const openModal = (event?: Event) => {
     if (event) {
       setEditingEvent(event);
+      
+      // Format date to YYYY-MM-DD for input[type="date"]
+      let formattedDate = "";
+      if (event.date) {
+        const d = new Date(event.date);
+        if (!isNaN(d.getTime())) {
+          formattedDate = d.toISOString().split('T')[0];
+        } else {
+          // If already in YYYY-MM-DD format or something else
+          formattedDate = event.date.split('T')[0];
+        }
+      }
+
       setFormData({
         name: event.name,
         description: event.description,
-        date: event.date,
+        date: formattedDate,
         time: event.time,
         venue: event.venue,
-        eventPoster: "" // placeholder
+        eventPoster: event.poster || ""
       });
+
+      // Sync time picker
+      if (event.time) {
+        const match = event.time.match(/(\d+):(\d+)\s*(AM|PM)/i);
+        if (match) {
+          setTempTime({
+            hour: match[1],
+            minute: match[2],
+            period: match[3].toUpperCase()
+          });
+        }
+      }
     } else {
       setEditingEvent(null);
       setFormData({
         name: "",
         description: "",
         date: "",
-        time: "",
+        time: "12:00 PM",
         venue: "",
         eventPoster: ""
       });
+      setTempTime({ hour: "12", minute: "00", period: "PM" });
     }
     setIsModalOpen(true);
   };
@@ -177,14 +208,32 @@ export function AdminEvents() {
               Create and manage club events
             </p>
           </div>
-          <button
-            onClick={() => openModal()}
-            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-blue-900 to-purple-700 text-white hover:shadow-lg hover:shadow-purple-500/50 transition-all"
-            style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}
-          >
-            <Plus className="w-5 h-5" />
-            Create Event
-          </button>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center bg-gray-100 dark:bg-gray-800 p-1 rounded-xl border border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-gray-700 text-purple-600 shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                title="Grid View"
+              >
+                <LayoutGrid className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white dark:bg-gray-700 text-purple-600 shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                title="List View"
+              >
+                <List className="w-5 h-5" />
+              </button>
+            </div>
+            <button
+              onClick={() => openModal()}
+              className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-blue-900 to-purple-700 text-white hover:shadow-lg hover:shadow-purple-500/50 transition-all"
+              style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}
+            >
+              <Plus className="w-5 h-5" />
+              Create Event
+            </button>
+          </div>
         </div>
 
         <AnimatePresence mode="wait">
@@ -208,11 +257,24 @@ export function AdminEvents() {
                 Loading upcoming events...
               </p>
             </motion.div>
-          ) : (
+          ) : events.length === 0 ? (
+            <motion.div 
+              key="no-events"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="py-20 text-center border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-2xl w-full"
+            >
+              <p className="text-gray-500 dark:text-gray-400" style={{ fontFamily: 'Open Sans, sans-serif' }}>
+                No events found. Create one to get started!
+              </p>
+            </motion.div>
+          ) : viewMode === 'grid' ? (
             <motion.div 
               key="events-grid"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
               transition={{ duration: 0.5 }}
               className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 w-full"
             >
@@ -221,63 +283,143 @@ export function AdminEvents() {
                   key={event.id}
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 hover:shadow-xl hover:shadow-purple-500/10 transition-all"
+                  className="rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 overflow-hidden hover:shadow-xl hover:shadow-purple-500/10 transition-all group"
                 >
-                  <div className="flex items-start justify-between mb-4">
-                    <h3 className="text-xl text-gray-900 dark:text-white flex-1" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 600 }}>
-                      {event.name}
-                    </h3>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => openModal(event)}
-                        className="p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 transition-colors"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(event.id)}
-                        className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+                  <div className="h-48 w-full overflow-hidden relative">
+                    <img 
+                      src={event.poster || "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&q=80&w=800"} 
+                      alt={event.name}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
-
-                  <p className="text-sm text-gray-600 dark:text-gray-300 mb-4" style={{ fontFamily: 'Open Sans, sans-serif' }}>
-                    {event.description}
-                  </p>
-
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                      <CalendarIcon className="w-4 h-4 text-purple-700 dark:text-purple-400" />
-                      <span style={{ fontFamily: 'Open Sans, sans-serif' }}>
-                        {new Date(event.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                      </span>
+                  <div className="p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <h3 className="text-xl text-gray-900 dark:text-white flex-1" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 600 }}>
+                        {event.name}
+                      </h3>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => openModal(event)}
+                          className="p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 transition-colors"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(event.id)}
+                          className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                      <Clock className="w-4 h-4 text-purple-700 dark:text-purple-400" />
-                      <span style={{ fontFamily: 'Open Sans, sans-serif' }}>{event.time}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                      <MapPin className="w-4 h-4 text-purple-700 dark:text-purple-400" />
-                      <span style={{ fontFamily: 'Open Sans, sans-serif' }}>{event.venue}</span>
-                    </div>
-                  </div>
 
-                  <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-800">
-                    <p className="text-xs text-gray-500 dark:text-gray-400" style={{ fontFamily: 'Open Sans, sans-serif' }}>
-                      Created by: <span className="font-semibold">{event.createdBy}</span>
+                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-4" style={{ fontFamily: 'Open Sans, sans-serif' }}>
+                      {event.description}
                     </p>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                        <CalendarIcon className="w-4 h-4 text-purple-700 dark:text-purple-400" />
+                        <span style={{ fontFamily: 'Open Sans, sans-serif' }}>
+                          {new Date(event.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                        <Clock className="w-4 h-4 text-purple-700 dark:text-purple-400" />
+                        <span style={{ fontFamily: 'Open Sans, sans-serif' }}>{event.time}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                        <MapPin className="w-4 h-4 text-purple-700 dark:text-purple-400" />
+                        <span style={{ fontFamily: 'Open Sans, sans-serif' }}>{event.venue}</span>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-800">
+                      <p className="text-xs text-gray-500 dark:text-gray-400" style={{ fontFamily: 'Open Sans, sans-serif' }}>
+                        Created by: <span className="font-semibold">{event.createdBy}</span>
+                      </p>
+                    </div>
                   </div>
                 </motion.div>
               ))}
-              {events.length === 0 && (
-                <div className="col-span-full py-20 text-center border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-2xl">
-                  <p className="text-gray-500 dark:text-gray-400" style={{ fontFamily: 'Open Sans, sans-serif' }}>
-                    No events found. Create one to get started!
-                  </p>
-                </div>
-              )}
+            </motion.div>
+          ) : (
+            <motion.div
+              key="events-list"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.5 }}
+              className="w-full overflow-hidden rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800"
+            >
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wider font-bold">Event</th>
+                      <th className="px-6 py-4 text-left text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wider font-bold">Date & Time</th>
+                      <th className="px-6 py-4 text-left text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wider font-bold">Venue</th>
+                      <th className="px-6 py-4 text-right text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wider font-bold">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+                    {events.map((event) => (
+                      <tr key={event.id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
+                              <img 
+                                src={event.poster || "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&q=80&w=200"} 
+                                alt="" 
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <div className="min-w-0">
+                              <div className="font-semibold text-gray-900 dark:text-white truncate">{event.name}</div>
+                              <div className="text-xs text-gray-500 truncate max-w-[200px]">{event.description}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                              <CalendarIcon className="w-3 h-3 text-purple-500" />
+                              <span>{new Date(event.date).toLocaleDateString()}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-xs text-gray-500">
+                              <Clock className="w-3 h-3 text-purple-400" />
+                              <span>{event.time}</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                            <MapPin className="w-3 h-3 text-purple-500" />
+                            <span>{event.venue}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => openModal(event)}
+                              className="p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 transition-colors"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(event.id)}
+                              className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
