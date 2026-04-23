@@ -9,7 +9,8 @@ import {
   FileText,
   Settings,
   X,
-  Menu
+  Menu,
+  Trophy
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -22,6 +23,7 @@ export function AdminSidebar() {
     { path: "/admin/users", label: "Users", icon: Users },
     { path: "/admin/events", label: "Events", icon: Calendar },
     { path: "/admin/registrations", label: "Registrations", icon: ClipboardList },
+    { path: "/admin/vote", label: "People's Choice", icon: Trophy },
     { path: "/admin/resources", label: "Resources", icon: BookOpen },
     { path: "/admin/submissions", label: "Submissions", icon: FileText },
     { path: "/admin/settings", label: "Settings", icon: Settings },
