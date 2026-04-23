@@ -32,40 +32,51 @@ export function Home() {
     <div className="bg-white dark:bg-gray-950">
       <section className="relative min-h-[calc(100vh-76px)] flex items-center overflow-hidden bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-900 dark:to-gray-950">
         <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
-        <div className="max-w-7xl mx-auto px-6 py-20 lg:py-32 relative z-10">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+        <div className="max-w-7xl mx-auto px-6 pt-10 pb-20 lg:pt-14 lg:pb-32 relative z-10">
+          <motion.div
+            className="relative w-full mb-8 lg:mb-12"
+            initial={{ opacity: 0, y: -30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+          >
+            <div className="relative w-full aspect-[21/9] md:aspect-[25/9] rounded-[2rem] md:rounded-[3rem] overflow-hidden shadow-2xl border-4 border-white dark:border-gray-900">
+              <img
+                src="/images/group-photo.jpg"
+                alt="English Club Group"
+                className="w-full h-full object-cover object-[center_60%]"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-blue-900/40 via-transparent to-transparent"></div>
+            </div>
+            
+            {/* Decorative blurs */}
+            <div className="absolute -bottom-10 -left-10 w-64 h-64 bg-blue-600/20 rounded-full blur-3xl opacity-50 -z-10"></div>
+            <div className="absolute -top-10 -right-10 w-64 h-64 bg-purple-600/20 rounded-full blur-3xl opacity-50 -z-10"></div>
+          </motion.div>
+
+          <div className="flex flex-col items-center text-center max-w-4xl mx-auto">
             <motion.div
-              initial={{ opacity: 0, x: -50 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, ease: "easeOut" }}
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
             >
               <motion.h1
-                className="text-5xl lg:text-7xl text-gray-900 dark:text-white mb-6 leading-tight"
+                className="text-5xl lg:text-8xl text-gray-900 dark:text-white mb-6 leading-tight"
                 style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 800 }}
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.2 }}
               >
                 Welcome to the <span className="bg-gradient-to-r from-blue-900 to-purple-700 bg-clip-text text-transparent">English Club</span>
               </motion.h1>
               <motion.p
-                className="text-xl text-gray-600 dark:text-gray-300 mb-8"
+                className="text-xl lg:text-2xl text-gray-600 dark:text-gray-300 mb-10 max-w-2xl mx-auto"
                 style={{ fontFamily: 'Open Sans, sans-serif' }}
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.4 }}
               >
                 Enhancing communication, creativity, and confidence through the power of language
               </motion.p>
               <motion.div
-                className="flex flex-wrap gap-4"
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.6 }}
+                className="flex flex-wrap justify-center gap-4"
               >
                 <Link
                   to="/join"
-                  className="group px-8 py-4 rounded-xl bg-gradient-to-r from-blue-900 to-purple-700 text-white hover:shadow-2xl hover:shadow-purple-500/50 transition-all hover:scale-105"
+                  className="group px-10 py-5 rounded-2xl bg-gradient-to-r from-blue-900 to-purple-700 text-white hover:shadow-2xl hover:shadow-purple-500/50 transition-all hover:scale-105"
                   style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}
                 >
                   <span className="flex items-center gap-2">
@@ -75,30 +86,12 @@ export function Home() {
                 </Link>
                 <Link
                   to="/events"
-                  className="px-8 py-4 rounded-xl border-2 border-blue-900 dark:border-purple-700 text-blue-900 dark:text-purple-400 hover:bg-blue-900 hover:text-white dark:hover:bg-purple-700 transition-all"
+                  className="px-10 py-5 rounded-2xl border-2 border-blue-900 dark:border-purple-700 text-blue-900 dark:text-purple-400 hover:bg-blue-900 hover:text-white dark:hover:bg-purple-700 transition-all"
                   style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}
                 >
                   Explore Events
                 </Link>
               </motion.div>
-            </motion.div>
-
-            <motion.div
-              className="relative"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.8, delay: 0.4 }}
-            >
-              <div className="relative w-full aspect-square rounded-3xl overflow-hidden shadow-2xl">
-                <img
-                  src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=800&h=800&fit=crop"
-                  alt="Students collaborating"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-tr from-blue-900/20 to-purple-700/20"></div>
-              </div>
-              <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-gradient-to-br from-blue-900 to-purple-700 rounded-3xl blur-3xl opacity-50"></div>
-              <div className="absolute -top-6 -left-6 w-32 h-32 bg-gradient-to-br from-purple-700 to-blue-900 rounded-3xl blur-3xl opacity-50"></div>
             </motion.div>
           </div>
         </div>
