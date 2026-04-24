@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Toaster } from "sonner";
 import { useAuth } from "../../context/AuthContext";
 import { userService } from "../../../services/userService";
+import { supabase } from "../../../lib/supabase";
 
 interface User {
   id: number;
@@ -29,18 +30,28 @@ export function AdminUsers() {
       if (userId) {
         try {
           const data = await userService.getUsers(userId);
-          const transformedUsers = data.map((u: any) => ({
-            id: u.user_id,
-            name: u.user_name,
-            email: u.user_email,
-            role: u.user_role,
-            profilePicture: u.user_image_key,
-            socials: {
-              instagram: u.instagram,
-              linkedin: u.linkedin,
-              github: u.github
+          const transformedUsers = data.map((u: any) => {
+            let publicUrl = "";
+            if (u.user_image_key) {
+              const { data: urlData } = supabase.storage
+                .from('profile_pictures')
+                .getPublicUrl(u.user_image_key);
+              publicUrl = urlData.publicUrl;
             }
-          }));
+
+            return {
+              id: u.user_id,
+              name: u.user_name,
+              email: u.user_email,
+              role: u.user_role,
+              profilePicture: u.user_image_key,
+              socials: {
+                instagram: u.instagram,
+                linkedin: u.linkedin,
+                github: u.github
+              }
+            };
+          });
           setUsers(transformedUsers);
         } catch (error) {
           toast.error("Failed to fetch users");
@@ -66,6 +77,69 @@ export function AdminUsers() {
     description: "",
     profileImage: ""
   });
+  const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>("");
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!['image/jpeg', 'image/png'].includes(file.type)) {
+      toast.error("Only JPEG and PNG images are allowed");
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Image size must be less than 2MB");
+      return;
+    }
+
+    setProfileImageFile(file);
+    setPreviewUrl(URL.createObjectURL(file));
+  };
+
+  const uploadImage = async (file: File, username: string) => {
+    const extension = file.name.split('.').pop();
+    const fileName = `${username.toLowerCase().replace(/\s+/g, '_')}_picture.${extension}`;
+    
+    const { data, error } = await supabase.storage
+      .from('profile_pictures')
+      .upload(fileName, file, {
+        upsert: true,
+        contentType: file.type
+      });
+
+    if (error) throw error;
+    return fileName;
+  };
+
+  const refreshUsers = async () => {
+    if (!userId) return;
+    const data = await userService.getUsers(userId);
+    const transformedUsers = data.map((u: any) => {
+      let publicUrl = "";
+      if (u.user_image_key) {
+        const { data: urlData } = supabase.storage
+          .from('profile_pictures')
+          .getPublicUrl(u.user_image_key);
+        publicUrl = urlData.publicUrl;
+      }
+
+      return {
+        id: u.user_id,
+        name: u.user_name,
+        email: u.user_email,
+        role: u.user_role,
+        profilePicture: u.user_image_key,
+        socials: {
+          instagram: u.instagram,
+          linkedin: u.linkedin,
+          github: u.github
+        }
+      };
+    });
+    setUsers(transformedUsers);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,30 +147,21 @@ export function AdminUsers() {
     if (editingUser) {
       if (!userId) return;
       try {
+        let imageKey = editingUser.profilePicture;
+        if (profileImageFile) {
+          imageKey = await uploadImage(profileImageFile, formData.name);
+        }
+
         const payload = {
           user_name: formData.name,
+          user_image_key: imageKey,
           instagram: formData.instagram || undefined,
           linkedin: formData.linkedin || undefined,
           github: formData.github || undefined,
         };
         await userService.updateUser(editingUser.id.toString(), payload);
         toast.success("User updated successfully!");
-        
-        // Refresh users list
-        const data = await userService.getUsers(userId);
-        const transformedUsers = data.map((u: any) => ({
-          id: u.user_id,
-          name: u.user_name,
-          email: u.user_email,
-          role: u.user_role,
-          profilePicture: u.user_image_key,
-          socials: {
-            instagram: u.instagram,
-            linkedin: u.linkedin,
-            github: u.github
-          }
-        }));
-        setUsers(transformedUsers);
+        await refreshUsers();
       } catch (error: any) {
         toast.error(error.message || "Failed to update user");
         return;
@@ -104,32 +169,23 @@ export function AdminUsers() {
     } else {
       if (!userId) return;
       try {
+        let imageKey = "";
+        if (profileImageFile) {
+          imageKey = await uploadImage(profileImageFile, formData.name);
+        }
+
         const payload = {
           user_name: formData.name,
           user_password: formData.password,
           user_role: formData.role,
+          user_image_key: imageKey,
           instagram: formData.instagram || undefined,
           linkedin: formData.linkedin || undefined,
           github: formData.github || undefined,
         };
         await userService.createUser(userId, payload);
         toast.success("User added successfully!");
-        
-        // Refresh users list
-        const data = await userService.getUsers(userId);
-        const transformedUsers = data.map((u: any) => ({
-          id: u.user_id,
-          name: u.user_name,
-          email: u.user_email,
-          role: u.user_role,
-          profilePicture: u.user_image_key,
-          socials: {
-            instagram: u.instagram,
-            linkedin: u.linkedin,
-            github: u.github
-          }
-        }));
-        setUsers(transformedUsers);
+        await refreshUsers();
       } catch (error: any) {
         toast.error(error.message || "Failed to create user");
         return;
@@ -141,6 +197,12 @@ export function AdminUsers() {
 
   const handleDelete = (_id: number) => {
     toast.info("Deletion is currently disabled (placeholder)");
+  };
+
+  const getPublicUrl = (key: string | undefined) => {
+    if (!key) return "";
+    const { data } = supabase.storage.from('profile_pictures').getPublicUrl(key);
+    return data.publicUrl;
   };
 
   const openModal = (user?: User) => {
@@ -157,6 +219,7 @@ export function AdminUsers() {
         description: "",
         profileImage: ""
       });
+      setPreviewUrl(user.profilePicture ? getPublicUrl(user.profilePicture) : "");
     } else {
       setEditingUser(null);
       setFormData({
@@ -170,13 +233,17 @@ export function AdminUsers() {
         description: "",
         profileImage: ""
       });
+      setPreviewUrl("");
     }
+    setProfileImageFile(null);
     setIsModalOpen(true);
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingUser(null);
+    setProfileImageFile(null);
+    setPreviewUrl("");
   };
 
   const getRoleBadgeColor = (role: string) => {
@@ -275,7 +342,7 @@ export function AdminUsers() {
                         <td className="px-6 py-4">
                           <div className="w-10 h-10 rounded-full border border-gray-200 dark:border-gray-700 overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
                             {user.profilePicture ? (
-                              <img src={user.profilePicture} alt={user.name} className="w-full h-full object-cover" />
+                              <img src={getPublicUrl(user.profilePicture)} alt={user.name} className="w-full h-full object-cover" />
                             ) : (
                               <UserIcon className="w-6 h-6 text-gray-400" />
                             )}
@@ -371,6 +438,32 @@ export function AdminUsers() {
               </div>
 
               <form onSubmit={handleSubmit} className="p-8 space-y-6">
+                {/* Profile Picture Upload */}
+                <div className="flex flex-col items-center gap-4 py-4">
+                  <div className="relative group">
+                    <div className="w-24 h-24 rounded-full border-2 border-gray-200 dark:border-gray-700 overflow-hidden bg-gray-50 dark:bg-gray-800 flex items-center justify-center">
+                      {previewUrl ? (
+                        <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
+                      ) : (
+                        <UserIcon className="w-10 h-10 text-gray-400" />
+                      )}
+                    </div>
+                    <label className="absolute inset-0 flex items-center justify-center bg-black/40 text-white opacity-0 group-hover:opacity-100 transition-opacity rounded-full cursor-pointer">
+                      <Plus className="w-6 h-6" />
+                      <input 
+                        type="file" 
+                        className="hidden" 
+                        accept="image/jpeg,image/png"
+                        onChange={handleFileChange}
+                      />
+                    </label>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Profile Picture</p>
+                    <p className="text-[10px] text-gray-400">JPG or PNG, max 2MB</p>
+                  </div>
+                </div>
+
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
                     <label htmlFor="name" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
@@ -419,18 +512,6 @@ export function AdminUsers() {
                   />
                 </div>
 
-                <div>
-                  <label htmlFor="profileImage" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                    Profile Image (api connection left)
-                  </label>
-                  <input
-                    type="file"
-                    id="profileImage"
-                    onChange={(e) => setFormData({ ...formData, profileImage: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                    style={{ fontFamily: 'Open Sans, sans-serif' }}
-                  />
-                </div>
 
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
