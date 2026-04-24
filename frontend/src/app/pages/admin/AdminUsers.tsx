@@ -139,11 +139,8 @@ export function AdminUsers() {
     closeModal();
   };
 
-  const handleDelete = (id: number) => {
-    if (confirm("Are you sure you want to delete this user?")) {
-      setUsers(users.filter(u => u.id !== id));
-      toast.success("User deleted successfully!");
-    }
+  const handleDelete = (_id: number) => {
+    toast.info("Deletion is currently disabled (placeholder)");
   };
 
   const openModal = (user?: User) => {

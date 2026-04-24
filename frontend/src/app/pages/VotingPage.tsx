@@ -4,6 +4,7 @@ import { Trophy, User, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Toaster } from "sonner";
 import { votingService, AwardParticipant, AwardSettings } from "../../services/votingService";
+import { supabase } from "../../lib/supabase";
 
 export function VotingPage() {
   const [participants, setParticipants] = useState<AwardParticipant[]>([]);
@@ -24,7 +25,6 @@ export function VotingPage() {
         setParticipants(pData);
         setSettings(sData);
 
-        // Simple device identifier using fingerprint (in real app, use more robust method)
         const deviceId = localStorage.getItem('voting_device_id') || 
                          Math.random().toString(36).substring(2, 15);
         if (!localStorage.getItem('voting_device_id')) {
@@ -40,6 +40,40 @@ export function VotingPage() {
       }
     };
     init();
+
+    // Real-time subscriptions
+    const settingsChannel = supabase
+      .channel('voting_page_settings')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'award_settings' }, payload => {
+        setSettings(payload.new as AwardSettings);
+      })
+      .subscribe();
+
+    const participantsChannel = supabase
+      .channel('voting_page_participants')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'award_participants' }, async () => {
+        const pData = await votingService.getParticipants();
+        setParticipants(pData);
+      })
+      .subscribe();
+
+    const votesChannel = supabase
+      .channel('voting_page_votes')
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'award_votes' }, async () => {
+        // If votes are deleted (session reset), allow user to vote again
+        const deviceId = localStorage.getItem('voting_device_id');
+        if (deviceId) {
+          const alreadyVoted = await votingService.checkIfVoted(deviceId);
+          setHasVoted(alreadyVoted);
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(settingsChannel);
+      supabase.removeChannel(participantsChannel);
+      supabase.removeChannel(votesChannel);
+    };
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {

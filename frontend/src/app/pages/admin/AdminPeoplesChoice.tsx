@@ -16,7 +16,11 @@ import {
   TrendingUp,
   Image as ImageIcon,
   ChevronRight,
-  AlertCircle
+  AlertCircle,
+  RotateCcw,
+  History,
+  Calendar as CalendarIcon,
+  X
 } from "lucide-react";
 import { toast } from "sonner";
 import { 
@@ -40,6 +44,8 @@ export function AdminPeoplesChoice() {
   const [newParticipantName, setNewParticipantName] = useState("");
   const [durationMinutes, setDurationMinutes] = useState(60);
   const [timeLeft, setTimeLeft] = useState<string>("00:00:00");
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [historyData, setHistoryData] = useState<any[]>([]);
 
   // Fetch initial data
   useEffect(() => {
@@ -169,6 +175,52 @@ export function AdminPeoplesChoice() {
     }
   };
 
+  const handleResetSession = async () => {
+    console.log("Reset session triggered");
+    if (!window.confirm("RESTORE/ARCHIVE ACTION: This will save the current standings to history and PERMANENTLY clear ALL participants and votes. You will need to add new participants for the next session. Are you sure?")) {
+      console.log("Reset cancelled by user");
+      return;
+    }
+    
+    try {
+      console.log("Starting reset process...");
+      setIsLoading(true);
+      await votingService.resetVoting();
+      console.log("Reset successful in database");
+      
+      // Refresh local data
+      const [pData, sData, votes] = await Promise.all([
+        votingService.getParticipants(),
+        votingService.getSettings(),
+        votingService.getVoteCounts()
+      ]);
+      
+      const participantsWithVotes = pData.map(p => ({
+        ...p,
+        vote_count: votes[p.id] || 0
+      }));
+      
+      setParticipants(participantsWithVotes);
+      setSettings(sData);
+      toast.success("Session reset! Ready for a new round. 🔄");
+    } catch (error) {
+      console.error("Reset error:", error);
+      toast.error("Failed to reset session");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleViewHistory = async () => {
+    try {
+      const data = await votingService.getHistory();
+      setHistoryData(data);
+      setIsHistoryModalOpen(true);
+    } catch (error) {
+      toast.error("Failed to load voting history");
+    }
+  };
+
   const sortedParticipants = useMemo(() => {
     return [...participants].sort((a, b) => (b.vote_count || 0) - (a.vote_count || 0));
   }, [participants]);
@@ -213,6 +265,14 @@ export function AdminPeoplesChoice() {
             </span>
           </div>
         </div>
+
+        <button 
+          onClick={handleViewHistory}
+          className="flex items-center gap-2 px-6 py-3 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all font-bold shadow-sm"
+        >
+          <History className="w-5 h-5 text-blue-600" />
+          View History
+        </button>
       </div>
 
       {/* Main Dashboard Grid */}
@@ -379,6 +439,14 @@ export function AdminPeoplesChoice() {
                        Start Live Voting
                      </button>
                    )}
+
+                   <button 
+                     onClick={handleResetSession}
+                     className="flex items-center justify-center gap-3 w-full py-4 rounded-2xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 font-bold hover:bg-gray-200 dark:hover:bg-gray-700 transition-all border border-gray-200 dark:border-gray-700 mt-2"
+                   >
+                     <RotateCcw className="w-5 h-5" />
+                     Reset Session
+                   </button>
                 </div>
              </div>
           </div>
@@ -488,6 +556,81 @@ export function AdminPeoplesChoice() {
                     </button>
                  </div>
               </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* History Modal */}
+      <AnimatePresence>
+        {isHistoryModalOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/60 backdrop-blur-md"
+            onClick={() => setIsHistoryModalOpen(false)}
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-white dark:bg-gray-900 w-full max-w-4xl rounded-[2.5rem] p-10 shadow-2xl max-h-[85vh] flex flex-col"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-4">
+                   <div className="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600">
+                      <History className="w-6 h-6" />
+                   </div>
+                   <h2 className="text-2xl font-bold text-gray-900 dark:text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>Voting History</h2>
+                </div>
+                <button 
+                  onClick={() => setIsHistoryModalOpen(false)}
+                  className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                >
+                  <X className="w-6 h-6 text-gray-500" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto space-y-6 pr-2">
+                {historyData.length === 0 ? (
+                  <div className="py-20 text-center text-gray-500">
+                    No history found. Complete a voting session to see results here.
+                  </div>
+                ) : (
+                  historyData.map((item) => (
+                    <div key={item.id} className="p-6 rounded-[2rem] border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30">
+                      <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-3">
+                          <CalendarIcon className="w-4 h-4 text-purple-600" />
+                          <span className="font-bold text-gray-700 dark:text-gray-300">
+                            {new Date(item.created_at).toLocaleString('en-US', { 
+                              dateStyle: 'long', 
+                              timeStyle: 'short' 
+                            })}
+                          </span>
+                        </div>
+                        <div className="px-4 py-1 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 text-xs font-bold">
+                          {item.session_data.total_votes} Total Votes
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {item.session_data.results.sort((a: any, b: any) => b.votes - a.votes).map((res: any, idx: number) => (
+                          <div key={res.id} className="flex items-center gap-3 p-3 rounded-xl bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 shadow-sm">
+                            <div className={`w-6 h-6 rounded flex items-center justify-center text-[10px] font-black ${idx === 0 ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-700'}`}>
+                              #{idx + 1}
+                            </div>
+                            <span className="flex-1 text-sm font-bold text-gray-900 dark:text-white truncate">{res.name}</span>
+                            <span className="text-sm font-black text-blue-600">{res.votes}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             </motion.div>
           </motion.div>
         )}

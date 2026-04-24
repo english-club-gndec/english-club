@@ -132,11 +132,8 @@ export function AdminEvents() {
     closeModal();
   };
 
-  const handleDelete = (id: number) => {
-    if (confirm("Are you sure you want to delete this event?")) {
-      setEvents(events.filter(e => e.id !== id));
-      toast.success("Event deleted successfully!");
-    }
+  const handleDelete = (_id: number) => {
+    toast.info("Deletion is currently disabled (placeholder)");
   };
 
   const openModal = (event?: Event) => {
