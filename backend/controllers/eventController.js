@@ -4,7 +4,7 @@ const eventController = {
   // POST /api/events
   createEvent: async (req, res) => {
     try {
-      const { event_name, event_description, event_venue, event_date, event_time, created_by } = req.body;
+      const { event_name, event_description, event_venue, event_date, event_time, event_poster_key, created_by } = req.body;
 
       if (!event_name || !event_description || !created_by) {
         return res.status(400).json({ error: 'Name, description, and created_by are required' });
@@ -19,22 +19,26 @@ const eventController = {
             event_venue, 
             event_date, 
             event_time, 
+            event_poster_key,
             created_by 
           }
         ])
         .select(`
           *,
           users (
-            user_name
+            user_name,
+            members:members!users_member_id_fkey (
+              member_name
+            )
           )
         `);
 
       if (error) throw error;
 
-      // Format response to include creater_name
+      // Format response to include creater_name (prefer member_name)
       const eventWithCreator = {
         ...data[0],
-        creater_name: data[0].users?.user_name
+        creater_name: data[0].users?.members?.member_name || data[0].users?.user_name
       };
       delete eventWithCreator.users;
 
@@ -52,7 +56,10 @@ const eventController = {
         .select(`
           *,
           users (
-            user_name
+            user_name,
+            members:members!users_member_id_fkey (
+              member_name
+            )
           )
         `)
         .order('event_date', { ascending: true });
@@ -62,7 +69,7 @@ const eventController = {
       // Format response
       const eventsWithCreator = data.map(event => ({
         ...event,
-        creater_name: event.users?.user_name,
+        creater_name: event.users?.members?.member_name || event.users?.user_name,
         users: undefined
       }));
 
@@ -81,7 +88,10 @@ const eventController = {
         .select(`
           *,
           users (
-            user_name
+            user_name,
+            members:members!users_member_id_fkey (
+              member_name
+            )
           )
         `)
         .eq('event_id', event_id)
@@ -94,7 +104,7 @@ const eventController = {
       // Format response
       const eventWithCreator = {
         ...data,
-        creater_name: data.users?.user_name
+        creater_name: data.users?.members?.member_name || data.users?.user_name
       };
       delete eventWithCreator.users;
 
@@ -105,10 +115,10 @@ const eventController = {
   },
 
   // PATCH /api/events/:event_id
-  updateEvent: async (req, res) => {
+    updateEvent: async (req, res) => {
     try {
       const { event_id } = req.params;
-      const { event_name, event_description, event_venue, event_date, event_time } = req.body;
+      const { event_name, event_description, event_venue, event_date, event_time, event_poster_key } = req.body;
 
       // Prepare update data (only include fields provided in the body)
       const updateData = {};
@@ -117,6 +127,7 @@ const eventController = {
       if (event_venue !== undefined) updateData.event_venue = event_venue;
       if (event_date !== undefined) updateData.event_date = event_date;
       if (event_time !== undefined) updateData.event_time = event_time;
+      if (event_poster_key !== undefined) updateData.event_poster_key = event_poster_key;
       
       // Explicitly set updated_at (though the DB trigger would also handle this if set up)
       updateData.updated_at = new Date().toISOString();
@@ -132,7 +143,10 @@ const eventController = {
         .select(`
           *,
           users (
-            user_name
+            user_name,
+            members:members!users_member_id_fkey (
+              member_name
+            )
           )
         `);
 
@@ -144,7 +158,7 @@ const eventController = {
       // Format response
       const eventWithCreator = {
         ...data[0],
-        creater_name: data[0].users?.user_name
+        creater_name: data[0].users?.members?.member_name || data[0].users?.user_name
       };
       delete eventWithCreator.users;
 

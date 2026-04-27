@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Toaster } from "sonner";
 import { eventService } from "../../../services/eventService";
 import { useAuth } from "../../context/AuthContext";
+import { supabase } from "../../../lib/supabase";
 
 interface Event {
   id: number;
@@ -22,30 +23,34 @@ export function AdminEvents() {
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [posterFile, setPosterFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>("");
 
   useEffect(() => {
-    const fetchEvents = async () => {
-      try {
-        const data = await eventService.getAllEvents();
-        const transformedEvents = data.map((ev: any) => ({
-          id: ev.event_id,
-          name: ev.event_name,
-          description: ev.event_description,
-          date: ev.event_date,
-          time: ev.event_time,
-          venue: ev.event_venue,
-          createdBy: ev.creater_name || "System",
-          poster: ev.event_poster
-        }));
-        setEvents(transformedEvents);
-      } catch (error) {
-        toast.error("Failed to fetch events");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchEvents();
+    fetchEventsList();
   }, []);
+
+  const fetchEventsList = async () => {
+    setIsLoading(true);
+    try {
+      const data = await eventService.getAllEvents();
+      const transformedEvents = data.map((ev: any) => ({
+        id: ev.event_id,
+        name: ev.event_name,
+        description: ev.event_description,
+        date: ev.event_date,
+        time: ev.event_time,
+        venue: ev.event_venue,
+        createdBy: ev.creater_name || "System",
+        poster: ev.event_poster_key
+      }));
+      setEvents(transformedEvents);
+    } catch (error) {
+      toast.error("Failed to fetch events");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
@@ -63,35 +68,58 @@ export function AdminEvents() {
 
   const hours = Array.from({ length: 12 }, (_, i) => (i + 1).toString().padStart(2, '0'));
   const minutes = ["00", "05", "10", "15", "20", "25", "30", "35", "40", "45", "50", "55"];
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setPosterFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+    }
+  };
+
+  const uploadImage = async (file: File, eventName: string) => {
+    const extension = file.name.split('.').pop();
+    const fileName = `${eventName.toLowerCase().replace(/\s+/g, '_')}_${Date.now()}.${extension}`;
+    
+    const { error } = await supabase.storage
+      .from('event_posters')
+      .upload(fileName, file, {
+        upsert: true,
+        contentType: file.type
+      });
+
+    if (error) throw error;
+    return fileName;
+  };
+
+  const getPublicUrl = (key: string | undefined) => {
+    if (!key) return "";
+    const { data } = supabase.storage.from('event_posters').getPublicUrl(key);
+    return data.publicUrl;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (editingEvent) {
       try {
+        let posterKey = formData.eventPoster;
+        if (posterFile) {
+          posterKey = await uploadImage(posterFile, formData.name);
+        }
+
         const payload = {
           event_name: formData.name,
           event_description: formData.description,
           event_date: formData.date,
           event_time: formData.time,
-          event_venue: formData.venue
+          event_venue: formData.venue,
+          event_poster_key: posterKey
         };
         await eventService.updateEvent(editingEvent.id, payload);
         toast.success("Event updated successfully!");
         
-        // Refresh list
-        const data = await eventService.getAllEvents();
-        const transformedEvents = data.map((ev: any) => ({
-          id: ev.event_id,
-          name: ev.event_name,
-          description: ev.event_description,
-          date: ev.event_date,
-          time: ev.event_time,
-          venue: ev.event_venue,
-          createdBy: ev.creater_name || "System",
-          poster: ev.event_poster
-        }));
-        setEvents(transformedEvents);
+        await fetchEventsList();
+        closeModal();
       } catch (error: any) {
         toast.error(error.message || "Failed to update event");
         return;
@@ -99,37 +127,29 @@ export function AdminEvents() {
     } else {
       if (!userId) return;
       try {
+        let posterKey = "";
+        if (posterFile) {
+          posterKey = await uploadImage(posterFile, formData.name);
+        }
         const payload = {
           event_name: formData.name,
           event_description: formData.description,
           event_date: formData.date,
           event_time: formData.time,
           event_venue: formData.venue,
+          event_poster_key: posterKey,
           created_by: parseInt(userId)
         };
         await eventService.createEvent(payload);
         toast.success("Event created successfully!");
         
-        // Refresh list
-        const data = await eventService.getAllEvents();
-        const transformedEvents = data.map((ev: any) => ({
-          id: ev.event_id,
-          name: ev.event_name,
-          description: ev.event_description,
-          date: ev.event_date,
-          time: ev.event_time,
-          venue: ev.event_venue,
-          createdBy: ev.creater_name || "System",
-          poster: ev.event_poster
-        }));
-        setEvents(transformedEvents);
+        await fetchEventsList();
+        closeModal();
       } catch (error: any) {
         toast.error(error.message || "Failed to create event");
         return;
       }
     }
-
-    closeModal();
   };
 
   const handleDelete = (_id: number) => {
@@ -139,19 +159,13 @@ export function AdminEvents() {
   const openModal = (event?: Event) => {
     if (event) {
       setEditingEvent(event);
-      
-      // Format date to YYYY-MM-DD for input[type="date"]
       let formattedDate = "";
       if (event.date) {
         const d = new Date(event.date);
         if (!isNaN(d.getTime())) {
           formattedDate = d.toISOString().split('T')[0];
-        } else {
-          // If already in YYYY-MM-DD format or something else
-          formattedDate = event.date.split('T')[0];
         }
       }
-
       setFormData({
         name: event.name,
         description: event.description,
@@ -160,18 +174,7 @@ export function AdminEvents() {
         venue: event.venue,
         eventPoster: event.poster || ""
       });
-
-      // Sync time picker
-      if (event.time) {
-        const match = event.time.match(/(\d+):(\d+)\s*(AM|PM)/i);
-        if (match) {
-          setTempTime({
-            hour: match[1],
-            minute: match[2],
-            period: match[3].toUpperCase()
-          });
-        }
-      }
+      setPreviewUrl(event.poster ? getPublicUrl(event.poster) : "");
     } else {
       setEditingEvent(null);
       setFormData({
@@ -182,7 +185,7 @@ export function AdminEvents() {
         venue: "",
         eventPoster: ""
       });
-      setTempTime({ hour: "12", minute: "00", period: "PM" });
+      setPreviewUrl("");
     }
     setIsModalOpen(true);
   };
@@ -190,6 +193,8 @@ export function AdminEvents() {
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingEvent(null);
+    setPosterFile(null);
+    setPreviewUrl("");
   };
 
   return (
@@ -284,7 +289,7 @@ export function AdminEvents() {
                 >
                   <div className="h-48 w-full overflow-hidden relative">
                     <img 
-                      src={event.poster || "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&q=80&w=800"} 
+                      src={event.poster ? getPublicUrl(event.poster) : "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&q=80&w=800"} 
                       alt={event.name}
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                     />
@@ -605,16 +610,26 @@ export function AdminEvents() {
 
                 <div>
                   <label className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                    Event Poster (api connection left)
+                    Event Poster
                   </label>
                   <div className="flex items-center justify-center w-full">
-                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 dark:border-gray-700 border-dashed rounded-xl cursor-not-allowed bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
-                      <div className="flex flex-col items-center justify-center pt-5 pb-6 text-gray-500 dark:text-gray-400">
-                        <ImageIcon className="w-8 h-8 mb-2 opacity-50" />
-                        <p className="text-xs" style={{ fontFamily: 'Open Sans, sans-serif' }}>
-                          Upload functionality coming soon
-                        </p>
-                      </div>
+                    <label className="flex flex-col items-center justify-center w-full min-h-[160px] border-2 border-gray-300 dark:border-gray-700 border-dashed rounded-xl cursor-pointer bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all overflow-hidden relative group">
+                      {previewUrl ? (
+                        <>
+                          <img src={previewUrl} className="w-full h-40 object-cover" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <Plus className="w-8 h-8 text-white" />
+                          </div>
+                        </>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center pt-5 pb-6 text-gray-500 dark:text-gray-400">
+                          <Plus className="w-8 h-8 mb-2" />
+                          <p className="text-xs uppercase font-bold tracking-widest" style={{ fontFamily: 'Open Sans, sans-serif' }}>
+                            Upload Poster
+                          </p>
+                        </div>
+                      )}
+                      <input type="file" className="hidden" accept="image/jpeg,image/png" onChange={handleFileChange} />
                     </label>
                   </div>
                 </div>

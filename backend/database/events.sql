@@ -6,6 +6,7 @@ CREATE TABLE events (
     event_venue VARCHAR,
     event_date DATE,
     event_time TIME,
+    event_poster_key TEXT,
     created_by BIGINT NOT NULL REFERENCES users(user_id),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL

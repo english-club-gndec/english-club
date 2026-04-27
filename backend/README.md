@@ -82,6 +82,7 @@ Handles the lifecycle of club events.
     - `event_venue` (String, Optional)
     - `event_date` (Date YYYY-MM-DD, Optional)
     - `event_time` (Time HH:MM:SS, Optional)
+    - `event_poster_key` (String, Optional)
     - `created_by` (Number - user_id, Required)
 - **Response (201 Created):** Includes the event data and the `creater_name`.
 
