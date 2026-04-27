@@ -4,7 +4,7 @@ import { supabase } from "../../../lib/supabase";
 import { useAuth } from "../../context/AuthContext";
 import { motion } from "motion/react";
 import { LogIn, User, Lock, AlertCircle, Loader2 } from "lucide-react";
-import bcrypt from "bcryptjs";
+import { userService } from "../../../services/userService";
 
 export function LoginPage() {
   const [username, setUsername] = useState("");
@@ -21,34 +21,15 @@ export function LoginPage() {
     setIsLoading(true);
 
     try {
-      const { data, error: supabaseError } = await supabase
-        .from("users")
-        .select("user_id, user_name, user_password")
-        .eq("user_name", username)
-        .single();
-
-      if (supabaseError || !data) {
-        setError("Invalid username or password");
-        setIsLoading(false);
-        return;
-      }
-
-      // Check password
-      const isPasswordValid = await bcrypt.compare(password, data.user_password);
-
-      if (!isPasswordValid) {
-        setError("Invalid username or password");
-        setIsLoading(false);
-        return;
-      }
-
-      login(data.user_id);
+      const data = await userService.login({ username, password });
+      
+      login(data.user.user_id);
       
       // Redirect to original destination or dashboard
       const from = (location.state as any)?.from?.pathname || "/admin";
       navigate(from, { replace: true });
     } catch (err: any) {
-      setError("An unexpected error occurred. Please try again.");
+      setError(err.message || "An unexpected error occurred. Please try again.");
       console.error("Login error:", err);
     } finally {
       setIsLoading(false);

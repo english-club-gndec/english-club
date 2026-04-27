@@ -17,7 +17,8 @@ const userController = {
           members:members!users_member_id_fkey (
             member_name,
             member_email,
-            member_profile_picture_key
+            member_profile_picture_key,
+            member_postion
           )
         `);
 
@@ -44,7 +45,8 @@ const userController = {
           members:members!users_member_id_fkey (
             member_name,
             member_email,
-            member_profile_picture_key
+            member_profile_picture_key,
+            member_postion
           )
         `)
         .eq('user_id', req.params.user_id)
@@ -169,6 +171,86 @@ const userController = {
       res.json(data);
     } catch (err) {
       res.status(500).json({ error: err.message });
+    }
+  },
+
+  // PATCH /api/users/:user_id/updatePassword
+  updatePassword: async (req, res) => {
+    try {
+      const { user_id } = req.params;
+      const { oldPassword, newPassword } = req.body;
+
+      if (!oldPassword || !newPassword) {
+        return res.status(400).json({ error: 'Current and new passwords are required' });
+      }
+
+      // Fetch user's current hashed password
+      const { data: user, error: fetchError } = await supabase
+        .from('users')
+        .select('user_password')
+        .eq('user_id', user_id)
+        .single();
+
+      if (fetchError || !user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      // Compare old password with hashed password
+      const isMatch = await bcrypt.compare(oldPassword, user.user_password);
+      if (!isMatch) {
+        return res.status(400).json({ error: 'Incorrect current password' });
+      }
+
+      // Hash new password
+      const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+      // Update password in database
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ user_password: hashedNewPassword })
+        .eq('user_id', user_id);
+
+      if (updateError) throw updateError;
+
+      res.json({ message: 'Password updated successfully' });
+    } catch (err) {
+      console.error('updatePassword error:', err);
+      res.status(500).json({ error: err.message || 'Internal Server Error' });
+    }
+  },
+
+  // POST /api/user/login
+  login: async (req, res) => {
+    try {
+      const { username, password } = req.body;
+
+      if (!username || !password) {
+        return res.status(400).json({ error: 'Username and password are required' });
+      }
+
+      // Fetch user from database
+      const { data: user, error } = await supabase
+        .from('users')
+        .select('user_id, user_name, user_password, user_role')
+        .eq('user_name', username)
+        .single();
+
+      if (error || !user) {
+        return res.status(401).json({ error: 'Invalid username or password' });
+      }
+
+      // Compare password
+      const isMatch = await bcrypt.compare(password, user.user_password);
+      if (!isMatch) {
+        return res.status(401).json({ error: 'Invalid username or password' });
+      }
+
+      // Return user data (excluding password)
+      delete user.user_password;
+      res.json({ message: 'Login successful', user });
+    } catch (err) {
+      console.error('Login error:', err);
+      res.status(500).json({ error: err.message || 'Internal Server Error' });
     }
   }
 };

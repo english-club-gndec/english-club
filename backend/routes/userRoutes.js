@@ -19,11 +19,15 @@ router.post('/:user_id/createUser', userController.createUser);
 router.patch('/:user_id/updateUser', userController.updateUser);
 
 // PATCH update user password
-// Path: /api/user/:user_id/updatePassword
-// router.patch('/:user_id/updatePassword', userController.updatePassword);
+// Path: /api/users/:user_id/updatePassword
+router.patch('/:user_id/updatePassword', userController.updatePassword);
 
 // GET user and member details by member_id
 // Path: /api/user/:member_id/getUserByMemberId
 router.get('/:member_id/getUserByMemberId', userController.getUserByMemberId);
+
+// POST login
+// Path: /api/user/login
+router.post('/login', userController.login);
 
 module.exports = router;

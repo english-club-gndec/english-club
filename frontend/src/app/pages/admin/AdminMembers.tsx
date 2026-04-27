@@ -90,9 +90,14 @@ export function AdminMembers() {
     setPreviewUrl(URL.createObjectURL(file));
   };
 
-  const uploadImage = async (file: File, name: string) => {
+  const uploadImage = async (file: File, name: string, position: string) => {
+    const names = name.split(' ');
+    const firstName = names[0]?.toLowerCase() || 'member';
+    const lastName = names[names.length - 1]?.toLowerCase() || 'name';
+    const pos = position.toLowerCase().replace(/[-\s]+/g, '_');
     const extension = file.name.split('.').pop();
-    const fileName = `${name.toLowerCase().replace(/\s+/g, '_')}_${Date.now()}.${extension}`;
+    
+    const fileName = `${firstName}_${lastName}_${pos}_photo.${extension}`;
     
     const { error } = await supabase.storage
       .from('profile_pictures')
@@ -118,7 +123,7 @@ export function AdminMembers() {
     try {
       let imageKey = formData.member_profile_picture_key;
       if (profileImageFile) {
-        imageKey = await uploadImage(profileImageFile, formData.member_name);
+        imageKey = await uploadImage(profileImageFile, formData.member_name, formData.member_postion);
       }
 
       const payload = {
