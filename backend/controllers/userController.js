@@ -7,7 +7,19 @@ const userController = {
     try {
       const { data, error } = await supabase
         .from('users')
-        .select('user_id, member_id, user_name, user_role, created_at, updated_at');
+        .select(`
+          user_id,
+          member_id,
+          user_name,
+          user_role,
+          created_at,
+          updated_at,
+          members (
+            member_name,
+            member_email,
+            member_profile_picture_key
+          )
+        `);
 
       if (error) throw error;
       res.json(data);
