@@ -7,7 +7,7 @@ const userController = {
     try {
       const { data, error } = await supabase
         .from('users')
-        .select('user_id, user_name, user_role, user_image_key, linkedin, github, instagram, portfolio');
+        .select('user_id, member_id, user_name, user_role, created_at, updated_at');
 
       if (error) throw error;
       res.json(data);
@@ -21,7 +21,7 @@ const userController = {
     try {
       const { data, error } = await supabase
         .from('users')
-        .select('user_name, user_role, user_image_key, linkedin, github, instagram, portfolio')
+        .select('user_id, member_id, user_name, user_role, created_at, updated_at')
         .eq('user_id', req.params.user_id)
         .single();
 
@@ -35,13 +35,16 @@ const userController = {
   // POST /api/users/:user_id/createUser (requester user_id in path)
   createUser: async (req, res) => {
     try {
-      const { user_name, user_password, user_role, user_image_key, linkedin, github, instagram, portfolio } = req.body;
+      const { user_name, user_password, user_role, member_id } = req.body;
 
       if (!user_name) {
         return res.status(400).json({ error: 'User name is required' });
       }
       if (!user_password) {
         return res.status(400).json({ error: 'User password is required' });
+      }
+      if (!member_id) {
+        return res.status(400).json({ error: 'Member ID is required' });
       }
 
       const validRoles = ['MASTER', 'ADMIN', 'MANAGER'];
@@ -60,12 +63,8 @@ const userController = {
           { 
             user_name, 
             user_password: hashedPassword, 
-            user_role: role, 
-            user_image_key: user_image_key || null, 
-            linkedin, 
-            github, 
-            instagram, 
-            portfolio 
+            user_role: role,
+            member_id: member_id || null
           }
         ])
         .select();
@@ -85,7 +84,7 @@ const userController = {
       // Check if user exists first
       const { data: existingUser, error: existError } = await supabase
         .from('users')
-        .select('user_id, user_name, user_role, user_image_key, linkedin, github, instagram, portfolio')
+        .select('user_id, member_id, user_name, user_role, created_at, updated_at')
         .eq('user_id', user_id)
         .single();
 
@@ -93,17 +92,19 @@ const userController = {
         return res.status(404).json({ error: 'User not found' });
       }
 
-      // Allow editing any fields except restricted ones (user_id, user_role, password)
+      // Allow editing fields
       const updateData = { ...req.body };
       delete updateData.user_id;
-      delete updateData.user_role;
-      delete updateData.user_password;
-      delete updateData.password;
+      // Note: we can allow updating password if needed, but usually it's a separate route
+      if (updateData.user_password) {
+          updateData.user_password = await bcrypt.hash(updateData.user_password, 10);
+      }
 
       if (Object.keys(updateData).length === 0) {
-        // If no key-value pairs are sent, return the current user details
         return res.json({ message: 'No changes provided', user: existingUser });
       }
+
+      // updated_at is handled by DB trigger
 
       const { data, error } = await supabase
         .from('users')
@@ -114,6 +115,32 @@ const userController = {
       if (error) throw error;
 
       res.json({ message: 'User details updated successfully', user: data[0] });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+
+  // GET /api/user/:member_id/getUserByMemberId
+  getUserByMemberId: async (req, res) => {
+    try {
+      const { member_id } = req.params;
+      const { data, error } = await supabase
+        .from('users')
+        .select(`
+          *,
+          members (*)
+        `)
+        .eq('member_id', member_id)
+        .single();
+
+      if (error || !data) {
+        return res.status(404).json({ error: 'User/Member not found' });
+      }
+
+      // Remove password from response
+      delete data.user_password;
+
+      res.json(data);
     } catch (err) {
       res.status(500).json({ error: err.message });
     }

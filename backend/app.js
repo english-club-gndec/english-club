@@ -11,6 +11,7 @@ app.use(express.json());
 app.use('/api/user', require('./routes/userRoutes'));
 app.use('/api/events', require('./routes/eventRoutes'));
 app.use('/api/registration', require('./routes/registrationRoutes'));
+app.use('/api/members', require('./routes/memberRoutes'));
 
 app.get('/', (req, res) => {
   res.json({ message: 'English Club API is running' });

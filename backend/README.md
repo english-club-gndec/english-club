@@ -23,47 +23,50 @@ Handles administrative users and club members.
 
 #### **[GET] Fetch All Users**
 - **Path:** `/:user_id/getUsers`
-- **Description:** Retrieves a list of all registered users. Useful for admin dashboards to see the team.
-- **Path Parameters:** `user_id` (The ID of the person making the request).
+- **Description:** Retrieves a list of all registered users.
+- **Path Parameters:** `user_id` (The ID of the requester).
 - **Response (200 OK):**
   ```json
   [
     {
       "user_id": 1,
-      "user_name": "John Doe",
+      "member_id": "uuid-here",
+      "user_name": "jasdeep_singh",
       "user_role": "MASTER",
-      "user_image_key": "...",
-      "linkedin": "...",
-      "github": "...",
-      "instagram": "...",
-      "portfolio": "..."
+      "created_at": "...",
+      "updated_at": "..."
     }
   ]
   ```
 
 #### **[GET] Fetch User by ID**
 - **Path:** `/:user_id`
-- **Description:** Returns profile information for a specific user. Password and internal ID fields are excluded for security.
+- **Description:** Returns profile information for a specific user.
 - **Path Parameters:** `user_id` (The ID of the user to fetch).
 - **Response (200 OK):** User profile object.
 - **Error (404):** `{ "error": "User not found" }`
 
 #### **[POST] Create New User**
 - **Path:** `/:user_id/createUser`
-- **Description:** Registers a new user/admin into the system. Passwords are encrypted using Bcrypt before storage.
+- **Description:** Registers a new admin/manager. Passwords are hashed with Bcrypt.
 - **Request Body:**
     - `user_name` (String, Required)
     - `user_password` (String, Required)
     - `user_role` (Enum: MASTER, ADMIN, MANAGER, Required)
-    - `user_image_key` (String, Optional)
-    - `linkedin`, `github`, `instagram`, `portfolio` (Strings, Optional)
+    - `member_id` (UUID, Required - links to a member record)
 - **Response (201 Created):** `{ "message": "User created successfully", "user": { ... } }`
 
 #### **[PATCH] Update User Profile**
 - **Path:** `/:user_id/updateUser`
-- **Description:** Allows a user to update their own profile information. Restricted from changing roles or passwords via this specific endpoint.
-- **Request Body:** Any profile field except `user_id`, `user_role`, or `password`.
+- **Description:** Allows updating user account details.
+- **Request Body:** `user_name`, `user_password`.
 - **Response (200 OK):** `{ "message": "User details updated successfully", "user": { ... } }`
+
+#### **[GET] Get User and Member by Member ID**
+- **Path:** `/:member_id/getUserByMemberId`
+- **Description:** Returns both user and member profile information joined together.
+- **Path Parameters:** `member_id` (The ID of the member).
+- **Response (200 OK):** Combined User and Member object (excluding password).
 
 ---
 
@@ -123,11 +126,13 @@ Manages student registrations for specific events.
 #### **[GET] Get Participants by Event**
 - **Path:** `/:event_id/getParticipantsByEventId`
 - **Description:** Filters participants based on the event they registered for.
+- **Path Parameters:** `event_id` (The ID of the event).
 - **Response (200 OK):** Array of participant objects.
 
 #### **[GET] Get Participation Count**
 - **Path:** `/:event_id/getParticipationCountByEventId`
 - **Description:** A lightweight API to get just the total number of registrations for an event.
+- **Path Parameters:** `event_id` (The ID of the event).
 - **Response (200 OK):** `{ "event_id": "...", "total_participants": 25 }`
 
 #### **[PATCH] Update Participant**
@@ -138,8 +143,52 @@ Manages student registrations for specific events.
 
 ---
 
+### 4. Member Management (`/api/members`)
+Handles the detailed records of English Club members.
+
+#### **[POST] Create Member**
+- **Path:** `/:user_id/createMember`
+- **Description:** Adds a new member to the database.
+- **Request Body:**
+    - `member_name` (Required)
+    - `member_postion` (Enum: CONVENOR, TECH_HEAD, etc., Required)
+    - `member_urn` (Long, Required)
+    - `member_email` (Required)
+    - `member_department` (Enum: IT, CSE, etc., Required)
+    - `member_semester` (Integer 1-8, Required)
+    - `member_profile_picture_key` (String)
+    - `member_crn` (Long)
+    - `member_club_department` (String)
+    - `socials` (JSON Object: `{ "linkedin": "...", "github": "..." }`)
+    - `created_by` (BIGINT - user_id, Required)
+- **Response (201 Created):** Member object.
+
+#### **[GET] Get All Members**
+- **Path:** `/:user_id/getAllMembers`
+- **Description:** Lists all club members.
+- **Response (200 OK):** Array of member objects.
+
+#### **[GET] Get Member by ID**
+- **Path:** `/:user_id/:member_id/getMemberById`
+- **Description:** Fetches full details for a single member.
+- **Response (200 OK):** Member object.
+
+#### **[PATCH] Update Member**
+- **Path:** `/:user_id/:member_id/updateMemberById`
+- **Description:** Modifies member details.
+- **Request Body:** Any member field.
+- **Response (200 OK):** `{ "message": "Member updated successfully", "member": { ... } }`
+
+#### **[DELETE] Delete Members**
+- **Path:** `/:user_id/deleteMembersById`
+- **Description:** Deletes multiple members at once.
+- **Request Body:** `{ "member_ids": ["uuid1", "uuid2"] }`
+- **Response (200 OK):** `{ "message": "2 member(s) deleted successfully" }`
+
+---
+
 ## 🛠 Tech Stack Details
 - **Database:** Supabase (PostgreSQL)
 - **Authentication:** Password hashing with `bcrypt`.
-- **Unique Identifiers:** `BIGSERIAL` for events/users, `UUID` for participants.
+- **Unique Identifiers:** `BIGSERIAL` for events/users, `UUID` for members/participants.
 - **Time Management:** Automatic `updated_at` triggers on all tables.
