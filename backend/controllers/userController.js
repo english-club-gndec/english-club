@@ -24,7 +24,8 @@ const userController = {
       if (error) throw error;
       res.json(data);
     } catch (err) {
-      res.status(500).json({ error: err.message });
+      console.error('getUsers error:', err);
+      res.status(500).json({ error: err.message || 'Internal Server Error' });
     }
   },
 
@@ -40,7 +41,8 @@ const userController = {
       if (error) return res.status(404).json({ error: 'User not found' });
       res.json(data);
     } catch (err) {
-      res.status(500).json({ error: err.message });
+      console.error('getUserById error:', err);
+      res.status(500).json({ error: err.message || 'Internal Server Error' });
     }
   },
 
