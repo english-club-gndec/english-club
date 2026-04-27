@@ -13,6 +13,7 @@ interface User {
   name: string;
   role: "MASTER" | "ADMIN" | "MANAGER";
   profilePicture?: string;
+  memberName?: string;
 }
 
 interface Member {
@@ -30,6 +31,7 @@ export function AdminUsers() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [step, setStep] = useState<1 | 2>(1); // Step 1: Select Member, Step 2: Set User Details
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   
   const [formData, setFormData] = useState({
@@ -74,11 +76,29 @@ export function AdminUsers() {
       setMembers(memberData);
       setStep(1);
       setSelectedMember(null);
+      setEditingUser(null);
       setFormData({ username: "", password: "", role: "MANAGER" });
       setIsModalOpen(true);
     } catch (error) {
       toast.error("Failed to fetch members list");
     }
+  };
+
+  const openEditModal = (user: User) => {
+    setEditingUser(user);
+    setSelectedMember({
+      member_id: user.member_id,
+      member_name: user.name,
+      member_email: "",
+      member_profile_picture_key: user.profilePicture || ""
+    });
+    setFormData({
+      username: user.name,
+      password: "",
+      role: user.role
+    });
+    setStep(2);
+    setIsModalOpen(true);
   };
 
   const handleSelectMember = (member: Member) => {
@@ -97,14 +117,26 @@ export function AdminUsers() {
     if (!userId || !selectedMember) return;
 
     try {
-      const payload = {
-        user_name: formData.username,
-        user_password: formData.password,
-        user_role: formData.role,
-        member_id: selectedMember.member_id
-      };
-      await userService.createUser(userId, payload);
-      toast.success("User account created successfully!");
+      if (editingUser) {
+        const payload: any = {
+          user_name: formData.username,
+          user_role: formData.role,
+        };
+        if (formData.password) {
+          payload.user_password = formData.password;
+        }
+        await userService.updateUser(String(editingUser.id), payload);
+        toast.success("User account updated successfully!");
+      } else {
+        const payload = {
+          user_name: formData.username,
+          user_password: formData.password,
+          user_role: formData.role,
+          member_id: selectedMember.member_id
+        };
+        await userService.createUser(userId, payload);
+        toast.success("User account created successfully!");
+      }
       await fetchUsers();
       closeModal();
     } catch (error: any) {
@@ -116,6 +148,7 @@ export function AdminUsers() {
     setIsModalOpen(false);
     setStep(1);
     setSelectedMember(null);
+    setEditingUser(null);
   };
 
   const getPublicUrl = (key: string | undefined) => {
@@ -160,7 +193,7 @@ export function AdminUsers() {
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
               <tr>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">User</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Account Holder</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Role</th>
                 <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Actions</th>
               </tr>
@@ -179,8 +212,8 @@ export function AdminUsers() {
                        )}
                     </div>
                     <div>
-                      <div className="font-semibold text-gray-900 dark:text-white">{user.name}</div>
-                      <div className="text-xs text-gray-500">ID: {user.id}</div>
+                      <div className="font-bold text-gray-900 dark:text-white leading-none mb-1">{user.memberName}</div>
+                      <div className="text-xs text-gray-500 font-medium italic">@{user.name}</div>
                     </div>
                   </td>
                   <td className="px-6 py-4">
@@ -189,7 +222,17 @@ export function AdminUsers() {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 className="w-4 h-4" /></button>
+                    <div className="flex justify-end gap-2">
+                      <button 
+                        onClick={() => openEditModal(user)}
+                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -209,7 +252,9 @@ export function AdminUsers() {
               onClick={e => e.stopPropagation()}
             >
               <div className="p-6 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
-                <h2 className="text-xl font-bold">{step === 1 ? "Select Member" : "Account Details"}</h2>
+                <h2 className="text-xl font-bold">
+                  {editingUser ? "Edit Account" : (step === 1 ? "Select Member" : "Account Details")}
+                </h2>
                 <button onClick={closeModal} className="p-2 hover:bg-gray-100 rounded-full"><X className="w-5 h-5" /></button>
               </div>
 
@@ -283,10 +328,12 @@ export function AdminUsers() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Password</label>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">
+                        {editingUser ? "New Password (leave blank to keep current)" : "Password"}
+                      </label>
                       <input 
                         type="password" 
-                        required 
+                        required={!editingUser} 
                         value={formData.password} 
                         onChange={e => setFormData({...formData, password: e.target.value})}
                         className="w-full px-4 py-2 rounded-xl border border-gray-200"
@@ -307,8 +354,10 @@ export function AdminUsers() {
                     </div>
 
                     <div className="flex gap-3 pt-4">
-                      <button type="button" onClick={() => setStep(1)} className="flex-1 py-3 text-sm font-bold text-gray-500">Back</button>
-                      <button type="submit" className="flex-[2] py-3 bg-gradient-to-r from-blue-900 to-purple-700 text-white rounded-xl font-bold shadow-lg">Create Account</button>
+                      {!editingUser && <button type="button" onClick={() => setStep(1)} className="flex-1 py-3 text-sm font-bold text-gray-500">Back</button>}
+                      <button type="submit" className="flex-[2] py-3 bg-gradient-to-r from-blue-900 to-purple-700 text-white rounded-xl font-bold shadow-lg">
+                        {editingUser ? "Update Account" : "Create Account"}
+                      </button>
                     </div>
                   </form>
                 )}

@@ -292,6 +292,8 @@ export function AdminMembers() {
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Position</th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Email</th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Dept / Sem</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">CRN</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">URN</th>
                       <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
@@ -320,6 +322,8 @@ export function AdminMembers() {
                         <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{member.member_postion.replace('_', ' ')}</td>
                         <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{member.member_email}</td>
                         <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{member.member_department} / Sem {member.member_semester}</td>
+                        <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{member.member_crn || 'N/A'}</td>
+                        <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{member.member_urn}</td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex justify-end gap-2">
                             <button onClick={() => openModal(member)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Edit2 className="w-4 h-4" /></button>

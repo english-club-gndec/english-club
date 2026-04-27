@@ -4,10 +4,13 @@ import { motion, AnimatePresence } from "motion/react";
 import { useTheme } from "../ThemeProvider";
 import { useAuth } from "../../context/AuthContext";
 import { userService } from "../../../services/userService";
+import { supabase } from "../../../lib/supabase";
 
 export function AdminNavbar() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [adminName, setAdminName] = useState("Admin User");
+  const [adminEmail, setAdminEmail] = useState("admin@englishclub.edu");
+  const [adminProfilePic, setAdminProfilePic] = useState<string | null>(null);
   const { theme, toggleTheme } = useTheme();
   const { logout, userId } = useAuth();
 
@@ -16,8 +19,12 @@ export function AdminNavbar() {
       if (userId) {
         try {
           const userData = await userService.getUserById(userId);
-          if (userData && userData.user_name) {
+          if (userData) {
             setAdminName(userData.user_name);
+            if (userData.members) {
+              setAdminEmail(userData.members.member_email);
+              setAdminProfilePic(userData.members.member_profile_picture_key);
+            }
           }
         } catch (err: any) {
           console.error("Failed to fetch admin name:", err);
@@ -71,15 +78,22 @@ export function AdminNavbar() {
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
                 className="flex items-center gap-3 px-4 py-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               >
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-900 to-purple-700 flex items-center justify-center">
-                  <User className="w-5 h-5 text-white" />
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-900 to-purple-700 flex items-center justify-center overflow-hidden border border-gray-200">
+                  {adminProfilePic ? (
+                    <img 
+                      src={supabase.storage.from('profile_pictures').getPublicUrl(adminProfilePic).data.publicUrl} 
+                      className="w-full h-full object-cover" 
+                    />
+                  ) : (
+                    <User className="w-5 h-5 text-white" />
+                  )}
                 </div>
                 <div className="hidden md:block text-left">
                   <div className="text-sm text-gray-900 dark:text-white" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
                     {adminName}
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-400" style={{ fontFamily: 'Open Sans, sans-serif' }}>
-                    admin@englishclub.edu
+                    {adminEmail}
                   </div>
                 </div>
               </button>

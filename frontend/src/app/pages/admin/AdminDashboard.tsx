@@ -28,7 +28,9 @@ export function AdminDashboard() {
       if (userId) {
         try {
           const userData = await userService.getUserById(userId);
-          if (userData && userData.user_name) {
+          if (userData && userData.members?.member_name) {
+            setAdminName(userData.members.member_name);
+          } else if (userData && userData.user_name) {
             setAdminName(userData.user_name);
           }
         } catch (err) {
