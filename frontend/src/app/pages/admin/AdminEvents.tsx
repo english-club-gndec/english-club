@@ -4,17 +4,20 @@ import { Plus, Edit2, Trash2, X, Calendar as CalendarIcon, Clock, MapPin, Loader
 import { toast } from "sonner";
 import { Toaster } from "sonner";
 import { eventService } from "../../../services/eventService";
+import { userService } from "../../../services/userService";
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../../lib/supabase";
 
 interface Event {
   id: number;
   name: string;
-  description: string;
+  shortDescription: string;
+  longDescription: string;
   date: string;
   time: string;
   venue: string;
   createdBy: string;
+  creatorId: number;
   poster?: string;
 }
 
@@ -25,10 +28,36 @@ export function AdminEvents() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [posterFile, setPosterFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>("");
+  const [viewingEvent, setViewingEvent] = useState<Event | null>(null);
+  const [usersMap, setUsersMap] = useState<Record<number, { name: string, profileUrl: string | null }>>({});
 
   useEffect(() => {
     fetchEventsList();
+    fetchAllUsers();
   }, []);
+
+  const fetchAllUsers = async () => {
+    if (!userId) return;
+    try {
+      const usersData = await userService.getUsers(userId);
+      const map: Record<number, { name: string, profileUrl: string | null }> = {};
+      usersData.forEach((u: any) => {
+        let profileUrl = null;
+        const profileKey = u.members?.member_profile_picture_key;
+        if (profileKey) {
+          const { data } = supabase.storage.from('profile_pictures').getPublicUrl(profileKey);
+          profileUrl = data.publicUrl;
+        }
+        map[u.user_id] = {
+          name: u.members?.member_name || u.user_name,
+          profileUrl
+        };
+      });
+      setUsersMap(map);
+    } catch (error) {
+      console.error("Failed to fetch users for profile pictures:", error);
+    }
+  };
 
   const fetchEventsList = async () => {
     setIsLoading(true);
@@ -37,11 +66,13 @@ export function AdminEvents() {
       const transformedEvents = data.map((ev: any) => ({
         id: ev.event_id,
         name: ev.event_name,
-        description: ev.event_description,
+        shortDescription: ev.event_short_description,
+        longDescription: ev.event_long_description || "",
         date: ev.event_date,
         time: ev.event_time,
         venue: ev.event_venue,
         createdBy: ev.creater_name || "System",
+        creatorId: ev.created_by,
         poster: ev.event_poster_key
       }));
       setEvents(transformedEvents);
@@ -56,7 +87,8 @@ export function AdminEvents() {
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [formData, setFormData] = useState({
     name: "",
-    description: "",
+    shortDescription: "",
+    longDescription: "",
     date: "",
     time: "12:00 PM",
     venue: "",
@@ -109,7 +141,8 @@ export function AdminEvents() {
 
         const payload = {
           event_name: formData.name,
-          event_description: formData.description,
+          event_short_description: formData.shortDescription,
+          event_long_description: formData.longDescription,
           event_date: formData.date,
           event_time: formData.time,
           event_venue: formData.venue,
@@ -133,7 +166,8 @@ export function AdminEvents() {
         }
         const payload = {
           event_name: formData.name,
-          event_description: formData.description,
+          event_short_description: formData.shortDescription,
+          event_long_description: formData.longDescription,
           event_date: formData.date,
           event_time: formData.time,
           event_venue: formData.venue,
@@ -168,7 +202,8 @@ export function AdminEvents() {
       }
       setFormData({
         name: event.name,
-        description: event.description,
+        shortDescription: event.shortDescription,
+        longDescription: event.longDescription,
         date: formattedDate,
         time: event.time,
         venue: event.venue,
@@ -179,7 +214,8 @@ export function AdminEvents() {
       setEditingEvent(null);
       setFormData({
         name: "",
-        description: "",
+        shortDescription: "",
+        longDescription: "",
         date: "",
         time: "12:00 PM",
         venue: "",
@@ -285,7 +321,8 @@ export function AdminEvents() {
                   key={event.id}
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 overflow-hidden hover:shadow-xl hover:shadow-purple-500/10 transition-all group"
+                  onClick={() => setViewingEvent(event)}
+                  className="rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 overflow-hidden hover:shadow-xl hover:shadow-purple-500/10 transition-all group cursor-pointer"
                 >
                   <div className="h-48 w-full overflow-hidden relative">
                     <img 
@@ -302,13 +339,19 @@ export function AdminEvents() {
                       </h3>
                       <div className="flex gap-2">
                         <button
-                          onClick={() => openModal(event)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openModal(event);
+                          }}
                           className="p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 transition-colors"
                         >
                           <Edit2 className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => handleDelete(event.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(event.id);
+                          }}
                           className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 transition-colors"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -317,7 +360,7 @@ export function AdminEvents() {
                     </div>
 
                     <p className="text-sm text-gray-600 dark:text-gray-300 mb-4" style={{ fontFamily: 'Open Sans, sans-serif' }}>
-                      {event.description}
+                      {event.shortDescription}
                     </p>
 
                     <div className="space-y-2">
@@ -337,10 +380,21 @@ export function AdminEvents() {
                       </div>
                     </div>
 
-                    <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-800">
-                      <p className="text-xs text-gray-500 dark:text-gray-400" style={{ fontFamily: 'Open Sans, sans-serif' }}>
-                        Created by: <span className="font-semibold">{event.createdBy}</span>
-                      </p>
+                    <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-800 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        {usersMap[event.creatorId]?.profileUrl ? (
+                          <div className="w-6 h-6 rounded-full overflow-hidden border border-purple-500/20">
+                            <img src={usersMap[event.creatorId].profileUrl!} alt="" className="w-full h-full object-cover" />
+                          </div>
+                        ) : (
+                          <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-purple-500 to-blue-500 flex items-center justify-center text-white text-[10px] font-bold">
+                            {event.createdBy.charAt(0)}
+                          </div>
+                        )}
+                        <p className="text-xs text-gray-500 dark:text-gray-400" style={{ fontFamily: 'Open Sans, sans-serif' }}>
+                          <span className="font-semibold">{event.createdBy}</span>
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </motion.div>
@@ -371,15 +425,15 @@ export function AdminEvents() {
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
-                              <img 
-                                src={event.poster || "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&q=80&w=200"} 
-                                alt="" 
-                                className="w-full h-full object-cover"
-                              />
+                                <img 
+                                  src={event.poster ? getPublicUrl(event.poster) : "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&q=80&w=200"} 
+                                  alt="" 
+                                  className="w-full h-full object-cover"
+                                />
                             </div>
                             <div className="min-w-0">
                               <div className="font-semibold text-gray-900 dark:text-white truncate">{event.name}</div>
-                              <div className="text-xs text-gray-500 truncate max-w-[200px]">{event.description}</div>
+                              <div className="text-xs text-gray-500 truncate max-w-[200px]">{event.shortDescription}</div>
                             </div>
                           </div>
                         </td>
@@ -472,17 +526,33 @@ export function AdminEvents() {
                 </div>
 
                 <div>
-                  <label htmlFor="description" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                    Description
+                  <label htmlFor="shortDescription" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
+                    Short Description
                   </label>
                   <textarea
-                    id="description"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    id="shortDescription"
+                    value={formData.shortDescription}
+                    onChange={(e) => setFormData({ ...formData, shortDescription: e.target.value })}
                     required
-                    rows={4}
+                    rows={2}
                     className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all resize-none"
                     style={{ fontFamily: 'Open Sans, sans-serif' }}
+                    placeholder="Brief overview of the event"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="longDescription" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
+                    Long Description
+                  </label>
+                  <textarea
+                    id="longDescription"
+                    value={formData.longDescription}
+                    onChange={(e) => setFormData({ ...formData, longDescription: e.target.value })}
+                    rows={5}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all resize-none"
+                    style={{ fontFamily: 'Open Sans, sans-serif' }}
+                    placeholder="Detailed information about the event"
                   />
                 </div>
 
@@ -652,6 +722,113 @@ export function AdminEvents() {
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {viewingEvent && (
+          <motion.div
+            className="fixed inset-0 bg-black/60 backdrop-blur-md z-[60] flex items-center justify-center p-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setViewingEvent(null)}
+          >
+            <motion.div
+              className="bg-white dark:bg-gray-900 rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl relative"
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="relative h-64 w-full">
+                <img 
+                  src={viewingEvent.poster ? getPublicUrl(viewingEvent.poster) : "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&q=80&w=800"} 
+                  alt={viewingEvent.name}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                <button
+                  onClick={() => setViewingEvent(null)}
+                  className="absolute top-4 right-4 p-2 rounded-full bg-white/20 hover:bg-white/40 backdrop-blur-md text-white transition-all"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+                <div className="absolute bottom-6 left-8 right-8">
+                  <h2 className="text-3xl text-white mb-2" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700 }}>
+                    {viewingEvent.name}
+                  </h2>
+                </div>
+              </div>
+
+              <div className="p-8 space-y-8">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex items-center gap-3 bg-gray-50 dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-800">
+                    <CalendarIcon className="w-5 h-5 text-purple-600" />
+                    <div>
+                      <p className="text-[10px] uppercase font-bold text-gray-500">Date</p>
+                      <p className="text-sm font-semibold dark:text-white">{new Date(viewingEvent.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 bg-gray-50 dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-800">
+                    <Clock className="w-5 h-5 text-purple-600" />
+                    <div>
+                      <p className="text-[10px] uppercase font-bold text-gray-500">Time</p>
+                      <p className="text-sm font-semibold dark:text-white">{viewingEvent.time}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 bg-gray-50 dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-800 col-span-2">
+                    <MapPin className="w-5 h-5 text-purple-600" />
+                    <div>
+                      <p className="text-[10px] uppercase font-bold text-gray-500">Venue</p>
+                      <p className="text-sm font-semibold dark:text-white">{viewingEvent.venue}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400 mb-2">Short Description</h3>
+                    <p className="text-gray-700 dark:text-gray-300 leading-relaxed" style={{ fontFamily: 'Open Sans, sans-serif' }}>
+                      {viewingEvent.shortDescription}
+                    </p>
+                  </div>
+                  
+                  <div className="pt-6 border-t border-gray-100 dark:border-gray-800">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400 mb-2">Detailed Information</h3>
+                    <div className="prose prose-sm dark:prose-invert max-w-none">
+                      <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap italic" style={{ fontFamily: 'Open Sans, sans-serif' }}>
+                        {viewingEvent.longDescription || "That's all for now, folks :)"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-6 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {usersMap[viewingEvent.creatorId]?.profileUrl ? (
+                      <div className="w-10 h-10 rounded-full border-2 border-purple-500/20 overflow-hidden">
+                        <img src={usersMap[viewingEvent.creatorId].profileUrl!} alt="" className="w-full h-full object-cover" />
+                      </div>
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-500 to-blue-500 flex items-center justify-center text-white text-sm font-bold">
+                        {viewingEvent.createdBy.charAt(0)}
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-[10px] uppercase font-bold text-gray-500">Created By</p>
+                      <p className="text-xs font-semibold dark:text-white">{viewingEvent.createdBy}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setViewingEvent(null)}
+                    className="px-6 py-2 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-bold text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
             </motion.div>
           </motion.div>
         )}

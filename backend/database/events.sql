@@ -2,7 +2,8 @@
 CREATE TABLE events (
     event_id BIGSERIAL PRIMARY KEY,
     event_name VARCHAR NOT NULL,
-    event_description VARCHAR NOT NULL,
+    event_short_description VARCHAR NOT NULL,
+    event_long_description TEXT,
     event_venue VARCHAR,
     event_date DATE,
     event_time TIME,

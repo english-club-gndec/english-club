@@ -4,10 +4,10 @@ const eventController = {
   // POST /api/events
   createEvent: async (req, res) => {
     try {
-      const { event_name, event_description, event_venue, event_date, event_time, event_poster_key, created_by } = req.body;
+      const { event_name, event_short_description, event_long_description, event_venue, event_date, event_time, event_poster_key, created_by } = req.body;
 
-      if (!event_name || !event_description || !created_by) {
-        return res.status(400).json({ error: 'Name, description, and created_by are required' });
+      if (!event_name || !event_short_description || !created_by) {
+        return res.status(400).json({ error: 'Name, short description, and created_by are required' });
       }
 
       const { data, error } = await supabase
@@ -15,7 +15,8 @@ const eventController = {
         .insert([
           { 
             event_name, 
-            event_description, 
+            event_short_description, 
+            event_long_description, 
             event_venue, 
             event_date, 
             event_time, 
@@ -118,12 +119,13 @@ const eventController = {
     updateEvent: async (req, res) => {
     try {
       const { event_id } = req.params;
-      const { event_name, event_description, event_venue, event_date, event_time, event_poster_key } = req.body;
+      const { event_name, event_short_description, event_long_description, event_venue, event_date, event_time, event_poster_key } = req.body;
 
       // Prepare update data (only include fields provided in the body)
       const updateData = {};
       if (event_name !== undefined) updateData.event_name = event_name;
-      if (event_description !== undefined) updateData.event_description = event_description;
+      if (event_short_description !== undefined) updateData.event_short_description = event_short_description;
+      if (event_long_description !== undefined) updateData.event_long_description = event_long_description;
       if (event_venue !== undefined) updateData.event_venue = event_venue;
       if (event_date !== undefined) updateData.event_date = event_date;
       if (event_time !== undefined) updateData.event_time = event_time;
