@@ -10,7 +10,9 @@ import {
   Settings,
   X,
   Menu,
-  Trophy
+  Trophy,
+  ShieldCheck,
+  UserCircle
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -20,7 +22,8 @@ export function AdminSidebar() {
 
   const menuItems = [
     { path: "/admin", label: "Dashboard", icon: LayoutDashboard },
-    { path: "/admin/users", label: "Users", icon: Users },
+    { path: "/admin/members", label: "Members", icon: Users },
+    { path: "/admin/users", label: "User Accounts", icon: ShieldCheck },
     { path: "/admin/events", label: "Events", icon: Calendar },
     { path: "/admin/registrations", label: "Registrations", icon: ClipboardList },
     { path: "/admin/vote", label: "People's Choice", icon: Trophy },

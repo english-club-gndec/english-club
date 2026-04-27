@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS users (
     user_id BIGSERIAL PRIMARY KEY,
-    member_id UUID NOT NULL REFERENCES members(member_id) ON DELETE CASCADE,
+    member_id UUID NOT NULL UNIQUE REFERENCES members(member_id) ON DELETE CASCADE,
     user_name VARCHAR NOT NULL,
     user_password TEXT NOT NULL,
     user_role VARCHAR NOT NULL CHECK (user_role IN ('MASTER', 'ADMIN', 'MANAGER')),

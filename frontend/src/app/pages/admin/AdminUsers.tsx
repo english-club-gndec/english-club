@@ -1,202 +1,121 @@
 import { motion, AnimatePresence } from "motion/react";
 import { useState, useEffect } from "react";
-import { Plus, Edit2, Trash2, X, Instagram, Linkedin, Mail, Github, Loader2, User as UserIcon } from "lucide-react";
-import { toast } from "sonner";
-import { Toaster } from "sonner";
+import { Plus, Edit2, Trash2, X, Mail, Loader2, User as UserIcon, Check, Search } from "lucide-react";
+import { toast, Toaster } from "sonner";
 import { useAuth } from "../../context/AuthContext";
 import { userService } from "../../../services/userService";
+import { memberService } from "../../../services/memberService";
 import { supabase } from "../../../lib/supabase";
 
 interface User {
   id: number;
+  member_id: string;
   name: string;
   role: "MASTER" | "ADMIN" | "MANAGER";
-  email: string;
   profilePicture?: string;
-  socials: {
-    instagram?: string;
-    linkedin?: string;
-    github?: string;
-  };
+}
+
+interface Member {
+  member_id: string;
+  member_name: string;
+  member_email: string;
+  member_profile_picture_key: string;
 }
 
 export function AdminUsers() {
-  const { userId } = useAuth();
+  const { userId, logout } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
+  const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [step, setStep] = useState<1 | 2>(1); // Step 1: Select Member, Step 2: Set User Details
+  const [selectedMember, setSelectedMember] = useState<Member | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  
+  const [formData, setFormData] = useState({
+    username: "",
+    password: "",
+    role: "MANAGER" as "MASTER" | "ADMIN" | "MANAGER"
+  });
+
+  const fetchUsers = async () => {
+    if (!userId) return;
+    try {
+      setLoading(true);
+      const data = await userService.getUsers(userId);
+      setUsers(data.map((u: any) => ({
+        id: u.user_id,
+        member_id: u.member_id,
+        name: u.user_name,
+        role: u.user_role,
+        profilePicture: u.members?.member_profile_picture_key,
+        memberName: u.members?.member_name,
+        memberEmail: u.members?.member_email
+      })));
+    } catch (error: any) {
+      toast.error("Failed to fetch users");
+      // If the admin's own ID is not found, force logout
+      if (error.message && error.message.includes("404")) {
+        logout();
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    async function fetchUsers() {
-      if (userId) {
-        try {
-          const data = await userService.getUsers(userId);
-          const transformedUsers = data.map((u: any) => {
-            let publicUrl = "";
-            if (u.user_image_key) {
-              const { data: urlData } = supabase.storage
-                .from('profile_pictures')
-                .getPublicUrl(u.user_image_key);
-              publicUrl = urlData.publicUrl;
-            }
-
-            return {
-              id: u.user_id,
-              name: u.user_name,
-              email: u.user_email,
-              role: u.user_role,
-              profilePicture: u.user_image_key,
-              socials: {
-                instagram: u.instagram,
-                linkedin: u.linkedin,
-                github: u.github
-              }
-            };
-          });
-          setUsers(transformedUsers);
-        } catch (error) {
-          toast.error("Failed to fetch users");
-        } finally {
-          setLoading(false);
-        }
-      }
-    }
     fetchUsers();
   }, [userId]);
 
-
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    password: "",
-    role: "MANAGER" as "MASTER" | "ADMIN" | "MANAGER",
-    instagram: "",
-    linkedin: "",
-    github: "",
-    description: "",
-    profileImage: ""
-  });
-  const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string>("");
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!['image/jpeg', 'image/png'].includes(file.type)) {
-      toast.error("Only JPEG and PNG images are allowed");
-      return;
-    }
-
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error("Image size must be less than 2MB");
-      return;
-    }
-
-    setProfileImageFile(file);
-    setPreviewUrl(URL.createObjectURL(file));
-  };
-
-  const uploadImage = async (file: File, username: string) => {
-    const extension = file.name.split('.').pop();
-    const fileName = `${username.toLowerCase().replace(/\s+/g, '_')}_picture.${extension}`;
-    
-    const { data, error } = await supabase.storage
-      .from('profile_pictures')
-      .upload(fileName, file, {
-        upsert: true,
-        contentType: file.type
-      });
-
-    if (error) throw error;
-    return fileName;
-  };
-
-  const refreshUsers = async () => {
+  const openAddModal = async () => {
     if (!userId) return;
-    const data = await userService.getUsers(userId);
-    const transformedUsers = data.map((u: any) => {
-      let publicUrl = "";
-      if (u.user_image_key) {
-        const { data: urlData } = supabase.storage
-          .from('profile_pictures')
-          .getPublicUrl(u.user_image_key);
-        publicUrl = urlData.publicUrl;
-      }
+    try {
+      const memberData = await memberService.getAllMembers(userId);
+      setMembers(memberData);
+      setStep(1);
+      setSelectedMember(null);
+      setFormData({ username: "", password: "", role: "MANAGER" });
+      setIsModalOpen(true);
+    } catch (error) {
+      toast.error("Failed to fetch members list");
+    }
+  };
 
-      return {
-        id: u.user_id,
-        name: u.user_name,
-        email: u.user_email,
-        role: u.user_role,
-        profilePicture: u.user_image_key,
-        socials: {
-          instagram: u.instagram,
-          linkedin: u.linkedin,
-          github: u.github
-        }
-      };
-    });
-    setUsers(transformedUsers);
+  const handleSelectMember = (member: Member) => {
+    const alreadyHasAccount = users.some(u => u.member_id === member.member_id);
+    if (alreadyHasAccount) {
+      toast.error("This member already has a user account");
+      return;
+    }
+    setSelectedMember(member);
+    setFormData({ ...formData, username: member.member_name.toLowerCase().replace(/\s+/g, '_') });
+    setStep(2);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!userId || !selectedMember) return;
 
-    if (editingUser) {
-      if (!userId) return;
-      try {
-        let imageKey = editingUser.profilePicture;
-        if (profileImageFile) {
-          imageKey = await uploadImage(profileImageFile, formData.name);
-        }
-
-        const payload = {
-          user_name: formData.name,
-          user_image_key: imageKey,
-          instagram: formData.instagram || undefined,
-          linkedin: formData.linkedin || undefined,
-          github: formData.github || undefined,
-        };
-        await userService.updateUser(editingUser.id.toString(), payload);
-        toast.success("User updated successfully!");
-        await refreshUsers();
-      } catch (error: any) {
-        toast.error(error.message || "Failed to update user");
-        return;
-      }
-    } else {
-      if (!userId) return;
-      try {
-        let imageKey = "";
-        if (profileImageFile) {
-          imageKey = await uploadImage(profileImageFile, formData.name);
-        }
-
-        const payload = {
-          user_name: formData.name,
-          user_password: formData.password,
-          user_role: formData.role,
-          user_image_key: imageKey,
-          instagram: formData.instagram || undefined,
-          linkedin: formData.linkedin || undefined,
-          github: formData.github || undefined,
-        };
-        await userService.createUser(userId, payload);
-        toast.success("User added successfully!");
-        await refreshUsers();
-      } catch (error: any) {
-        toast.error(error.message || "Failed to create user");
-        return;
-      }
+    try {
+      const payload = {
+        user_name: formData.username,
+        user_password: formData.password,
+        user_role: formData.role,
+        member_id: selectedMember.member_id
+      };
+      await userService.createUser(userId, payload);
+      toast.success("User account created successfully!");
+      await fetchUsers();
+      closeModal();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to create user");
     }
-
-    closeModal();
   };
 
-  const handleDelete = (_id: number) => {
-    toast.info("Deletion is currently disabled (placeholder)");
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setStep(1);
+    setSelectedMember(null);
   };
 
   const getPublicUrl = (key: string | undefined) => {
@@ -205,55 +124,19 @@ export function AdminUsers() {
     return data.publicUrl;
   };
 
-  const openModal = (user?: User) => {
-    if (user) {
-      setEditingUser(user);
-      setFormData({
-        name: user.name,
-        email: user.email,
-        password: "",
-        role: user.role,
-        instagram: user.socials.instagram || "",
-        linkedin: user.socials.linkedin || "",
-        github: user.socials.github || "",
-        description: "",
-        profileImage: ""
-      });
-      setPreviewUrl(user.profilePicture ? getPublicUrl(user.profilePicture) : "");
-    } else {
-      setEditingUser(null);
-      setFormData({
-        name: "",
-        email: "",
-        password: "",
-        role: "MANAGER",
-        instagram: "",
-        linkedin: "",
-        github: "",
-        description: "",
-        profileImage: ""
-      });
-      setPreviewUrl("");
-    }
-    setProfileImageFile(null);
-    setIsModalOpen(true);
-  };
-
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setEditingUser(null);
-    setProfileImageFile(null);
-    setPreviewUrl("");
-  };
-
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
-      case "MASTER": return "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400";
-      case "ADMIN": return "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400";
-      case "MANAGER": return "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400";
-      default: return "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-400";
+      case "MASTER": return "bg-purple-100 text-purple-700";
+      case "ADMIN": return "bg-blue-100 text-blue-700";
+      case "MANAGER": return "bg-green-100 text-green-700";
+      default: return "bg-gray-100 text-gray-700";
     }
   };
+
+  const filteredMembers = members.filter(m => 
+    m.member_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    m.member_email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <>
@@ -261,365 +144,177 @@ export function AdminUsers() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl text-gray-900 dark:text-white mb-2" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700 }}>
-              Users Management
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400" style={{ fontFamily: 'Open Sans, sans-serif' }}>
-              Manage admin users and their roles
-            </p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">User Accounts</h1>
+            <p className="text-gray-600 dark:text-gray-400">Manage login credentials for club members</p>
           </div>
           <button
-            onClick={() => openModal()}
-            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-blue-900 to-purple-700 text-white hover:shadow-lg hover:shadow-purple-500/50 transition-all"
-            style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}
+            onClick={openAddModal}
+            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-blue-900 to-purple-700 text-white font-bold hover:shadow-lg transition-all"
           >
             <Plus className="w-5 h-5" />
-            Add User
+            Add User Account
           </button>
         </div>
 
-        <div className="rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 overflow-hidden min-h-[400px] flex flex-col">
-          <div className="overflow-x-auto flex-1 flex flex-col">
-            <AnimatePresence mode="wait">
+        <div className="rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 overflow-hidden">
+          <table className="w-full">
+            <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+              <tr>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">User</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Role</th>
+                <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
               {loading ? (
-                <motion.div
-                  key="loader"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="flex-1 flex flex-col items-center justify-center gap-4 py-20"
-                >
-                  <div className="relative">
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                      className="w-16 h-16 rounded-full border-4 border-blue-500/20 border-t-blue-500"
-                    />
-                    <Loader2 className="w-8 h-8 text-blue-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-spin-slow" />
-                  </div>
-                  <p className="text-gray-500 dark:text-gray-400 animate-pulse" style={{ fontFamily: 'Open Sans, sans-serif' }}>
-                    Fetching membership records...
-                  </p>
-                </motion.div>
-              ) : (
-                <motion.table
-                  key="table"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.5 }}
-                  className="w-full"
-                >
-                  <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-                    <tr>
-                      <th className="px-6 py-4 text-left text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wider" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                        Profile
-                      </th>
-                      <th className="px-6 py-4 text-left text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wider" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                        Name
-                      </th>
-                      <th className="px-6 py-4 text-left text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wider" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                        Email
-                      </th>
-                      <th className="px-6 py-4 text-left text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wider" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                        Role
-                      </th>
-                      <th className="px-6 py-4 text-left text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wider" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                        Social Links
-                      </th>
-                      <th className="px-6 py-4 text-right text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wider" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
-                    {users.map((user) => (
-                      <motion.tr
-                        key={user.id}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                      >
-                        <td className="px-6 py-4">
-                          <div className="w-10 h-10 rounded-full border border-gray-200 dark:border-gray-700 overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                            {user.profilePicture ? (
-                              <img src={getPublicUrl(user.profilePicture)} alt={user.name} className="w-full h-full object-cover" />
-                            ) : (
-                              <UserIcon className="w-6 h-6 text-gray-400" />
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-gray-900 dark:text-white" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                            {user.name}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400" style={{ fontFamily: 'Open Sans, sans-serif' }}>
-                            <Mail className="w-4 h-4" />
-                            {user.email}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className={`inline-block px-3 py-1 rounded-full text-xs ${getRoleBadgeColor(user.role)}`} style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                            {user.role}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            {user.socials.instagram && (
-                              <a href={user.socials.instagram} target="_blank" rel="noopener noreferrer" className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gradient-to-br hover:from-blue-900 hover:to-purple-700 transition-all group">
-                                <Instagram className="w-4 h-4 text-gray-600 dark:text-gray-400 group-hover:text-white" />
-                              </a>
-                            )}
-                            {user.socials.linkedin && (
-                              <a href={user.socials.linkedin} target="_blank" rel="noopener noreferrer" className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gradient-to-br hover:from-blue-900 hover:to-purple-700 transition-all group">
-                                <Linkedin className="w-4 h-4 text-gray-600 dark:text-gray-400 group-hover:text-white" />
-                              </a>
-                            )}
-                            {user.socials.github && (
-                              <a href={user.socials.github} target="_blank" rel="noopener noreferrer" className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gradient-to-br hover:from-blue-900 hover:to-purple-700 transition-all group">
-                                <Github className="w-4 h-4 text-gray-600 dark:text-gray-400 group-hover:text-white" />
-                              </a>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center justify-end gap-2">
-                            <button
-                              onClick={() => openModal(user)}
-                              className="p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 transition-colors"
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(user.id)}
-                              className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 transition-colors"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </motion.tr>
-                    ))}
-                  </tbody>
-                </motion.table>
-              )}
-            </AnimatePresence>
-          </div>
+                <tr><td colSpan={3} className="py-20 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-500" /></td></tr>
+              ) : users.map((user) => (
+                <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                  <td className="px-6 py-4 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden border border-gray-200">
+                       {user.profilePicture ? (
+                         <img src={getPublicUrl(user.profilePicture)} className="w-full h-full object-cover" />
+                       ) : (
+                         <UserIcon className="text-gray-400" />
+                       )}
+                    </div>
+                    <div>
+                      <div className="font-semibold text-gray-900 dark:text-white">{user.name}</div>
+                      <div className="text-xs text-gray-500">ID: {user.id}</div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${getRoleBadgeColor(user.role)}`}>
+                      {user.role}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <button className="p-2 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 className="w-4 h-4" /></button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
       <AnimatePresence>
         {isModalOpen && (
-          <motion.div
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-6"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={closeModal}
-          >
-            <motion.div
-              className="bg-white dark:bg-gray-900 rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-6" onClick={closeModal}>
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }} 
+              animate={{ opacity: 1, scale: 1 }} 
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-white dark:bg-gray-900 rounded-3xl max-w-md w-full" 
+              onClick={e => e.stopPropagation()}
             >
-              <div className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-8 py-6 flex items-center justify-between">
-                <h2 className="text-2xl text-gray-900 dark:text-white" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700 }}>
-                  {editingUser ? "Edit User" : "Add New User"}
-                </h2>
-                <button
-                  onClick={closeModal}
-                  className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                >
-                  <X className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                </button>
+              <div className="p-6 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
+                <h2 className="text-xl font-bold">{step === 1 ? "Select Member" : "Account Details"}</h2>
+                <button onClick={closeModal} className="p-2 hover:bg-gray-100 rounded-full"><X className="w-5 h-5" /></button>
               </div>
 
-              <form onSubmit={handleSubmit} className="p-8 space-y-6">
-                {/* Profile Picture Upload */}
-                <div className="flex flex-col items-center gap-4 py-4">
-                  <div className="relative group">
-                    <div className="w-24 h-24 rounded-full border-2 border-gray-200 dark:border-gray-700 overflow-hidden bg-gray-50 dark:bg-gray-800 flex items-center justify-center">
-                      {previewUrl ? (
-                        <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
-                      ) : (
-                        <UserIcon className="w-10 h-10 text-gray-400" />
-                      )}
-                    </div>
-                    <label className="absolute inset-0 flex items-center justify-center bg-black/40 text-white opacity-0 group-hover:opacity-100 transition-opacity rounded-full cursor-pointer">
-                      <Plus className="w-6 h-6" />
+              <div className="p-6">
+                {step === 1 ? (
+                  <div className="space-y-4">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                       <input 
-                        type="file" 
-                        className="hidden" 
-                        accept="image/jpeg,image/png"
-                        onChange={handleFileChange}
+                        type="text" 
+                        placeholder="Search members..." 
+                        className="w-full pl-10 pr-4 py-2 rounded-xl border border-gray-200 bg-gray-50"
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
                       />
-                    </label>
+                    </div>
+                    <div className="max-h-60 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+                      {filteredMembers.map(member => {
+                        const hasAccount = users.some(u => u.member_id === member.member_id);
+                        return (
+                          <button
+                            key={member.member_id}
+                            disabled={hasAccount}
+                            onClick={() => handleSelectMember(member)}
+                            className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all ${hasAccount ? 'bg-gray-50 border-gray-100 opacity-60 grayscale' : 'border-gray-200 hover:border-blue-500 hover:bg-blue-50'}`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden">
+                                {member.member_profile_picture_key ? (
+                                  <img src={getPublicUrl(member.member_profile_picture_key)} className="w-full h-full object-cover" />
+                                ) : (
+                                  <UserIcon className="p-1 text-gray-400" />
+                                )}
+                              </div>
+                              <div className="text-left">
+                                <p className="text-sm font-bold">{member.member_name}</p>
+                                <p className="text-[10px] text-gray-500">{member.member_email}</p>
+                              </div>
+                            </div>
+                            {hasAccount && <span className="text-[10px] font-bold text-green-600 flex items-center gap-1"><Check className="w-3 h-3" /> Done</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                  <div className="text-center">
-                    <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">Profile Picture</p>
-                    <p className="text-[10px] text-gray-400">JPG or PNG, max 2MB</p>
-                  </div>
-                </div>
+                ) : (
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-xl mb-4 border border-blue-100">
+                       <div className="w-10 h-10 rounded-full bg-blue-200 overflow-hidden">
+                         {selectedMember?.member_profile_picture_key ? (
+                           <img src={getPublicUrl(selectedMember.member_profile_picture_key)} className="w-full h-full object-cover" />
+                         ) : (
+                           <UserIcon className="p-2 text-blue-600" />
+                         )}
+                       </div>
+                       <div>
+                         <p className="text-sm font-bold text-blue-900">{selectedMember?.member_name}</p>
+                         <button type="button" onClick={() => setStep(1)} className="text-[10px] text-blue-600 hover:underline">Change Member</button>
+                       </div>
+                    </div>
 
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div>
-                    <label htmlFor="name" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                      Username (for now)
-                    </label>
-                    <input
-                      type="text"
-                      id="name"
-                      placeholder="firstname_lastname_position"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      required
-                      autoComplete="off"
-                      className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all placeholder:text-gray-400 dark:placeholder:text-gray-600"
-                      style={{ fontFamily: 'Open Sans, sans-serif' }}
-                    />
-                  </div>
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Username</label>
+                      <input 
+                        type="text" 
+                        required 
+                        value={formData.username} 
+                        onChange={e => setFormData({...formData, username: e.target.value})}
+                        className="w-full px-4 py-2 rounded-xl border border-gray-200"
+                      />
+                    </div>
 
-                  <div>
-                    <label htmlFor="email" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                      Email Address (api connection left)
-                    </label>
-                    <input
-                      type="email"
-                      id="email"
-                      placeholder="abc123@gmail.com"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      required
-                      className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all placeholder:text-gray-400 dark:placeholder:text-gray-600"
-                      style={{ fontFamily: 'Open Sans, sans-serif' }}
-                    />
-                  </div>
-                </div>
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Password</label>
+                      <input 
+                        type="password" 
+                        required 
+                        value={formData.password} 
+                        onChange={e => setFormData({...formData, password: e.target.value})}
+                        className="w-full px-4 py-2 rounded-xl border border-gray-200"
+                      />
+                    </div>
 
-                <div>
-                  <label htmlFor="description" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                    Description (api connection left)
-                  </label>
-                  <textarea
-                    id="description"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all min-h-[100px]"
-                    style={{ fontFamily: 'Open Sans, sans-serif' }}
-                  />
-                </div>
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Role</label>
+                      <select 
+                        value={formData.role} 
+                        onChange={e => setFormData({...formData, role: e.target.value as any})}
+                        className="w-full px-4 py-2 rounded-xl border border-gray-200"
+                      >
+                        <option value="MANAGER">Manager</option>
+                        <option value="ADMIN">Admin</option>
+                        <option value="MASTER">Master</option>
+                      </select>
+                    </div>
 
-
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div>
-                    <label htmlFor="password" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                      Password {editingUser && "(leave blank to keep current)"}
-                    </label>
-                    <input
-                      type="password"
-                      id="password"
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      required={!editingUser}
-                      autoComplete="new-password"
-                      className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                      style={{ fontFamily: 'Open Sans, sans-serif' }}
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="role" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                      Role
-                    </label>
-                    <select
-                      id="role"
-                      value={formData.role}
-                      onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
-                      required
-                      className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                      style={{ fontFamily: 'Open Sans, sans-serif' }}
-                    >
-                      <option value="MANAGER">Manager</option>
-                      <option value="ADMIN">Admin</option>
-                      <option value="MASTER">Master</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <h3 className="text-lg text-gray-900 dark:text-white" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 600 }}>
-                    Social Links (Optional)
-                  </h3>
-
-                  <div>
-                    <label htmlFor="instagram" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                      Instagram
-                    </label>
-                    <input
-                      type="url"
-                      id="instagram"
-                      value={formData.instagram}
-                      onChange={(e) => setFormData({ ...formData, instagram: e.target.value })}
-                      placeholder="https://instagram.com/username"
-                      className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                      style={{ fontFamily: 'Open Sans, sans-serif' }}
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="linkedin" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                      LinkedIn
-                    </label>
-                    <input
-                      type="url"
-                      id="linkedin"
-                      value={formData.linkedin}
-                      onChange={(e) => setFormData({ ...formData, linkedin: e.target.value })}
-                      placeholder="https://linkedin.com/in/username"
-                      className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                      style={{ fontFamily: 'Open Sans, sans-serif' }}
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="github" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                      GitHub
-                    </label>
-                    <input
-                      type="url"
-                      id="github"
-                      value={formData.github}
-                      onChange={(e) => setFormData({ ...formData, github: e.target.value })}
-                      placeholder="https://github.com/username"
-                      className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                      style={{ fontFamily: 'Open Sans, sans-serif' }}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex gap-4 pt-4">
-                  <button
-                    type="button"
-                    onClick={closeModal}
-                    className="flex-1 px-6 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
-                    style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-blue-900 to-purple-700 text-white hover:shadow-lg hover:shadow-purple-500/50 transition-all"
-                    style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}
-                  >
-                    {editingUser ? "Update User" : "Add User"}
-                  </button>
-                </div>
-              </form>
+                    <div className="flex gap-3 pt-4">
+                      <button type="button" onClick={() => setStep(1)} className="flex-1 py-3 text-sm font-bold text-gray-500">Back</button>
+                      <button type="submit" className="flex-[2] py-3 bg-gradient-to-r from-blue-900 to-purple-700 text-white rounded-xl font-bold shadow-lg">Create Account</button>
+                    </div>
+                  </form>
+                )}
+              </div>
             </motion.div>
-          </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </>

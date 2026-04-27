@@ -14,7 +14,7 @@ const userController = {
           user_role,
           created_at,
           updated_at,
-          members (
+          members:members!users_member_id_fkey (
             member_name,
             member_email,
             member_profile_picture_key
@@ -142,7 +142,7 @@ const userController = {
         .from('users')
         .select(`
           *,
-          members (*)
+          members:members!users_member_id_fkey (*)
         `)
         .eq('member_id', member_id)
         .single();

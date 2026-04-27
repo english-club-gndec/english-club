@@ -19,8 +19,12 @@ export function AdminNavbar() {
           if (userData && userData.user_name) {
             setAdminName(userData.user_name);
           }
-        } catch (err) {
+        } catch (err: any) {
           console.error("Failed to fetch admin name:", err);
+          // If the user is not found (404), the session is invalid (e.g. after DB reset)
+          if (err.message && err.message.includes("404")) {
+            logout();
+          }
         }
       }
     }

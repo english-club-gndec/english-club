@@ -11,6 +11,7 @@ import { VotingPage } from "./pages/VotingPage"; // Added
 import { AdminLayout } from "./components/admin/AdminLayout";
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
 import { AdminUsers } from "./pages/admin/AdminUsers";
+import { AdminMembers } from "./pages/admin/AdminMembers";
 import { AdminEvents } from "./pages/admin/AdminEvents";
 import { AdminRegistrations } from "./pages/admin/AdminRegistrations";
 import { AdminResources } from "./pages/admin/AdminResources";
@@ -52,6 +53,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, Component: AdminDashboard },
       { path: "users", Component: AdminUsers },
+      { path: "members", Component: AdminMembers },
       { path: "events", Component: AdminEvents },
       { path: "registrations", Component: AdminRegistrations },
       { path: "resources", Component: AdminResources },

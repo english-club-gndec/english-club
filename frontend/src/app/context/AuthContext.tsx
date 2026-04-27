@@ -3,7 +3,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 interface AuthContextType {
   isAuthenticated: boolean;
   userId: string | null;
-  login: (id: string) => void;
+  login: (id: string | number) => void;
   logout: () => void;
 }
 
@@ -16,9 +16,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const isAuthenticated = !!userId;
 
-  const login = (id: string) => {
-    setUserId(id);
-    localStorage.setItem("admin_user_id", id);
+  const login = (id: string | number) => {
+    const stringId = String(id);
+    setUserId(stringId);
+    localStorage.setItem("admin_user_id", stringId);
   };
 
   const logout = () => {
