@@ -12,7 +12,7 @@ export function Navbar() {
   const links = [
     { path: "/", label: "Home" },
     { path: "/events", label: "Events" },
-    { path: "/join", label: "Join Us" },
+    // { path: "/join", label: "Join Us" },
     { path: "/resources", label: "Resources" },
     { path: "/team", label: "Team" },
     { path: "/submit", label: "Submit Us" },

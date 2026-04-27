@@ -185,6 +185,53 @@ Handles the detailed records of English Club members.
 - **Description:** Deletes multiple members at once.
 - **Request Body:** `{ "member_ids": ["uuid1", "uuid2"] }`
 - **Response (200 OK):** `{ "message": "2 member(s) deleted successfully" }`
++
++---
++
++### 5. Recruitment Management (`/api/recruitment`)
++Handles the recruitment process for new club members.
++
++#### **[POST] Create Candidate**
++- **Path:** `/createCandidate`
++- **Description:** Submits a new candidate application.
++- **Request Body:**
++    - `candidate_name` (String, Required)
++    - `candidate_class` (String, Required)
++    - `candidate_crn` (Number/Long, Required)
++    - `candidate_urn` (Number/Long, Optional)
++    - `candidate_email` (String, Required)
++    - `interested_department` (Enum: TECHNICAL, CREATIVE, PROMOTION, EVENT_MANAGEMENT, DISICIPLINE, PHOTOGRAPHY, DATABASE, Required)
++- **Response (201 Created):** Candidate object.
++
++#### **[GET] Fetch All Candidates**
++- **Path:** `/:user_id/getAllCandidates`
++- **Description:** Retrieves all candidate applications.
++- **Response (200 OK):** Array of candidate objects.
++
++#### **[GET] Fetch Candidate by ID**
++- **Path:** `/:userId/:candidate_id/getCandidateById`
++- **Description:** Returns details for a specific candidate.
++- **Response (200 OK):** Candidate object.
++
++#### **[PATCH] Update Candidate Info**
++- **Path:** `/:candidate_id/updateCandidateById`
++- **Description:** Updates candidate details (name, class, etc.).
++- **Response (200 OK):** Updated candidate object.
++
++#### **[PATCH] Update Candidate Status**
++- **Path:** `/:user_id/:candidate_key/updateCandidateStatusById`
++- **Description:** Updates the status of a candidate and tracks who made the change.
++- **Request Body:**
++    - `candidate_status` (Enum: PENDING, SELECTED, REJECTED)
++    - `status_updated_by` (Number - user_id)
++- **Response (200 OK):** Updated candidate object.
++
++#### **[DELETE] Archive All Data**
++- **Path:** `/:user_id/archiveAllData`
++- **Description:** Moves all current candidates to recruitment history and clears the candidates table.
++- **Request Body:**
++    - `recruitment_date` (Date YYYY-MM-DD, Required)
++- **Response (200 OK):** `{ "message": "All recruitment data archived...", "archivedCount": 10 }`
 
 ---
 

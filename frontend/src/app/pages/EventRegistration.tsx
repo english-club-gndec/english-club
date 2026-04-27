@@ -1,30 +1,73 @@
 import { motion } from "motion/react";
-import { useState } from "react";
-import { CheckCircle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useLocation } from "react-router";
+import { CheckCircle, AlertCircle } from "lucide-react";
+import { eventService } from "../../services/eventService";
+import { registrationService } from "../../services/EventRegistration";
 
 export function EventRegistration() {
+  const location = useLocation();
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [eventsList, setEventsList] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    branch: "",
+    stream: "",
     year: "",
-    event: "",
+    section: "",
+    crn: "",
+    urn: "",
+    event_id: "",
   });
 
-  const events = [
-    "Public Speaking Workshop - April 20, 2026",
-    "Creative Writing Competition - April 28, 2026",
-    "Debate Championship - May 5, 2026",
-  ];
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const data = await eventService.getAllEvents();
+        setEventsList(data);
+        
+        // If we came from the events page with a pre-selected ID
+        if (location.state?.selectedEventId) {
+          setFormData(prev => ({ ...prev, event_id: location.state.selectedEventId.toString() }));
+        }
+      } catch (err) {
+        console.error("Failed to fetch events:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchEvents();
+  }, [location.state]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitted(true);
-    setTimeout(() => {
-      setFormData({ name: "", email: "", branch: "", year: "", event: "" });
-      setIsSubmitted(false);
-    }, 3000);
+    setError(null);
+    
+    try {
+      const payload = {
+        participant_name: formData.name,
+        participant_class: `D${formData.year}${formData.stream}${formData.section.toUpperCase()}`,
+        participant_crn: parseInt(formData.crn),
+        participant_urn: formData.urn ? parseInt(formData.urn) : null,
+        participant_email: formData.email,
+        registered_event: parseInt(formData.event_id)
+      };
+
+      await registrationService.registerParticipant(payload);
+
+      setIsSubmitted(true);
+      setTimeout(() => {
+        setFormData({ name: "", email: "", stream: "", year: "", section: "", crn: "", urn: "", event_id: "" });
+        setIsSubmitted(false);
+      }, 3000);
+    } catch (err: any) {
+      setError(err.message);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -106,19 +149,56 @@ export function EventRegistration() {
 
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
-                  <label htmlFor="branch" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                    Branch
+                  <label htmlFor="crn" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
+                    College Roll No. (CRN)
                   </label>
                   <input
-                    type="text"
-                    id="branch"
-                    name="branch"
-                    value={formData.branch}
+                    type="number"
+                    id="crn"
+                    name="crn"
+                    value={formData.crn}
                     onChange={handleChange}
                     required
                     className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                     style={{ fontFamily: 'Open Sans, sans-serif' }}
                   />
+                </div>
+
+                <div>
+                  <label htmlFor="urn" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
+                    Univ. Roll No. (URN) - Optional
+                  </label>
+                  <input
+                    type="number"
+                    id="urn"
+                    name="urn"
+                    value={formData.urn}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                    style={{ fontFamily: 'Open Sans, sans-serif' }}
+                  />
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-3 gap-6">
+                <div>
+                  <label htmlFor="stream" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
+                    Stream
+                  </label>
+                  <select
+                    id="stream"
+                    name="stream"
+                    value={formData.stream}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                    style={{ fontFamily: 'Open Sans, sans-serif' }}
+                  >
+                    <option value="">Stream</option>
+                    {['IT', 'CSE', 'RAI', 'ECE', 'CE', 'EE', 'ME', 'BBA', 'BCA'].map(s => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
@@ -134,12 +214,30 @@ export function EventRegistration() {
                     className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                     style={{ fontFamily: 'Open Sans, sans-serif' }}
                   >
-                    <option value="">Select Year</option>
-                    <option value="1">1st Year</option>
-                    <option value="2">2nd Year</option>
-                    <option value="3">3rd Year</option>
-                    <option value="4">4th Year</option>
+                    <option value="">Year</option>
+                    <option value="1">1st</option>
+                    <option value="2">2nd</option>
+                    <option value="3">3rd</option>
+                    <option value="4">4th</option>
                   </select>
+                </div>
+
+                <div>
+                  <label htmlFor="section" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
+                    Section
+                  </label>
+                  <input
+                    type="text"
+                    id="section"
+                    name="section"
+                    placeholder="e.g. A"
+                    value={formData.section}
+                    onChange={handleChange}
+                    maxLength={1}
+                    required
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all uppercase"
+                    style={{ fontFamily: 'Open Sans, sans-serif' }}
+                  />
                 </div>
               </div>
 
@@ -149,28 +247,36 @@ export function EventRegistration() {
                 </label>
                 <select
                   id="event"
-                  name="event"
-                  value={formData.event}
+                  name="event_id"
+                  value={formData.event_id}
                   onChange={handleChange}
                   required
                   className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                   style={{ fontFamily: 'Open Sans, sans-serif' }}
                 >
-                  <option value="">Choose an event</option>
-                  {events.map((event, index) => (
-                    <option key={index} value={event}>
-                      {event}
+                  <option value="">{loading ? 'Loading events...' : 'Choose an event'}</option>
+                  {eventsList.map((ev) => (
+                    <option key={ev.event_id} value={ev.event_id}>
+                      {ev.event_name}
                     </option>
                   ))}
                 </select>
               </div>
 
+              {error && (
+                <div className="p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 flex items-center gap-3 text-red-600 dark:text-red-400 text-sm">
+                  <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                  <p>{error}</p>
+                </div>
+              )}
+
               <button
                 type="submit"
-                className="w-full px-8 py-4 rounded-xl bg-gradient-to-r from-blue-900 to-purple-700 text-white hover:shadow-2xl hover:shadow-purple-500/50 transition-all hover:scale-105"
+                disabled={loading}
+                className={`w-full px-8 py-4 rounded-xl bg-gradient-to-r from-blue-900 to-purple-700 text-white hover:shadow-2xl hover:shadow-purple-500/50 transition-all ${loading ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'}`}
                 style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}
               >
-                Register Now
+                {loading ? 'Processing...' : 'Register Now'}
               </button>
             </form>
           </motion.div>
