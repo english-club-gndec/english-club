@@ -2,7 +2,7 @@ const supabase = require('../config/supabase');
 
 const recruitmentController = {
   // POST /createCandidate
-  // Payload: candidate_name, candidate_class, candidate_crn, candidate_urn, candidate_email, interested_department
+  // Payload: candidate_name, candidate_class, candidate_crn, candidate_urn, candidate_email, interested_department, candidate_description, candidate_why_eligible
   createCandidate: async (req, res) => {
     try {
       const { 
@@ -11,11 +11,13 @@ const recruitmentController = {
         candidate_crn, 
         candidate_urn, 
         candidate_email, 
-        interested_department 
+        interested_department,
+        candidate_description,
+        candidate_why_eligible
       } = req.body;
 
       // Validation
-      if (!candidate_name || !candidate_class || !candidate_crn || !candidate_email || !interested_department) {
+      if (!candidate_name || !candidate_class || !candidate_crn || !candidate_email || !interested_department || !candidate_description || !candidate_why_eligible) {
         return res.status(400).json({ error: 'All required fields must be provided' });
       }
 
@@ -28,7 +30,9 @@ const recruitmentController = {
             candidate_crn, 
             candidate_urn, 
             candidate_email, 
-            interested_department 
+            interested_department,
+            candidate_description,
+            candidate_why_eligible
           }
         ])
         .select();
@@ -108,12 +112,12 @@ const recruitmentController = {
     }
   },
 
-  // PATCH /:user_id/:candidate_key/updateCandidateStatusById
-  // Payload: candidate_status, status_updated_by
+  // PATCH /:user_id/:candidate_id/updateCandidateStatusById
+  // Payload: candidate_status, status_updated_by, candidate_comment
   updateCandidateStatusById: async (req, res) => {
     try {
-      const { candidate_key } = req.params; // The user used :candidate_key in the route definition for status update
-      const { candidate_status, status_updated_by } = req.body;
+      const { candidate_id } = req.params;
+      const { candidate_status, status_updated_by, candidate_comment } = req.body;
 
       if (!candidate_status || !status_updated_by) {
         return res.status(400).json({ error: 'candidate_status and status_updated_by are required' });
@@ -125,10 +129,14 @@ const recruitmentController = {
         updated_at: new Date().toISOString()
       };
 
+      if (candidate_comment !== undefined) {
+        updateData.candidate_comment = candidate_comment;
+      }
+
       const { data, error } = await supabase
         .from('candidates')
         .update(updateData)
-        .eq('candidate_id', candidate_key)
+        .eq('candidate_id', candidate_id)
         .select();
 
       if (error) throw error;

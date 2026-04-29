@@ -17,6 +17,7 @@ import { AdminRegistrations } from "./pages/admin/AdminRegistrations";
 import { AdminResources } from "./pages/admin/AdminResources";
 import { AdminSubmissions } from "./pages/admin/AdminSubmissions";
 import { AdminPeoplesChoice } from "./pages/admin/AdminPeoplesChoice"; // Added
+import { AdminRecruitments } from "./pages/admin/AdminRecruitments";
 import { AdminSettings } from "./pages/admin/AdminSettings";
 import { ErrorPage } from "./pages/ErrorPage";
 import { LoginPage } from "./pages/admin/LoginPage";
@@ -59,6 +60,7 @@ export const router = createBrowserRouter([
       { path: "resources", Component: AdminResources },
       { path: "submissions", Component: AdminSubmissions },
       { path: "vote", Component: AdminPeoplesChoice }, // Added
+      { path: "recruitments", Component: AdminRecruitments },
       { path: "settings", Component: AdminSettings },
     ],
   },

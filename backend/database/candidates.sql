@@ -31,7 +31,10 @@ CREATE TABLE IF NOT EXISTS candidates (
     candidate_urn BIGINT,
     candidate_email TEXT NOT NULL,
     interested_department interested_department NOT NULL,
+    candidate_description TEXT NOT NULL,
+    candidate_why_eligible TEXT NOT NULL,
     candidate_status candidate_status NOT NULL DEFAULT 'PENDING',
+    candidate_comment VARCHAR,
     status_updated_by BIGINT REFERENCES users(user_id) ON DELETE SET NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL

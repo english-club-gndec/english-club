@@ -1,15 +1,39 @@
 import { motion } from "motion/react";
-import { useState } from "react";
-import { MessageCircle, Users, TrendingUp, CheckCircle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { MessageCircle, Users, TrendingUp, CheckCircle, Loader2 } from "lucide-react";
+import { recruitmentServices } from "../../services/recruitmentServices";
+import { settingsServices } from "../../services/settingsServices";
 
 export function JoinUs() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    skills: "",
-    reason: "",
+    candidate_name: "",
+    year: "",
+    stream: "",
+    section: "",
+    candidate_crn: "",
+    candidate_urn: "",
+    candidate_email: "",
+    interested_department: "TECHNICAL",
+    candidate_description: "",
+    candidate_why_eligible: "",
   });
+  const [recruitmentsActive, setRecruitmentsActive] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const data = await settingsServices.getSettings();
+        setRecruitmentsActive(data.recruitmentsActive || false);
+      } catch (error) {
+        console.error("Failed to fetch settings:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchSettings();
+  }, []);
 
   const benefits = [
     {
@@ -29,17 +53,52 @@ export function JoinUs() {
     },
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitted(true);
-    setTimeout(() => {
-      setFormData({ name: "", email: "", skills: "", reason: "" });
-      setIsSubmitted(false);
-    }, 3000);
+    try {
+      const payload = {
+        candidate_name: formData.candidate_name,
+        candidate_class: `D${formData.year}${formData.stream}${formData.section}`,
+        candidate_crn: parseInt(formData.candidate_crn, 10),
+        candidate_urn: formData.candidate_urn ? parseInt(formData.candidate_urn, 10) : undefined,
+        candidate_email: formData.candidate_email,
+        interested_department: formData.interested_department,
+        candidate_description: formData.candidate_description,
+        candidate_why_eligible: formData.candidate_why_eligible,
+      };
+
+      await recruitmentServices.createCandidate(payload);
+
+      setIsSubmitted(true);
+      setTimeout(() => {
+        setFormData({
+          candidate_name: "",
+          year: "",
+          stream: "",
+          section: "",
+          candidate_crn: "",
+          candidate_urn: "",
+          candidate_email: "",
+          interested_department: "",
+          candidate_description: "",
+          candidate_why_eligible: "",
+        });
+        setIsSubmitted(false);
+      }, 3000);
+    } catch (error: any) {
+      console.error("Error submitting application:", error);
+      alert(error.message || "An error occurred while submitting. Please try again.");
+    }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    if (name === "candidate_crn" || name === "candidate_urn") {
+      const numericValue = value.replace(/\D/g, "");
+      setFormData({ ...formData, [name]: numericValue });
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
   };
 
   const container = {
@@ -54,6 +113,36 @@ export function JoinUs() {
     hidden: { opacity: 0, y: 20 },
     show: { opacity: 1, y: 0 }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+        <Loader2 className="w-12 h-12 animate-spin text-purple-600" />
+      </div>
+    );
+  }
+
+  if (!recruitmentsActive) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-900 dark:to-gray-950 p-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white dark:bg-gray-900 rounded-3xl p-12 max-w-lg text-center shadow-2xl border border-gray-100 dark:border-gray-800"
+        >
+          <div className="w-20 h-20 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mx-auto mb-6">
+            <Users className="w-10 h-10 text-blue-600 dark:text-blue-400" />
+          </div>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4" style={{ fontFamily: 'Poppins, sans-serif' }}>
+            Recruitments will start soon
+          </h2>
+          <p className="text-gray-600 dark:text-gray-300" style={{ fontFamily: 'Open Sans, sans-serif' }}>
+            We are currently not accepting new applications. Please check back later!
+          </p>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white dark:bg-gray-950">
@@ -143,69 +232,190 @@ export function JoinUs() {
               transition={{ duration: 0.6, delay: 0.2 }}
             >
               <form onSubmit={handleSubmit} className="space-y-6">
-                <div>
-                  <label htmlFor="name" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                    Full Name
-                  </label>
-                  <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                    style={{ fontFamily: 'Open Sans, sans-serif' }}
-                  />
-                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label htmlFor="candidate_name" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
+                      Full Name *
+                    </label>
+                    <input
+                      type="text"
+                      id="candidate_name"
+                      name="candidate_name"
+                      value={formData.candidate_name}
+                      onChange={handleChange}
+                      required
+                      className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                      style={{ fontFamily: 'Open Sans, sans-serif' }}
+                    />
+                  </div>
 
-                <div>
-                  <label htmlFor="email" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                    Email Address
-                  </label>
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                    style={{ fontFamily: 'Open Sans, sans-serif' }}
-                  />
-                </div>
+                  <div>
+                    <label htmlFor="candidate_email" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
+                      Email Address *
+                    </label>
+                    <input
+                      type="email"
+                      id="candidate_email"
+                      name="candidate_email"
+                      value={formData.candidate_email}
+                      onChange={handleChange}
+                      required
+                      className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                      style={{ fontFamily: 'Open Sans, sans-serif' }}
+                    />
+                  </div>
 
-                <div>
-                  <label htmlFor="skills" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                    Skills / Interests
-                  </label>
-                  <input
-                    type="text"
-                    id="skills"
-                    name="skills"
-                    value={formData.skills}
-                    onChange={handleChange}
-                    required
-                    placeholder="e.g., Writing, Public Speaking, Debate"
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                    style={{ fontFamily: 'Open Sans, sans-serif' }}
-                  />
-                </div>
+                  <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-6">
+                    <div>
+                      <label htmlFor="year" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
+                        Year *
+                      </label>
+                      <select
+                        id="year"
+                        name="year"
+                        value={formData.year}
+                        onChange={handleChange}
+                        required
+                        className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                        style={{ fontFamily: 'Open Sans, sans-serif' }}
+                      >
+                        <option value="" disabled>Select Year</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                      </select>
+                    </div>
 
-                <div>
-                  <label htmlFor="reason" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                    Why do you want to join?
-                  </label>
-                  <textarea
-                    id="reason"
-                    name="reason"
-                    value={formData.reason}
-                    onChange={handleChange}
-                    required
-                    rows={4}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all resize-none"
-                    style={{ fontFamily: 'Open Sans, sans-serif' }}
-                  />
+                    <div>
+                      <label htmlFor="stream" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
+                        Stream *
+                      </label>
+                      <select
+                        id="stream"
+                        name="stream"
+                        value={formData.stream}
+                        onChange={handleChange}
+                        required
+                        className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                        style={{ fontFamily: 'Open Sans, sans-serif' }}
+                      >
+                        <option value="" disabled>Select Stream</option>
+                        {['IT', 'CSE', 'RAI', 'ECE', 'CE', 'EE', 'ME', 'BBA', 'BCA'].map(s => (
+                          <option key={s} value={s}>{s}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label htmlFor="section" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
+                        Section *
+                      </label>
+                      <input
+                        type="text"
+                        id="section"
+                        name="section"
+                        value={formData.section}
+                        onChange={handleChange}
+                        required
+                        placeholder="e.g. A"
+                        className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                        style={{ fontFamily: 'Open Sans, sans-serif' }}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="candidate_crn" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
+                      CRN *
+                    </label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      id="candidate_crn"
+                      name="candidate_crn"
+                      value={formData.candidate_crn}
+                      onChange={handleChange}
+                      required
+                      className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                      style={{ fontFamily: 'Open Sans, sans-serif' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="candidate_urn" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
+                      URN (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      id="candidate_urn"
+                      name="candidate_urn"
+                      value={formData.candidate_urn}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                      style={{ fontFamily: 'Open Sans, sans-serif' }}
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label htmlFor="interested_department" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
+                      Interested Department *
+                    </label>
+                    <select
+                      id="interested_department"
+                      name="interested_department"
+                      value={formData.interested_department}
+                      onChange={handleChange}
+                      required
+                      className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                      style={{ fontFamily: 'Open Sans, sans-serif' }}
+                    >
+                      <option value="TECHNICAL">Technical</option>
+                      <option value="CREATIVE">Creative</option>
+                      <option value="PROMOTION">Promotion</option>
+                      <option value="EVENT_MANAGEMENT">Event Management</option>
+                      <option value="DISICIPLINE">Discipline</option>
+                      <option value="PHOTOGRAPHY">Photography</option>
+                      <option value="DATABASE">Database</option>
+                    </select>
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label htmlFor="candidate_description" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
+                      Introduce Yourself *
+                    </label>
+                    <textarea
+                      id="candidate_description"
+                      name="candidate_description"
+                      value={formData.candidate_description}
+                      onChange={handleChange}
+                      required
+                      rows={3}
+                      placeholder="Tell us a little about yourself..."
+                      className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all resize-none"
+                      style={{ fontFamily: 'Open Sans, sans-serif' }}
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label htmlFor="candidate_why_eligible" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
+                      Why do you want to be part of this club and how can you contribute? *
+                    </label>
+                    <textarea
+                      id="candidate_why_eligible"
+                      name="candidate_why_eligible"
+                      value={formData.candidate_why_eligible}
+                      onChange={handleChange}
+                      required
+                      rows={4}
+                      placeholder="Share your motivation and potential contributions..."
+                      className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all resize-none"
+                      style={{ fontFamily: 'Open Sans, sans-serif' }}
+                    />
+                  </div>
                 </div>
 
                 <button

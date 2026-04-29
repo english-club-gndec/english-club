@@ -14,8 +14,8 @@ router.get('/:userId/:candidate_id/getCandidateById', recruitmentController.getC
 // PATCH /api/recruitment/:candidate_id/updateCandidateById
 router.patch('/:candidate_id/updateCandidateById', recruitmentController.updateCandidateById);
 
-// PATCH /api/recruitment/:user_id/:candidate_key/updateCandidateStatusById
-router.patch('/:user_id/:candidate_key/updateCandidateStatusById', recruitmentController.updateCandidateStatusById);
+// PATCH /api/recruitment/:user_id/:candidate_id/updateCandidateStatusById
+router.patch('/:user_id/:candidate_id/updateCandidateStatusById', recruitmentController.updateCandidateStatusById);
 
 // DELETE /api/recruitment/:user_id/archiveAllData
 router.delete('/:user_id/archiveAllData', recruitmentController.archiveAllData);
