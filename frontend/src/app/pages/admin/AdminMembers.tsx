@@ -35,7 +35,7 @@ export function AdminMembers() {
     if (!userId) return;
     try {
       setLoading(true);
-      const data = await memberService.getAllMembers(userId);
+      const data = await memberService.getAllMembers();
       setMembers(data);
     } catch (error: any) {
       toast.error(error.message || "Failed to fetch members");

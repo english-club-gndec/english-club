@@ -72,7 +72,7 @@ export function AdminUsers() {
   const openAddModal = async () => {
     if (!userId) return;
     try {
-      const memberData = await memberService.getAllMembers(userId);
+      const memberData = await memberService.getAllMembers();
       setMembers(memberData);
       setStep(1);
       setSelectedMember(null);

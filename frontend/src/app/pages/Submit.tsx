@@ -131,6 +131,7 @@ export function Submit() {
             Submit Your Contribution
           </motion.h2>
 
+          {/* 
           <motion.div
             className="max-w-4xl mx-auto"
             initial={{ opacity: 0, y: 30 }}
@@ -272,6 +273,44 @@ export function Submit() {
                   Submit
                 </button>
               </form>
+            </div>
+          </motion.div>
+          */}
+
+          <motion.div
+            className="relative mt-8 mb-16 w-full max-w-3xl mx-auto group text-center"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6 }}
+            whileHover={{ scale: 1.02 }}
+          >
+            <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 rounded-[2.5rem] blur-xl opacity-30 group-hover:opacity-60 transition duration-500"></div>
+            <div className="relative px-8 py-16 sm:px-16 sm:py-20 bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl ring-1 ring-gray-200 dark:ring-gray-800 rounded-[2rem] shadow-2xl flex flex-col items-center justify-center space-y-8 overflow-hidden text-center">
+              <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-blob"></div>
+              <div className="absolute top-0 left-0 -ml-16 -mt-16 w-64 h-64 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-blob animation-delay-2000"></div>
+              
+              <motion.div 
+                animate={{ rotate: [-5, 5, -5] }} 
+                transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+                className="text-7xl drop-shadow-2xl z-10"
+              >
+                💌
+              </motion.div>
+              
+              <div className="space-y-4 z-10">
+                <h2 className="text-3xl sm:text-4xl lg:text-5xl bg-clip-text text-transparent bg-gradient-to-r from-blue-900 to-purple-700 dark:from-blue-400 dark:to-purple-400" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 800 }}>
+                  We understand your curiosity!
+                </h2>
+                <p className="text-lg sm:text-xl text-gray-700 dark:text-gray-300 font-medium max-w-xl mx-auto leading-relaxed" style={{ fontFamily: 'Open Sans, sans-serif' }}>
+                  The submission portal is currently under construction. Get your articles and photos ready, this feature is <strong className="text-purple-600 dark:text-purple-400">coming soon!</strong> <span className="inline-block animate-pulse ml-1 text-2xl">✨</span>
+                </p>
+              </div>
+
+              <div className="flex gap-3 pt-6 z-10">
+                <motion.div className="w-3 h-3 rounded-full bg-blue-500" animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 1.5, delay: 0 }} />
+                <motion.div className="w-3 h-3 rounded-full bg-purple-500" animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 1.5, delay: 0.2 }} />
+                <motion.div className="w-3 h-3 rounded-full bg-blue-700" animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 1.5, delay: 0.4 }} />
+              </div>
             </div>
           </motion.div>
         </section>

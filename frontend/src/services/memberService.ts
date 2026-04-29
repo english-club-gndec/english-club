@@ -1,9 +1,9 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export const memberService = {
-  // GET /api/members/:user_id/getAllMembers
-  getAllMembers: async (userId: string) => {
-    const response = await fetch(`${API_BASE_URL}/members/${userId}/getAllMembers`);
+  // GET /api/members/getAllMembers
+  getAllMembers: async () => {
+    const response = await fetch(`${API_BASE_URL}/members/getAllMembers`);
     if (!response.ok) {
       const error = await response.json();
       throw new Error(`Error ${response.status}: ${error.error || 'Failed to fetch members'}`);

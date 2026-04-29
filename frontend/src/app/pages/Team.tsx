@@ -1,5 +1,8 @@
 import { motion } from "motion/react";
-import { Linkedin, Mail } from "lucide-react";
+import { Linkedin, Mail, Loader2, User as UserIcon, Github, Instagram } from "lucide-react";
+import { useState, useEffect } from "react";
+import { memberService } from "../../services/memberService";
+import { supabase } from "../../lib/supabase";
 
 interface TeamMember {
   name: string;
@@ -10,7 +13,45 @@ interface TeamMember {
   email?: string;
 }
 
+interface Member {
+  member_id: string;
+  member_name: string;
+  member_postion: string;
+  member_profile_picture_key: string;
+  member_email: string;
+  member_department: string;
+  member_semester: number;
+  member_club_department: string;
+  socials: {
+    linkedin?: string;
+    github?: string;
+    instagram?: string;
+  };
+}
+
 export function Team() {
+  const [members, setMembers] = useState<Member[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchMembers = async () => {
+      try {
+        const data = await memberService.getAllMembers();
+        setMembers(data);
+      } catch (error) {
+        console.error("Failed to fetch members", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchMembers();
+  }, []);
+
+  const getPublicUrl = (key: string | undefined) => {
+    if (!key) return "";
+    const { data } = supabase.storage.from('profile_pictures').getPublicUrl(key);
+    return data.publicUrl;
+  };
   const faculty: TeamMember[] = [
     {
       name: "Dr. Sarah Johnson",
@@ -28,56 +69,7 @@ export function Team() {
     },
   ];
 
-  const coreTeam: TeamMember[] = [
-    {
-      name: "Emily Rodriguez",
-      role: "President",
-      image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=400&fit=crop",
-      bio: "Leading the club with vision and dedication. Passionate about creative writing and poetry.",
-      linkedin: "#",
-      email: "emily.r@student.edu",
-    },
-    {
-      name: "Alex Turner",
-      role: "Vice President",
-      image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop",
-      bio: "Coordinates events and manages team operations. Enthusiast of debate and public speaking.",
-      linkedin: "#",
-      email: "alex.t@student.edu",
-    },
-    {
-      name: "Priya Sharma",
-      role: "Event Coordinator",
-      image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&h=400&fit=crop",
-      bio: "Organizes engaging events and workshops. Loves storytelling and creative expression.",
-      linkedin: "#",
-      email: "priya.s@student.edu",
-    },
-    {
-      name: "James Wilson",
-      role: "Creative Head",
-      image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop",
-      bio: "Leads creative initiatives and content development. Award-winning writer and poet.",
-      linkedin: "#",
-      email: "james.w@student.edu",
-    },
-    {
-      name: "Aisha Patel",
-      role: "Social Media Manager",
-      image: "https://images.unsplash.com/photo-1489424731084-a5d8b219a5bb?w=400&h=400&fit=crop",
-      bio: "Manages online presence and community engagement. Expert in digital communication.",
-      linkedin: "#",
-      email: "aisha.p@student.edu",
-    },
-    {
-      name: "David Kim",
-      role: "Treasurer",
-      image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&h=400&fit=crop",
-      bio: "Handles finances and resource management. Ensures smooth operation of club activities.",
-      linkedin: "#",
-      email: "david.k@student.edu",
-    },
-  ];
+
 
   const container = {
     hidden: { opacity: 0 },
@@ -184,51 +176,72 @@ export function Team() {
             Core Team
           </motion.h2>
 
-          <motion.div
-            className="grid md:grid-cols-2 lg:grid-cols-3 gap-8"
-            variants={container}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true }}
-          >
-            {coreTeam.map((member, index) => (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {loading ? (
+              <div className="flex justify-center items-center py-20 w-full col-span-full">
+                 <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
+              </div>
+            ) : members.map((member, index) => (
               <motion.div
-                key={index}
-                variants={item}
+                key={member.member_id || index}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
                 className="group relative rounded-2xl overflow-hidden bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:shadow-2xl hover:shadow-purple-500/20 transition-all hover:-translate-y-2"
               >
-                <div className="relative h-64 overflow-hidden">
-                  <img
-                    src={member.image}
-                    alt={member.name}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                  />
+                <div className="relative h-64 overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                  {member.member_profile_picture_key ? (
+                    <img
+                      src={getPublicUrl(member.member_profile_picture_key)}
+                      alt={member.member_name}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    />
+                  ) : (
+                    <UserIcon className="w-24 h-24 text-gray-400 group-hover:scale-110 transition-transform duration-500" />
+                  )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
                   <div className="absolute bottom-0 left-0 right-0 p-6">
                     <h3 className="text-2xl text-white mb-1" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 600 }}>
-                      {member.name}
+                      {member.member_name}
                     </h3>
                     <p className="text-sm text-purple-300" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                      {member.role}
+                      {member.member_postion.replace(/_/g, ' ')}
                     </p>
                   </div>
                 </div>
                 <div className="p-6">
                   <p className="text-sm text-gray-600 dark:text-gray-300 mb-4" style={{ fontFamily: 'Open Sans, sans-serif' }}>
-                    {member.bio}
+                    {member.member_club_department ? member.member_club_department : `Department: ${member.member_department}, Sem: ${member.member_semester}`}
                   </p>
                   <div className="flex gap-3">
-                    {member.linkedin && (
+                    {member.socials?.linkedin && (
                       <a
-                        href={member.linkedin}
+                        href={member.socials.linkedin}
                         className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gradient-to-br hover:from-blue-900 hover:to-purple-700 flex items-center justify-center transition-all hover:scale-110 group/icon"
                       >
                         <Linkedin className="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover/icon:text-white" />
                       </a>
                     )}
-                    {member.email && (
+                    {member.socials?.github && (
                       <a
-                        href={`mailto:${member.email}`}
+                        href={member.socials.github}
+                        className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gradient-to-br hover:from-blue-900 hover:to-purple-700 flex items-center justify-center transition-all hover:scale-110 group/icon"
+                      >
+                        <Github className="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover/icon:text-white" />
+                      </a>
+                    )}
+                    {member.socials?.instagram && (
+                      <a
+                        href={member.socials.instagram}
+                        className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gradient-to-br hover:from-blue-900 hover:to-purple-700 flex items-center justify-center transition-all hover:scale-110 group/icon"
+                      >
+                        <Instagram className="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover/icon:text-white" />
+                      </a>
+                    )}
+                    {member.member_email && (
+                      <a
+                        href={`mailto:${member.member_email}`}
                         className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gradient-to-br hover:from-blue-900 hover:to-purple-700 flex items-center justify-center transition-all hover:scale-110 group/icon"
                       >
                         <Mail className="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover/icon:text-white" />
@@ -238,7 +251,7 @@ export function Team() {
                 </div>
               </motion.div>
             ))}
-          </motion.div>
+          </div>
         </section>
       </div>
     </div>

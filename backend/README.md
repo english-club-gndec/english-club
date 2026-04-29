@@ -165,7 +165,7 @@ Handles the detailed records of English Club members.
 - **Response (201 Created):** Member object.
 
 #### **[GET] Get All Members**
-- **Path:** `/:user_id/getAllMembers`
+- **Path:** `/getAllMembers`
 - **Description:** Lists all club members.
 - **Response (200 OK):** Array of member objects.
 

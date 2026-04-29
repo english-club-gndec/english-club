@@ -5,8 +5,8 @@ const memberController = require('../controllers/memberController');
 // POST /api/members/:user_id/createMember
 router.post('/:user_id/createMember', memberController.createMember);
 
-// GET /api/members/:user_id/getAllMembers
-router.get('/:user_id/getAllMembers', memberController.getAllMembers);
+// GET /api/members/getAllMembers
+router.get('/getAllMembers', memberController.getAllMembers);
 
 // GET /api/members/:user_id/:member_id/getMemberById
 router.get('/:user_id/:member_id/getMemberById', memberController.getMemberById);
