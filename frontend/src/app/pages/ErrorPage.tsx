@@ -1,6 +1,7 @@
 import { useRouteError, isRouteErrorResponse, Link } from "react-router";
 import { AlertTriangle, Home, RefreshCcw } from "lucide-react";
 import { motion } from "motion/react";
+import { PageTitle } from "../components/PageTitle";
 
 export function ErrorPage() {
   const error = useRouteError();
@@ -14,6 +15,7 @@ export function ErrorPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center p-6">
+      <PageTitle />
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

@@ -5,6 +5,7 @@ import { useAuth } from "../../context/AuthContext";
 import { motion } from "motion/react";
 import { LogIn, User, Lock, AlertCircle, Loader2, Eye, EyeOff } from "lucide-react";
 import { userService } from "../../../services/userService";
+import { PageTitle } from "../../components/PageTitle";
 
 export function LoginPage() {
   const [username, setUsername] = useState("");
@@ -39,6 +40,7 @@ export function LoginPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center p-6">
+      <PageTitle />
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
