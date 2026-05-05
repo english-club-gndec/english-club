@@ -134,7 +134,6 @@ export function Team() {
                         alt={member.name}
                         className="w-24 h-24 rounded-2xl object-cover"
                       />
-                      <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-900/20 to-purple-700/20"></div>
                     </div>
                     <div className="flex-1">
                       <h3 className="text-2xl text-gray-900 dark:text-white mb-1" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 600 }}>
@@ -200,17 +199,14 @@ export function Team() {
                   ) : (
                     <UserIcon className="w-24 h-24 text-gray-400 group-hover:scale-110 transition-transform duration-500" />
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
-                  <div className="absolute bottom-0 left-0 right-0 p-6">
-                    <h3 className="text-2xl text-white mb-1" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 600 }}>
-                      {member.member_name}
-                    </h3>
-                    <p className="text-sm text-purple-300" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                      {member.member_postion.replace(/_/g, ' ')}
-                    </p>
-                  </div>
                 </div>
                 <div className="p-6">
+                  <h3 className="text-xl text-gray-900 dark:text-white mb-1" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 600 }}>
+                    {member.member_name}
+                  </h3>
+                  <p className="text-sm text-purple-700 dark:text-purple-400 mb-3" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
+                    {member.member_postion.replace(/_/g, ' ')}
+                  </p>
                   <p className="text-sm text-gray-600 dark:text-gray-300 mb-4" style={{ fontFamily: 'Open Sans, sans-serif' }}>
                     {member.member_club_department ? member.member_club_department : `Department: ${member.member_department}, Sem: ${member.member_semester}`}
                   </p>
