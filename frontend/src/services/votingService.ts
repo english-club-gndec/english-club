@@ -103,6 +103,24 @@ export const votingService = {
       .eq('id', 1)
       .single();
     
+    if (error && error.code === 'PGRST116') {
+      // Auto-initialize settings row if it doesn't exist
+      const defaultSettings = {
+        id: 1,
+        is_active: false,
+        start_time: null,
+        end_time: null
+      };
+      const { data: insertedData, error: insertError } = await supabase
+        .from('award_settings')
+        .insert([defaultSettings])
+        .select()
+        .single();
+      
+      if (insertError) throw insertError;
+      return insertedData as AwardSettings;
+    }
+    
     if (error) throw error;
     return data as AwardSettings;
   },
