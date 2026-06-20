@@ -185,53 +185,116 @@ Handles the detailed records of English Club members.
 - **Description:** Deletes multiple members at once.
 - **Request Body:** `{ "member_ids": ["uuid1", "uuid2"] }`
 - **Response (200 OK):** `{ "message": "2 member(s) deleted successfully" }`
-+
-+---
-+
-+### 5. Recruitment Management (`/api/recruitment`)
-+Handles the recruitment process for new club members.
-+
-+#### **[POST] Create Candidate**
-+- **Path:** `/createCandidate`
-+- **Description:** Submits a new candidate application.
-+- **Request Body:**
-+    - `candidate_name` (String, Required)
-+    - `candidate_class` (String, Required)
-+    - `candidate_crn` (Number/Long, Required)
-+    - `candidate_urn` (Number/Long, Optional)
-+    - `candidate_email` (String, Required)
-+    - `interested_department` (Enum: TECHNICAL, CREATIVE, PROMOTION, EVENT_MANAGEMENT, DISICIPLINE, PHOTOGRAPHY, DATABASE, Required)
-+- **Response (201 Created):** Candidate object.
-+
-+#### **[GET] Fetch All Candidates**
-+- **Path:** `/:user_id/getAllCandidates`
-+- **Description:** Retrieves all candidate applications.
-+- **Response (200 OK):** Array of candidate objects.
-+
-+#### **[GET] Fetch Candidate by ID**
-+- **Path:** `/:userId/:candidate_id/getCandidateById`
-+- **Description:** Returns details for a specific candidate.
-+- **Response (200 OK):** Candidate object.
-+
-+#### **[PATCH] Update Candidate Info**
-+- **Path:** `/:candidate_id/updateCandidateById`
-+- **Description:** Updates candidate details (name, class, etc.).
-+- **Response (200 OK):** Updated candidate object.
-+
-+#### **[PATCH] Update Candidate Status**
-+- **Path:** `/:user_id/:candidate_key/updateCandidateStatusById`
-+- **Description:** Updates the status of a candidate and tracks who made the change.
-+- **Request Body:**
-+    - `candidate_status` (Enum: PENDING, SELECTED, REJECTED)
-+    - `status_updated_by` (Number - user_id)
-+- **Response (200 OK):** Updated candidate object.
-+
-+#### **[DELETE] Archive All Data**
-+- **Path:** `/:user_id/archiveAllData`
-+- **Description:** Moves all current candidates to recruitment history and clears the candidates table.
-+- **Request Body:**
-+    - `recruitment_date` (Date YYYY-MM-DD, Required)
-+- **Response (200 OK):** `{ "message": "All recruitment data archived...", "archivedCount": 10 }`
+
+---
+
+### 5. Recruitment Management (`/api/recruitment`)
+Handles the recruitment process for new club members.
+
+#### **[POST] Create Candidate**
+- **Path:** `/createCandidate`
+- **Description:** Submits a new candidate application.
+- **Request Body:**
+    - `candidate_name` (String, Required)
+    - `candidate_class` (String, Required)
+    - `candidate_crn` (Number/Long, Required)
+    - `candidate_urn` (Number/Long, Optional)
+    - `candidate_email` (String, Required)
+    - `interested_department` (Enum: TECHNICAL, CREATIVE, PROMOTION, EVENT_MANAGEMENT, DISICIPLINE, PHOTOGRAPHY, DATABASE, Required)
+- **Response (201 Created):** Candidate object.
+
+#### **[GET] Fetch All Candidates**
+- **Path:** `/:user_id/getAllCandidates`
+- **Description:** Retrieves all candidate applications.
+- **Response (200 OK):** Array of candidate objects.
+
+#### **[GET] Fetch Candidate by ID**
+- **Path:** `/:userId/:candidate_id/getCandidateById`
+- **Description:** Returns details for a specific candidate.
+- **Response (200 OK):** Candidate object.
+
+#### **[PATCH] Update Candidate Info**
+- **Path:** `/:candidate_id/updateCandidateById`
+- **Description:** Updates candidate details (name, class, etc.).
+- **Response (200 OK):** Updated candidate object.
+
+#### **[PATCH] Update Candidate Status**
+- **Path:** `/:user_id/:candidate_key/updateCandidateStatusById`
+- **Description:** Updates the status of a candidate and tracks who made the change.
+- **Request Body:**
+    - `candidate_status` (Enum: PENDING, SELECTED, REJECTED)
+    - `status_updated_by` (Number - user_id)
+- **Response (200 OK):** Updated candidate object.
+
+#### **[DELETE] Archive All Data**
+- **Path:** `/:user_id/archiveAllData`
+- **Description:** Moves all current candidates to recruitment history and clears the candidates table.
+- **Request Body:**
+    - `recruitment_date` (Date YYYY-MM-DD, Required)
+- **Response (200 OK):** `{ "message": "All recruitment data archived...", "archivedCount": 10 }`
+
+---
+
+### 6. Blog Submission Management (`/api/submission`)
+Handles student blog post contributions, moderation, resubmission, and daily data pruning.
+
+#### **[POST] Submit New Blog**
+- **Path:** `/`
+- **Description:** Submits a new blog post. Default status is set to `PENDING`.
+- **Request Body:**
+    - `student_name` (String, Required)
+    - `student_class` (String, Required)
+    - `student_urn` (Number/Long, Required)
+    - `student_crn` (Number/Long, Optional)
+    - `student_email` (String, Required)
+    - `title` (String, Required)
+    - `description` (String, Required)
+    - `body` (String, HTML/Markdown content, Required)
+    - `image_url` (String, Cover Image URL, Optional)
+    - `tags` (Array of Strings, Optional)
+- **Response (201 Created):** Includes the submission details and a unique `edit_token`.
+
+#### **[GET] Fetch All Submissions**
+- **Path:** `/`
+- **Description:** Retrieves all submissions sorted by creation date. (Admin use).
+- **Response (200 OK):** Array of all submission records.
+
+#### **[GET] Fetch Approved Submissions**
+- **Path:** `/approved`
+- **Description:** Retrieves only `APPROVED` posts to display on the public blog feed.
+- **Response (200 OK):** Array of approved submission records.
+
+#### **[PATCH] Update Moderation Status**
+- **Path:** `/:submissionId/:userId`
+- **Description:** Allows administrators to approve, reject, or delete submissions. Sets `reviewed_by` to the provided `userId`.
+- **Path Parameters:**
+    - `submissionId` (UUID of the submission)
+    - `userId` (ID of the admin making the review)
+- **Request Body:**
+    - `status` (Enum: PENDING, APPROVED, REJECTED, DELETED, Required)
+    - `rejection_reason` (String, Required if status is REJECTED)
+    - `edit_token` (UUID, Optional)
+- **Response (200 OK):** Updated submission object.
+
+#### **[PATCH] Edit and Resubmit**
+- **Path:** `/:submissionId/:edit_token`
+- **Description:** Allows students to correct and resubmit rejected blog posts. Automatically resets status to `PENDING` and clears all review/rejection metadata.
+- **Path Parameters:**
+    - `submissionId` (UUID of the submission)
+    - `edit_token` (UUID secure key received upon submission)
+- **Request Body:** Same fields as **Submit New Blog**.
+- **Response (200 OK):** Updated submission object.
+
+#### **[DELETE] Delete Submission**
+- **Path:** `/:submissionId`
+- **Description:** Permanently deletes a submission record.
+- **Response (200 OK):** `{ "message": "Submission deleted successfully", "deletedCount": 1 }`
+
+#### **[POST] Daily Expired Cleanup**
+- **Path:** `/cleanup`
+- **Description:** Background endpoint triggered by cron job to permanently purge rejected submissions older than 7 days and delete their referenced Supabase Storage images.
+- **Headers:** `Authorization: Bearer <cleanup_secret_key>`
+- **Response (200 OK):** Summary of purged records and assets.
 
 ---
 
