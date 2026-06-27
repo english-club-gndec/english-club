@@ -1,6 +1,6 @@
 import { motion } from "motion/react";
 import { Link } from "react-router";
-import { MessageCircle, Users, Trophy, BookOpen, Target, Lightbulb, Instagram, Youtube, Linkedin, ArrowRight } from "lucide-react";
+import { MessageCircle, Users, Trophy, Target, Lightbulb } from "lucide-react";
 
 export function Home() {
   const stats = [
@@ -71,27 +71,7 @@ export function Home() {
               >
                 Enhancing communication, creativity, and confidence through the power of language
               </motion.p>
-              <motion.div
-                className="flex flex-wrap justify-center gap-4"
-              >
-                <Link
-                  to="/join"
-                  className="group px-10 py-5 rounded-2xl bg-gradient-to-r from-blue-900 to-purple-700 text-white hover:shadow-2xl hover:shadow-purple-500/50 transition-all hover:scale-105"
-                  style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}
-                >
-                  <span className="flex items-center gap-2">
-                    Join Us
-                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                  </span>
-                </Link>
-                <Link
-                  to="/events"
-                  className="px-10 py-5 rounded-2xl border-2 border-blue-900 dark:border-purple-700 text-blue-900 dark:text-purple-400 hover:bg-blue-900 hover:text-white dark:hover:bg-purple-700 transition-all"
-                  style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}
-                >
-                  Explore Events
-                </Link>
-              </motion.div>
+              
             </motion.div>
           </div>
         </div>
@@ -181,54 +161,7 @@ export function Home() {
         </div>
       </section>
 
-      <section className="py-20 bg-white dark:bg-gray-950">
-        <div className="max-w-7xl mx-auto px-6">
-          <motion.div
-            className="text-center mb-12"
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-          >
-            <h2 className="text-4xl lg:text-5xl text-gray-900 dark:text-white mb-6" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700 }}>
-              Connect With Us
-            </h2>
-            <p className="text-lg text-gray-600 dark:text-gray-300" style={{ fontFamily: 'Open Sans, sans-serif' }}>
-              Follow us on social media for updates and inspiration
-            </p>
-          </motion.div>
-
-          <motion.div
-            className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto"
-            variants={container}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true }}
-          >
-            {[
-              { icon: Instagram, name: "Instagram", handle: "@englishclub", color: "from-pink-500 to-purple-500" },
-              { icon: Youtube, name: "YouTube", handle: "English Club", color: "from-red-500 to-red-600" },
-              { icon: Linkedin, name: "LinkedIn", handle: "English Club", color: "from-blue-600 to-blue-700" },
-            ].map((social, index) => (
-              <motion.a
-                key={index}
-                href="#"
-                variants={item}
-                className="group p-6 rounded-2xl bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-800 border border-gray-200 dark:border-gray-700 hover:border-transparent hover:shadow-xl transition-all hover:-translate-y-2 relative overflow-hidden"
-              >
-                <div className={`absolute inset-0 bg-gradient-to-br ${social.color} opacity-0 group-hover:opacity-10 transition-opacity`}></div>
-                <social.icon className="w-12 h-12 text-gray-400 dark:text-gray-500 group-hover:text-gray-900 dark:group-hover:text-white mb-4 group-hover:scale-110 transition-all relative z-10" />
-                <h3 className="text-xl text-gray-900 dark:text-white mb-1 relative z-10" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 600 }}>
-                  {social.name}
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400 relative z-10" style={{ fontFamily: 'Open Sans, sans-serif' }}>
-                  {social.handle}
-                </p>
-              </motion.a>
-            ))}
-          </motion.div>
-        </div>
-      </section>
+      
     </div>
   );
 }

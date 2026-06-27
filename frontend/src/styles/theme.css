@@ -178,4 +178,235 @@
     font-weight: var(--font-weight-normal);
     line-height: 1.5;
   }
+
+  /* Tiptap Editor Placeholder */
+  .tiptap p.is-editor-empty:first-child::before {
+    color: var(--muted-foreground);
+    content: attr(data-placeholder);
+    float: left;
+    height: 0;
+    pointer-events: none;
+  }
+
+  /* Tiptap and Prose Typography (Tailwind Reset Overrides) */
+  .tiptap ul,
+  .prose ul {
+    list-style-type: disc !important;
+    padding-left: 1.5rem !important;
+    margin-top: 0.5rem !important;
+    margin-bottom: 0.5rem !important;
+  }
+
+  .tiptap ul ul,
+  .prose ul ul {
+    list-style-type: circle !important;
+    margin-top: 0.25rem !important;
+    margin-bottom: 0.25rem !important;
+  }
+
+  .tiptap ul ul ul,
+  .prose ul ul ul {
+    list-style-type: square !important;
+  }
+
+  .tiptap ol,
+  .prose ol {
+    list-style-type: decimal !important;
+    padding-left: 1.5rem !important;
+    margin-top: 0.5rem !important;
+    margin-bottom: 0.5rem !important;
+  }
+
+  .tiptap ol ol,
+  .prose ol ol {
+    list-style-type: lower-alpha !important;
+    margin-top: 0.25rem !important;
+    margin-bottom: 0.25rem !important;
+  }
+
+  .tiptap ol ol ol,
+  .prose ol ol ol {
+    list-style-type: lower-roman !important;
+  }
+
+  .tiptap li,
+  .prose li {
+    margin-bottom: 0.25rem !important;
+    display: list-item !important;
+  }
+
+  .tiptap h1,
+  .prose h1 {
+    font-size: 2rem !important;
+    font-weight: 700 !important;
+    margin-top: 1.5rem !important;
+    margin-bottom: 0.75rem !important;
+  }
+
+  .tiptap h2,
+  .prose h2 {
+    font-size: 1.5rem !important;
+    font-weight: 600 !important;
+    margin-top: 1.25rem !important;
+    margin-bottom: 0.5rem !important;
+  }
+
+  .tiptap blockquote,
+  .prose blockquote {
+    border-left: 4px solid #8b5cf6 !important;
+    /* purple-500 */
+    padding-left: 1rem !important;
+    font-style: italic !important;
+    margin: 1.25rem 0 !important;
+    color: var(--muted-foreground) !important;
+  }
+
+  .tiptap pre,
+  .prose pre,
+  .tiptap code,
+  .prose code {
+    font-family: "MD IO", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
+  }
+
+  .tiptap pre,
+  .prose pre {
+    background-color: #f3f4f6 !important;
+    padding: 1rem !important;
+    border-radius: 0.5rem !important;
+    margin: 1rem 0 !important;
+    color: inherit !important;
+  }
+
+  .dark .tiptap pre,
+  .dark .prose pre {
+    background-color: #1f2937 !important;
+  }
+
+  /* Inline code styling */
+  .tiptap :not(pre)>code,
+  .prose :not(pre)>code {
+    background-color: rgba(0, 0, 0, 0.05) !important;
+    color: #ef4444 !important;
+    padding: 0.2rem 0.4rem !important;
+    border-radius: 0.25rem !important;
+    font-size: 0.875em !important;
+  }
+
+  .dark .tiptap :not(pre)>code,
+  .dark .prose :not(pre)>code {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    color: #f87171 !important;
+  }
+
+  /* Syntax Highlighting Colors (Highlight.js / Lowlight) */
+  .tiptap pre code,
+  .prose pre code {
+    color: #383a42 !important;
+  }
+
+  .dark .tiptap pre code,
+  .dark .prose pre code {
+    color: #abb2bf !important;
+  }
+
+  .hljs-comment,
+  .hljs-quote {
+    color: #a0a1a7 !important;
+    font-style: italic !important;
+  }
+
+  .dark .hljs-comment,
+  .dark .hljs-quote {
+    color: #5c6370 !important;
+  }
+
+  .hljs-doctag,
+  .hljs-keyword,
+  .hljs-formula {
+    color: #a626a4 !important;
+  }
+
+  .dark .hljs-doctag,
+  .dark .hljs-keyword,
+  .dark .hljs-formula {
+    color: #c678dd !important;
+  }
+
+  .hljs-section,
+  .hljs-name,
+  .hljs-selector-tag,
+  .hljs-deletion,
+  .hljs-subst {
+    color: #e45649 !important;
+  }
+
+  .dark .hljs-section,
+  .dark .hljs-name,
+  .dark .hljs-selector-tag,
+  .dark .hljs-deletion,
+  .dark .hljs-subst {
+    color: #e06c75 !important;
+  }
+
+  .hljs-literal,
+  .hljs-number,
+  .hljs-regexp,
+  .hljs-link {
+    color: #986801 !important;
+  }
+
+  .dark .hljs-literal,
+  .dark .hljs-number,
+  .dark .hljs-regexp,
+  .dark .hljs-link {
+    color: #d19a66 !important;
+  }
+
+  .hljs-string,
+  .hljs-symbol,
+  .hljs-bullet,
+  .hljs-addition {
+    color: #50a14f !important;
+  }
+
+  .dark .hljs-string,
+  .dark .hljs-symbol,
+  .dark .hljs-bullet,
+  .dark .hljs-addition {
+    color: #98c379 !important;
+  }
+
+  .hljs-title,
+  .hljs-class .hljs-title,
+  .hljs-title.class_ {
+    color: #4078f2 !important;
+  }
+
+  .dark .hljs-title,
+  .dark .hljs-class .hljs-title,
+  .dark .hljs-title.class_ {
+    color: #61afef !important;
+  }
+
+  .hljs-variable,
+  .hljs-template-variable,
+  .hljs-attribute,
+  .hljs-tag,
+  .hljs-type,
+  .hljs-built_in,
+  .hljs-params,
+  .hljs-meta {
+    color: #986801 !important;
+  }
+
+  .dark .hljs-variable,
+  .dark .hljs-template-variable,
+  .dark .hljs-attribute,
+  .dark .hljs-tag,
+  .dark .hljs-type,
+  .dark .hljs-built_in,
+  .dark .hljs-params,
+  .dark .hljs-meta {
+    color: #e5c07b !important;
+  }
 }

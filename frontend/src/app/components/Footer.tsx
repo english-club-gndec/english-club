@@ -5,10 +5,8 @@ export function Footer() {
   const quickLinks = [
     { path: "/", label: "Home" },
     { path: "/events", label: "Events" },
-    { path: "/join", label: "Join Us" },
-    { path: "/resources", label: "Resources" },
     { path: "/team", label: "Team" },
-    { path: "/submit", label: "Submit Us" },
+    { path: "/submit", label: "Articles" },
   ];
 
   return (
@@ -61,10 +59,6 @@ export function Footer() {
               <li className="flex items-start gap-3">
                 <Mail className="w-5 h-5 text-purple-400 mt-0.5 flex-shrink-0" />
                 <span className="text-sm" style={{ fontFamily: 'Open Sans, sans-serif' }}>englishclub@college.edu</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <Phone className="w-5 h-5 text-purple-400 mt-0.5 flex-shrink-0" />
-                <span className="text-sm" style={{ fontFamily: 'Open Sans, sans-serif' }}>+1 234 567 8900</span>
               </li>
               <li className="flex items-start gap-3">
                 <MapPin className="w-5 h-5 text-purple-400 mt-0.5 flex-shrink-0" />

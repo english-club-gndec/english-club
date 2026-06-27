@@ -5,8 +5,8 @@ import { Events } from "./pages/Events";
 import { EventRegistration } from "./pages/EventRegistration";
 import { JoinUs } from "./pages/JoinUs";
 import { Team } from "./pages/Team";
-import { Resources } from "./pages/Resources";
-import { Submit } from "./pages/Submit";
+import { Articles } from "./pages/Articles";
+import { SubmitArticle } from "./pages/SubmitArticle";
 import { VotingPage } from "./pages/VotingPage"; // Added
 import { AdminLayout } from "./components/admin/AdminLayout";
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
@@ -14,7 +14,6 @@ import { AdminUsers } from "./pages/admin/AdminUsers";
 import { AdminMembers } from "./pages/admin/AdminMembers";
 import { AdminEvents } from "./pages/admin/AdminEvents";
 import { AdminRegistrations } from "./pages/admin/AdminRegistrations";
-import { AdminResources } from "./pages/admin/AdminResources";
 import { AdminSubmissions } from "./pages/admin/AdminSubmissions";
 import { AdminPeoplesChoice } from "./pages/admin/AdminPeoplesChoice"; // Added
 import { AdminRecruitments } from "./pages/admin/AdminRecruitments";
@@ -34,8 +33,8 @@ export const router = createBrowserRouter([
       { path: "register", Component: EventRegistration },
       { path: "join", Component: JoinUs },
       { path: "team", Component: Team },
-      { path: "resources", Component: Resources },
-      { path: "submit", Component: Submit },
+      { path: "submit", Component: Articles },
+      { path: "submit-article", Component: SubmitArticle },
       { path: "vote", Component: VotingPage }, // Added
     ],
   },
@@ -57,7 +56,6 @@ export const router = createBrowserRouter([
       { path: "members", Component: AdminMembers },
       { path: "events", Component: AdminEvents },
       { path: "registrations", Component: AdminRegistrations },
-      { path: "resources", Component: AdminResources },
       { path: "submissions", Component: AdminSubmissions },
       { path: "vote", Component: AdminPeoplesChoice }, // Added
       { path: "recruitments", Component: AdminRecruitments },

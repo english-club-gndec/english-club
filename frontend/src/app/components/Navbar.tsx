@@ -14,8 +14,7 @@ export function Navbar() {
     { path: "/events", label: "Events" },
     // { path: "/join", label: "Join Us" },
     { path: "/team", label: "Team" },
-    { path: "/resources", label: "Resources" },
-    { path: "/submit", label: "Submit Us" },
+    { path: "/submit", label: "Articles" },
   ];
 
   const isActive = (path: string) => location.pathname === path;
