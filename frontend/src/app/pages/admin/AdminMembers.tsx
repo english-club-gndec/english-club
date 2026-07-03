@@ -71,6 +71,7 @@ export function AdminMembers() {
 
   const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Cropper States
   const [cropSrc, setCropSrc] = useState<string | null>(null);
@@ -263,6 +264,7 @@ export function AdminMembers() {
     if (!userId) return;
 
     try {
+      setIsSubmitting(true);
       let imageKey = formData.member_profile_picture_key;
       if (profileImageFile) {
         imageKey = await uploadImage(profileImageFile, formData.member_name, formData.member_postion);
@@ -298,6 +300,8 @@ export function AdminMembers() {
       closeModal();
     } catch (error: any) {
       toast.error(error.message || "Operation failed");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -489,7 +493,7 @@ export function AdminMembers() {
 
       <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-6 overflow-y-auto" onClick={closeModal}>
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-6 overflow-y-auto" onClick={() => !isSubmitting && closeModal()}>
             <motion.div 
               initial={{ opacity: 0, scale: 0.9 }} 
               animate={{ opacity: 1, scale: 1 }} 
@@ -499,7 +503,14 @@ export function AdminMembers() {
             >
               <div className="p-8 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
                 <h2 className="text-2xl font-bold">{editingMember ? "Edit Member" : "Add New Member"}</h2>
-                <button onClick={closeModal} className="p-2 hover:bg-gray-100 rounded-full"><X className="w-6 h-6" /></button>
+                <button 
+                  type="button" 
+                  onClick={closeModal} 
+                  disabled={isSubmitting} 
+                  className="p-2 hover:bg-gray-100 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <X className="w-6 h-6" />
+                </button>
               </div>
 
               <form onSubmit={handleSubmit} className="p-8 space-y-6">
@@ -579,9 +590,27 @@ export function AdminMembers() {
                 </div>
 
                 <div className="flex gap-4 pt-4">
-                  <button type="button" onClick={closeModal} className="flex-1 px-6 py-3 rounded-xl border-2 border-gray-300 text-gray-700 font-bold hover:bg-gray-50 transition-all">Cancel</button>
-                  <button type="submit" className="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-blue-900 to-purple-700 text-white font-bold hover:shadow-lg transition-all">
-                    {editingMember ? "Update Member" : "Add Member"}
+                  <button 
+                    type="button" 
+                    onClick={closeModal} 
+                    disabled={isSubmitting} 
+                    className="flex-1 px-6 py-3 rounded-xl border-2 border-gray-300 text-gray-700 font-bold hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit" 
+                    disabled={isSubmitting} 
+                    className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-blue-900 to-purple-700 text-white font-bold hover:shadow-lg transition-all disabled:opacity-75 disabled:cursor-not-allowed"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <span>Saving...</span>
+                      </>
+                    ) : (
+                      editingMember ? "Update Member" : "Add Member"
+                    )}
                   </button>
                 </div>
               </form>
