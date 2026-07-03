@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "motion/react";
-import { useState, useEffect } from "react";
-import { Plus, Edit2, Trash2, X, Instagram, Linkedin, Mail, Github, Loader2, User as UserIcon, CheckCircle2, Circle } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Plus, Edit2, Trash2, X, Instagram, Linkedin, Mail, Github, Loader2, User as UserIcon, CheckCircle2, Circle, ZoomIn, ZoomOut } from "lucide-react";
 import { toast, Toaster } from "sonner";
 import { useAuth } from "../../context/AuthContext";
 import { memberService } from "../../../services/memberService";
@@ -72,6 +72,18 @@ export function AdminMembers() {
   const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>("");
 
+  // Cropper States
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
+  const [originalFile, setOriginalFile] = useState<File | null>(null);
+  const [zoom, setZoom] = useState(1);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -81,13 +93,143 @@ export function AdminMembers() {
       return;
     }
 
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error("Image size must be less than 2MB");
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Original image size must be less than 10MB");
       return;
     }
 
-    setProfileImageFile(file);
-    setPreviewUrl(URL.createObjectURL(file));
+    setOriginalFile(file);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (event.target?.result) {
+        setCropSrc(event.target.result as string);
+        setZoom(1);
+        setPosition({ x: 0, y: 0 });
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCropCancel = () => {
+    setCropSrc(null);
+    setOriginalFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const getClientCoords = (e: MouseEvent | TouchEvent | React.MouseEvent | React.TouchEvent) => {
+    if ('touches' in e) {
+      if (e.touches.length > 0) {
+        return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      }
+      return null;
+    }
+    return { x: e.clientX, y: e.clientY };
+  };
+
+  const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    const coords = getClientCoords(e);
+    if (!coords) return;
+    setIsDragging(true);
+    setDragStart({ x: coords.x - position.x, y: coords.y - position.y });
+  };
+
+  const handleDragMove = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!isDragging || !viewportRef.current || !imgRef.current) return;
+    const coords = getClientCoords(e);
+    if (!coords) return;
+
+    const nextX = coords.x - dragStart.x;
+    const nextY = coords.y - dragStart.y;
+
+    const viewportRect = viewportRef.current.getBoundingClientRect();
+    const imgRect = imgRef.current.getBoundingClientRect();
+
+    const limitX = Math.max(0, (imgRect.width - viewportRect.width) / 2);
+    const limitY = Math.max(0, (imgRect.height - viewportRect.height) / 2);
+
+    setPosition({
+      x: Math.max(-limitX, Math.min(limitX, nextX)),
+      y: Math.max(-limitY, Math.min(limitY, nextY))
+    });
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+  };
+
+  const handleZoomChange = (nextZoom: number) => {
+    if (!viewportRef.current || !imgRef.current) {
+      setZoom(nextZoom);
+      return;
+    }
+
+    const viewportRect = viewportRef.current.getBoundingClientRect();
+    const imgRect = imgRef.current.getBoundingClientRect();
+
+    const unzoomedW = imgRect.width / zoom;
+    const unzoomedH = imgRect.height / zoom;
+
+    const nextW = unzoomedW * nextZoom;
+    const nextH = unzoomedH * nextZoom;
+
+    const limitX = Math.max(0, (nextW - viewportRect.width) / 2);
+    const limitY = Math.max(0, (nextH - viewportRect.height) / 2);
+
+    setPosition(prev => ({
+      x: Math.max(-limitX, Math.min(limitX, prev.x)),
+      y: Math.max(-limitY, Math.min(limitY, prev.y))
+    }));
+    setZoom(nextZoom);
+  };
+
+  const handleCropConfirm = () => {
+    if (!viewportRef.current || !imgRef.current || !cropSrc || !originalFile) return;
+
+    const viewportRect = viewportRef.current.getBoundingClientRect();
+    const imgRect = imgRef.current.getBoundingClientRect();
+
+    const L = imgRect.left - viewportRect.left;
+    const T = imgRect.top - viewportRect.top;
+    const W = imgRect.width;
+    const H = imgRect.height;
+
+    const naturalWidth = imgRef.current.naturalWidth;
+    const naturalHeight = imgRef.current.naturalHeight;
+
+    const S = naturalWidth / W;
+
+    const sourceX = -L * S;
+    const sourceY = -T * S;
+    const sourceWidth = viewportRect.width * S;
+    const sourceHeight = viewportRect.height * S;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = 768; // 384 * 2
+    canvas.height = 512; // 256 * 2
+
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(
+        imgRef.current,
+        sourceX, sourceY, sourceWidth, sourceHeight,
+        0, 0, canvas.width, canvas.height
+      );
+    }
+
+    canvas.toBlob((blob) => {
+      if (blob) {
+        const croppedFile = new File([blob], originalFile.name, { type: blob.type });
+        setProfileImageFile(croppedFile);
+        setPreviewUrl(URL.createObjectURL(croppedFile));
+      }
+      setCropSrc(null);
+      setOriginalFile(null);
+    }, originalFile.type || 'image/png', 0.9);
   };
 
   const uploadImage = async (file: File, name: string, position: string) => {
@@ -363,12 +505,12 @@ export function AdminMembers() {
               <form onSubmit={handleSubmit} className="p-8 space-y-6">
                 <div className="flex flex-col items-center gap-4">
                   <div className="relative group">
-                    <div className="w-24 h-24 rounded-full border-2 border-gray-200 overflow-hidden bg-gray-50 flex items-center justify-center">
+                    <div className="w-36 h-24 rounded-2xl border-2 border-gray-200 overflow-hidden bg-gray-50 flex items-center justify-center shadow-md">
                       {previewUrl ? <img src={previewUrl} className="w-full h-full object-cover" /> : <UserIcon className="w-10 h-10 text-gray-400" />}
                     </div>
-                    <label className="absolute inset-0 flex items-center justify-center bg-black/40 text-white opacity-0 group-hover:opacity-100 transition-opacity rounded-full cursor-pointer">
+                    <label className="absolute inset-0 flex items-center justify-center bg-black/40 text-white opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl cursor-pointer">
                       <Plus className="w-6 h-6" />
-                      <input type="file" className="hidden" accept="image/jpeg,image/png" onChange={handleFileChange} />
+                      <input ref={fileInputRef} type="file" className="hidden" accept="image/jpeg,image/png" onChange={handleFileChange} />
                     </label>
                   </div>
                   <p className="text-xs text-gray-400 uppercase font-bold tracking-widest">Profile Picture</p>
@@ -443,6 +585,107 @@ export function AdminMembers() {
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {cropSrc && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-6 overflow-y-auto" onClick={handleCropCancel}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white dark:bg-gray-900 rounded-[2rem] max-w-xl w-full p-8 shadow-2xl border border-gray-100 dark:border-gray-800 flex flex-col items-center gap-6"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="w-full text-center">
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  Crop Profile Picture
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Drag the image to position and use the slider to zoom.
+                </p>
+              </div>
+
+              {/* Viewport Box (3:2 Aspect Ratio) */}
+              <div
+                ref={viewportRef}
+                onMouseDown={handleDragStart}
+                onMouseMove={handleDragMove}
+                onMouseUp={handleDragEnd}
+                onMouseLeave={handleDragEnd}
+                onTouchStart={handleDragStart}
+                onTouchMove={handleDragMove}
+                onTouchEnd={handleDragEnd}
+                className="relative overflow-hidden w-full aspect-[3/2] bg-gray-100 dark:bg-gray-800 rounded-2xl cursor-move select-none border border-gray-250 dark:border-gray-700 flex items-center justify-center shadow-inner"
+              >
+                <img
+                  ref={imgRef}
+                  src={cropSrc}
+                  alt="Crop preview"
+                  draggable={false}
+                  style={{
+                    transform: `translate3d(${position.x}px, ${position.y}px, 0) scale(${zoom})`,
+                    transformOrigin: "center",
+                    transition: isDragging ? "none" : "transform 0.1s ease-out",
+                  }}
+                  className="max-w-none max-h-none pointer-events-none select-none min-w-full min-h-full object-cover"
+                />
+
+                {/* 3x3 Grid Overlay */}
+                <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 pointer-events-none rounded-2xl overflow-hidden">
+                  <div className="border-r border-b border-white/20"></div>
+                  <div className="border-r border-b border-white/20"></div>
+                  <div className="border-b border-white/20"></div>
+                  <div className="border-r border-b border-white/20"></div>
+                  <div className="border-r border-b border-white/20"></div>
+                  <div className="border-b border-white/20"></div>
+                  <div className="border-r border-white/20"></div>
+                  <div className="border-r border-white/20"></div>
+                  <div></div>
+                </div>
+
+                {/* Crop border overlay */}
+                <div className="absolute inset-0 border-2 border-dashed border-purple-500/50 rounded-2xl pointer-events-none shadow-[0_0_0_9999px_rgba(0,0,0,0.5)]"></div>
+              </div>
+
+              {/* Zoom Controls */}
+              <div className="w-full flex items-center gap-4 py-2">
+                <ZoomOut className="w-5 h-5 text-gray-400" />
+                <input
+                  type="range"
+                  min="1"
+                  max="3"
+                  step="0.01"
+                  value={zoom}
+                  onChange={(e) => handleZoomChange(parseFloat(e.target.value))}
+                  className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-600 focus:outline-none"
+                />
+                <ZoomIn className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                <span className="text-xs font-semibold text-gray-500 w-10 text-right">
+                  {Math.round(zoom * 100)}%
+                </span>
+              </div>
+
+              {/* Actions */}
+              <div className="w-full flex gap-4 pt-2">
+                <button
+                  type="button"
+                  onClick={handleCropCancel}
+                  className="flex-1 px-6 py-3.5 rounded-xl border-2 border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-bold hover:bg-gray-50 dark:hover:bg-gray-800 transition-all text-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCropConfirm}
+                  className="flex-1 px-6 py-3.5 rounded-xl bg-gradient-to-r from-blue-900 to-purple-700 text-white font-bold hover:shadow-lg transition-all text-sm"
+                >
+                  Apply Crop
+                </button>
+              </div>
             </motion.div>
           </div>
         )}
