@@ -72,6 +72,7 @@ export function AdminMembers() {
   const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDragActive, setIsDragActive] = useState(false);
 
   // Cropper States
   const [cropSrc, setCropSrc] = useState<string | null>(null);
@@ -85,10 +86,7 @@ export function AdminMembers() {
   const imgRef = useRef<HTMLImageElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const processFile = (file: File) => {
     if (!['image/jpeg', 'image/png'].includes(file.type)) {
       toast.error("Only JPEG and PNG images are allowed");
       return;
@@ -109,6 +107,33 @@ export function AdminMembers() {
       }
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    processFile(file);
+  };
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setIsDragActive(true);
+    } else if (e.type === "dragleave") {
+      setIsDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragActive(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const file = e.dataTransfer.files[0];
+      processFile(file);
+    }
   };
 
   const handleCropCancel = () => {
@@ -385,6 +410,7 @@ export function AdminMembers() {
     setEditingMember(null);
     setProfileImageFile(null);
     setPreviewUrl("");
+    setIsDragActive(false);
   };
 
   return (
@@ -515,16 +541,30 @@ export function AdminMembers() {
 
               <form onSubmit={handleSubmit} className="p-8 space-y-6">
                 <div className="flex flex-col items-center gap-4">
-                  <div className="relative group">
+                  <div 
+                    className={`relative group rounded-2xl border-2 border-dashed transition-all ${
+                      isDragActive 
+                        ? 'border-purple-500 bg-purple-500/10 scale-105 shadow-lg' 
+                        : 'border-transparent'
+                    }`}
+                    onDragEnter={handleDrag}
+                    onDragOver={handleDrag}
+                    onDragLeave={handleDrag}
+                    onDrop={handleDrop}
+                  >
                     <div className="w-36 h-24 rounded-2xl border-2 border-gray-200 overflow-hidden bg-gray-50 flex items-center justify-center shadow-md">
                       {previewUrl ? <img src={previewUrl} className="w-full h-full object-cover" /> : <UserIcon className="w-10 h-10 text-gray-400" />}
                     </div>
-                    <label className="absolute inset-0 flex items-center justify-center bg-black/40 text-white opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl cursor-pointer">
-                      <Plus className="w-6 h-6" />
+                    <label className={`absolute inset-0 flex items-center justify-center bg-black/40 text-white rounded-2xl cursor-pointer transition-opacity ${
+                      isDragActive ? 'opacity-100 bg-purple-950/60' : 'opacity-0 group-hover:opacity-100'
+                    }`}>
+                      <Plus className={`w-6 h-6 ${isDragActive ? 'animate-bounce text-purple-200' : ''}`} />
                       <input ref={fileInputRef} type="file" className="hidden" accept="image/jpeg,image/png" onChange={handleFileChange} />
                     </label>
                   </div>
-                  <p className="text-xs text-gray-400 uppercase font-bold tracking-widest">Profile Picture</p>
+                  <p className="text-xs text-gray-400 uppercase font-bold tracking-widest">
+                    {isDragActive ? "Drop image here" : "Profile Picture"}
+                  </p>
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-6">
