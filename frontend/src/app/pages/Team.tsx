@@ -69,8 +69,6 @@ export function Team() {
     },
   ];
 
-
-
   const container = {
     hidden: { opacity: 0 },
     show: {
@@ -291,12 +289,6 @@ export function Team() {
 
                 {convenors.length > 0 && (
                   <div className="mb-20">
-                    <div className="text-center mb-10 flex flex-col items-center">
-                      <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                        Convenors
-                      </h3>
-                      <div className="w-12 h-1 bg-purple-600 rounded-full"></div>
-                    </div>
                     <div className="flex flex-wrap justify-center gap-8">
                       {convenors.map((member, index) => (
                         <MemberCard key={member.member_id} member={member} index={index} />
