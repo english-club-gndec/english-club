@@ -6,11 +6,12 @@ import { supabase } from "../../lib/supabase";
 
 interface TeamMember {
   name: string;
-  role: string;
   image: string;
-  bio: string;
   linkedin?: string;
   email?: string;
+  zoomScale?: number;
+  originX?: number;
+  originY?: number;
 }
 
 interface Member {
@@ -54,18 +55,17 @@ export function Team() {
   };
   const faculty: TeamMember[] = [
     {
-      name: "Dr. Sarah Johnson",
-      role: "Faculty Mentor",
-      image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop",
-      bio: "Professor of English Literature with 15 years of teaching experience. Passionate about nurturing young talent.",
-      email: "sarah.johnson@college.edu",
+      name: "Prof. Nisha Masson",
+      image: "/faculty/nisha.jpg",
+      email: "nishamasson93@gmail.com",
+      zoomScale: 4,
+      originX: 0.45,
+      originY: 0.25,
     },
     {
-      name: "Prof. Michael Chen",
-      role: "Faculty Advisor",
-      image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop",
-      bio: "Specializes in communication studies and public speaking. Guides students in developing presentation skills.",
-      email: "michael.chen@college.edu",
+      name: "Prof. Jasmine Kaur",
+      image: "/faculty/jasmine.jpg",
+      email: "harjasbms19@gmail.com",
     },
   ];
 
@@ -177,9 +177,6 @@ export function Team() {
           <h3 className="text-xl text-gray-900 dark:text-white mb-2" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700 }}>
             {member.member_name}
           </h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-auto" style={{ fontFamily: 'Open Sans, sans-serif' }}>
-            {member.member_club_department ? member.member_club_department : `${member.member_department} · Sem ${member.member_semester}`}
-          </p>
         </div>
       </motion.div>
     );
@@ -203,19 +200,24 @@ export function Team() {
         </motion.div>
 
         <section className="mb-24">
-          <motion.h2
-            className="text-4xl lg:text-5xl text-center text-gray-900 dark:text-white mb-16"
-            style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 800 }}
-            initial={{ opacity: 0, y: -20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-          >
-            Faculty Mentors
-          </motion.h2>
+          <div className="text-center mb-16">
+            <motion.h2
+              className="text-4xl lg:text-5xl text-center text-gray-900 dark:text-white mb-4 bg-clip-text text-transparent bg-gradient-to-r from-purple-600 via-pink-500 to-blue-600 dark:from-purple-400 dark:via-pink-400 dark:to-blue-400 font-extrabold"
+              style={{ fontFamily: 'Poppins, sans-serif' }}
+              initial={{ opacity: 0, y: -20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+            >
+              Faculty Mentors
+            </motion.h2>
+            <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto text-sm sm:text-base" style={{ fontFamily: 'Open Sans, sans-serif' }}>
+              The guiding pillars of our club, providing wisdom, academic guidance, and unwavering support.
+            </p>
+          </div>
 
           <motion.div
-            className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto"
+            className="grid md:grid-cols-2 gap-10 max-w-6xl mx-auto"
             variants={container}
             initial="hidden"
             whileInView="show"
@@ -225,34 +227,45 @@ export function Team() {
               <motion.div
                 key={index}
                 variants={item}
-                className="group relative rounded-3xl overflow-hidden bg-white dark:bg-gray-900/60 backdrop-blur-md border border-gray-200/80 dark:border-gray-800/80 hover:border-purple-500/50 hover:shadow-2xl hover:shadow-purple-500/10 transition-all duration-300"
+                className="group relative rounded-[2rem] overflow-hidden bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-950/50 backdrop-blur-md border border-gray-200/80 dark:border-gray-800/80 hover:border-purple-500/50 hover:shadow-2xl hover:shadow-purple-500/10 transition-all duration-500 hover:-translate-y-2"
               >
-                <div className="p-8 flex flex-col sm:flex-row gap-6 items-center sm:items-start text-center sm:text-left">
-                  <div className="relative flex-shrink-0 w-28 h-28 rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-800 shadow-md bg-gray-100 dark:bg-gray-800">
-                    <img
-                      src={member.image}
-                      alt={member.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
+                {/* Background decorative glow */}
+                <div className="absolute -right-24 -top-24 w-56 h-56 bg-purple-500/10 dark:bg-purple-500/5 rounded-full blur-3xl group-hover:scale-150 transition-all duration-700 pointer-events-none" />
+                <div className="absolute -left-24 -bottom-24 w-56 h-56 bg-pink-500/10 dark:bg-pink-500/5 rounded-full blur-3xl group-hover:scale-150 transition-all duration-700 pointer-events-none" />
+                
+                <div className="p-10 sm:p-12 flex flex-col sm:flex-row gap-8 items-center sm:items-start text-center sm:text-left relative z-10">
+                  {/* Glowing dynamic ring wrapper around image */}
+                  <div className="relative flex-shrink-0 w-36 h-36 sm:w-44 sm:h-44 rounded-3xl overflow-hidden p-[4px] bg-gradient-to-tr from-purple-600 via-pink-500 to-blue-500 shadow-xl group-hover:rotate-3 transition-transform duration-500">
+                    <div className="w-full h-full rounded-[20px] overflow-hidden bg-white dark:bg-gray-900">
+                      <motion.img
+                        src={member.image}
+                        alt={member.name}
+                        className="w-full h-full object-cover"
+                        style={{
+                          originX: member.originX ?? 0.5,
+                          originY: member.originY ?? 0.5,
+                          scale: member.zoomScale ?? 1.0,
+                        }}
+                        whileHover={{ scale: (member.zoomScale ?? 1.0) * 1.1 }}
+                        transition={{ duration: 0.5 }}
+                      />
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <span className="text-[10px] uppercase tracking-widest font-extrabold text-purple-600 dark:text-purple-400 mb-1 block">
-                      {member.role}
+                  <div className="flex-1 flex flex-col items-center sm:items-start justify-center sm:min-h-[11rem]">
+                    <span className="inline-flex items-center px-4 py-1 rounded-full text-[10px] sm:text-xs font-black bg-gradient-to-r from-purple-500/10 to-pink-500/10 dark:from-purple-500/20 dark:to-pink-500/20 text-purple-700 dark:text-purple-300 border border-purple-500/20 mb-3 uppercase tracking-widest">
+                      Faculty Mentor
                     </span>
-                    <h3 className="text-2xl text-gray-900 dark:text-white mb-2" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700 }}>
+                    <h3 className="text-2xl sm:text-3xl lg:text-4xl text-gray-900 dark:text-white font-extrabold tracking-tight group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors duration-300 mb-6" style={{ fontFamily: 'Poppins, sans-serif' }}>
                       {member.name}
                     </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 leading-relaxed" style={{ fontFamily: 'Open Sans, sans-serif' }}>
-                      {member.bio}
-                    </p>
                     {member.email && (
                       <a
                         href={`mailto:${member.email}`}
-                        className="inline-flex items-center gap-2 text-sm text-blue-600 dark:text-purple-400 font-semibold hover:underline"
+                        className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-gray-900 hover:bg-purple-600 dark:bg-white dark:hover:bg-purple-600 text-white dark:text-gray-950 dark:hover:text-white text-xs sm:text-sm font-bold shadow-lg hover:shadow-purple-500/25 transition-all duration-300 hover:-translate-y-0.5 group/btn"
                         style={{ fontFamily: 'Open Sans, sans-serif' }}
                       >
-                        <Mail className="w-4 h-4" />
-                        Contact Mentor
+                        <Mail className="w-4 h-4 transition-transform group-hover/btn:scale-110" />
+                        <span>Contact Mentor</span>
                       </a>
                     )}
                   </div>
