@@ -30,6 +30,7 @@ export function AdminMembers() {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
 
   const fetchMembers = async () => {
     if (!userId) return;
@@ -73,6 +74,7 @@ export function AdminMembers() {
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDragActive, setIsDragActive] = useState(false);
+  const [showPhotoOptions, setShowPhotoOptions] = useState(false);
 
   // Cropper States
   const [cropSrc, setCropSrc] = useState<string | null>(null);
@@ -212,7 +214,7 @@ export function AdminMembers() {
   };
 
   const handleCropConfirm = () => {
-    if (!viewportRef.current || !imgRef.current || !cropSrc || !originalFile) return;
+    if (!viewportRef.current || !imgRef.current || !cropSrc) return;
 
     const viewportRect = viewportRef.current.getBoundingClientRect();
     const imgRect = imgRef.current.getBoundingClientRect();
@@ -233,8 +235,8 @@ export function AdminMembers() {
     const sourceHeight = viewportRect.height * S;
 
     const canvas = document.createElement('canvas');
-    canvas.width = 768; // 384 * 2
-    canvas.height = 512; // 256 * 2
+    canvas.width = 640;
+    canvas.height = 800;
 
     const ctx = canvas.getContext('2d');
     if (ctx) {
@@ -247,15 +249,25 @@ export function AdminMembers() {
       );
     }
 
+    const fileType = originalFile?.type || 'image/png';
+
     canvas.toBlob((blob) => {
       if (blob) {
-        const croppedFile = new File([blob], originalFile.name, { type: blob.type });
+        const fileName = originalFile?.name || (editingMember ? `${editingMember.member_name.toLowerCase().replace(/\s+/g, '_')}_photo.png` : 'member_photo.png');
+        const croppedFile = new File([blob], fileName, { type: fileType });
         setProfileImageFile(croppedFile);
         setPreviewUrl(URL.createObjectURL(croppedFile));
       }
       setCropSrc(null);
       setOriginalFile(null);
-    }, originalFile.type || 'image/png', 0.9);
+    }, fileType, 0.9);
+  };
+
+  const handleExistingCrop = () => {
+    if (!previewUrl) return;
+    setCropSrc(previewUrl);
+    setZoom(1);
+    setPosition({ x: 0, y: 0 });
   };
 
   const uploadImage = async (file: File, name: string, position: string) => {
@@ -411,6 +423,7 @@ export function AdminMembers() {
     setProfileImageFile(null);
     setPreviewUrl("");
     setIsDragActive(false);
+    setShowPhotoOptions(false);
   };
 
   return (
@@ -446,9 +459,29 @@ export function AdminMembers() {
           </div>
         </div>
 
-        <div className="flex gap-4 mb-4">
-          <button onClick={selectAll} className="text-sm font-semibold text-blue-600 hover:underline">Select All</button>
-          <button onClick={unselectAll} className="text-sm font-semibold text-gray-500 hover:underline">Unselect All</button>
+        <div className="flex gap-4 mb-4 items-center">
+          {!isSelectionMode ? (
+            <button
+              onClick={() => setIsSelectionMode(true)}
+              className="text-sm font-semibold text-blue-600 hover:underline"
+            >
+              Select
+            </button>
+          ) : (
+            <>
+              <button onClick={selectAll} className="text-sm font-semibold text-blue-600 hover:underline">Select All</button>
+              <button onClick={unselectAll} className="text-sm font-semibold text-gray-500 hover:underline">Unselect All</button>
+              <button
+                onClick={() => {
+                  setIsSelectionMode(false);
+                  unselectAll();
+                }}
+                className="text-sm font-semibold text-red-500 hover:underline"
+              >
+                Cancel Selection
+              </button>
+            </>
+          )}
         </div>
 
         <div className="rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 overflow-hidden min-h-[400px] flex flex-col">
@@ -463,7 +496,7 @@ export function AdminMembers() {
                 <table className="w-full">
                   <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
                     <tr>
-                      <th className="px-6 py-4 text-left w-10"></th>
+                      {isSelectionMode && <th className="px-6 py-4 text-left w-10"></th>}
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Profile</th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Name</th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Position</th>
@@ -477,15 +510,17 @@ export function AdminMembers() {
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
                     {members.map((member) => (
                       <tr key={member.member_id} className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${selectedIds.includes(member.member_id) ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}`}>
-                        <td className="px-6 py-4">
-                          <button onClick={() => toggleSelect(member.member_id)}>
-                            {selectedIds.includes(member.member_id) ? (
-                              <CheckCircle2 className="w-5 h-5 text-blue-600" />
-                            ) : (
-                              <Circle className="w-5 h-5 text-gray-300" />
-                            )}
-                          </button>
-                        </td>
+                        {isSelectionMode && (
+                          <td className="px-6 py-4">
+                            <button onClick={() => toggleSelect(member.member_id)}>
+                              {selectedIds.includes(member.member_id) ? (
+                                <CheckCircle2 className="w-5 h-5 text-blue-600" />
+                              ) : (
+                                <Circle className="w-5 h-5 text-gray-300" />
+                              )}
+                            </button>
+                          </td>
+                        )}
                         <td className="px-6 py-4">
                           <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-100 border border-gray-200">
                             {member.member_profile_picture_key ? (
@@ -552,15 +587,68 @@ export function AdminMembers() {
                     onDragLeave={handleDrag}
                     onDrop={handleDrop}
                   >
-                    <div className="w-36 h-24 rounded-2xl border-2 border-gray-200 overflow-hidden bg-gray-50 flex items-center justify-center shadow-md">
+                    <div className="w-32 h-40 rounded-2xl border-2 border-gray-200 overflow-hidden bg-gray-50 flex items-center justify-center shadow-md">
                       {previewUrl ? <img src={previewUrl} className="w-full h-full object-cover" /> : <UserIcon className="w-10 h-10 text-gray-400" />}
                     </div>
-                    <label className={`absolute inset-0 flex items-center justify-center bg-black/40 text-white rounded-2xl cursor-pointer transition-opacity ${
-                      isDragActive ? 'opacity-100 bg-purple-950/60' : 'opacity-0 group-hover:opacity-100'
-                    }`}>
-                      <Plus className={`w-6 h-6 ${isDragActive ? 'animate-bounce text-purple-200' : ''}`} />
-                      <input ref={fileInputRef} type="file" className="hidden" accept="image/jpeg,image/png" onChange={handleFileChange} />
-                    </label>
+                    {previewUrl ? (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setShowPhotoOptions(true);
+                        }}
+                        className="absolute inset-0 flex items-center justify-center bg-black/40 text-white rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                      >
+                        {editingMember ? <Edit2 className="w-6 h-6" /> : <Plus className="w-6 h-6" />}
+                      </button>
+                    ) : (
+                      <label className={`absolute inset-0 flex items-center justify-center bg-black/40 text-white rounded-2xl cursor-pointer transition-opacity ${
+                        isDragActive ? 'opacity-100 bg-purple-950/60' : 'opacity-0 group-hover:opacity-100'
+                      }`}>
+                        <Plus className={`w-6 h-6 ${isDragActive ? 'animate-bounce text-purple-200' : ''}`} />
+                        <input ref={fileInputRef} type="file" className="hidden" accept="image/jpeg,image/png" onChange={handleFileChange} />
+                      </label>
+                    )}
+                    <input ref={fileInputRef} type="file" className="hidden" accept="image/jpeg,image/png" onChange={handleFileChange} />
+                    
+                    <AnimatePresence>
+                      {previewUrl && showPhotoOptions && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.9 }}
+                          className="absolute inset-0 bg-black/90 rounded-2xl flex flex-col justify-center gap-1.5 p-2.5 z-10"
+                        >
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowPhotoOptions(false);
+                              handleExistingCrop();
+                            }}
+                            className="w-full text-xs font-semibold bg-white/10 hover:bg-white/20 text-white py-1.5 rounded-lg transition-colors cursor-pointer border border-white/10"
+                          >
+                            Crop
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowPhotoOptions(false);
+                              fileInputRef.current?.click();
+                            }}
+                            className="w-full text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white py-1.5 rounded-lg transition-colors cursor-pointer"
+                          >
+                            Upload New
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setShowPhotoOptions(false)}
+                            className="w-full text-[10px] text-gray-400 hover:text-white mt-0.5 cursor-pointer"
+                          >
+                            Cancel
+                          </button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                   <p className="text-xs text-gray-400 uppercase font-bold tracking-widest">
                     {isDragActive ? "Drop image here" : "Profile Picture"}
@@ -678,7 +766,7 @@ export function AdminMembers() {
                 </p>
               </div>
 
-              {/* Viewport Box (3:2 Aspect Ratio) */}
+              {/* Viewport Box (4:5 Aspect Ratio) */}
               <div
                 ref={viewportRef}
                 onMouseDown={handleDragStart}
@@ -688,12 +776,13 @@ export function AdminMembers() {
                 onTouchStart={handleDragStart}
                 onTouchMove={handleDragMove}
                 onTouchEnd={handleDragEnd}
-                className="relative overflow-hidden w-full aspect-[3/2] bg-gray-100 dark:bg-gray-800 rounded-2xl cursor-move select-none border border-gray-250 dark:border-gray-700 flex items-center justify-center shadow-inner"
+                className="relative overflow-hidden w-full aspect-[4/5] bg-gray-100 dark:bg-gray-800 rounded-2xl cursor-move select-none border border-gray-250 dark:border-gray-700 flex items-center justify-center shadow-inner"
               >
                 <img
                   ref={imgRef}
                   src={cropSrc}
                   alt="Crop preview"
+                  crossOrigin="anonymous"
                   draggable={false}
                   style={{
                     transform: `translate3d(${position.x}px, ${position.y}px, 0) scale(${zoom})`,
