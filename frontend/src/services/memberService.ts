@@ -51,5 +51,19 @@ export const memberService = {
       throw new Error(`Error ${response.status}: ${error.error || 'Failed to delete members'}`);
     }
     return response.json();
+  },
+
+  // POST /api/members/:user_id/createMultipleMembers
+  createMultipleMembers: async (userId: string, membersList: any[]) => {
+    const response = await fetch(`${API_BASE_URL}/members/${userId}/createMultipleMembers`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(membersList)
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(`Error ${response.status}: ${error.error || 'Failed to create multiple members'}`);
+    }
+    return response.json();
   }
 };

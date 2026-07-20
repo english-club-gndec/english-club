@@ -18,4 +18,7 @@ router.patch('/:user_id/:member_id/updateMemberById', memberController.updateMem
 // Note: This takes an array of IDs in the body as per request
 router.delete('/:user_id/deleteMembersById', memberController.deleteMembersById);
 
+// POST /api/members/:user_id/createMultipleMembers
+router.post('/:user_id/createMultipleMembers', memberController.createMultipleMembers);
+
 module.exports = router;

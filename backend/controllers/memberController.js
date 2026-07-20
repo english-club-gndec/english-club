@@ -137,6 +137,125 @@ const memberController = {
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
+  },
+
+  // POST /:user_id/createMultipleMembers
+  createMultipleMembers: async (req, res) => {
+    try {
+      const { user_id } = req.params;
+      let membersList = req.body;
+      if (!Array.isArray(membersList) && req.body && Array.isArray(req.body.members)) {
+        membersList = req.body.members;
+      }
+
+      if (!membersList || !Array.isArray(membersList) || membersList.length === 0) {
+        return res.status(400).json({ error: 'An array of members is required' });
+      }
+
+      const validPositions = [
+        'CONVENOR',
+        'CO-CONVENOR',
+        'TECH_HEAD',
+        'CO-TECH_HEAD',
+        'CREATIVE_HEAD',
+        'CO-CREATIVE_HEAD',
+        'EXECUTIVE_MEMBER',
+        'ACTIVE_MEMBER'
+      ];
+
+      const validDepartments = [
+        'IT',
+        'CSE',
+        'RAI',
+        'ECE',
+        'CE',
+        'EE',
+        'ME',
+        'BBA',
+        'BCA'
+      ];
+
+      const formattedMembers = [];
+      for (let i = 0; i < membersList.length; i++) {
+        const m = membersList[i];
+        if (!m || typeof m !== 'object') {
+          return res.status(400).json({ error: `Member at index ${i} is invalid` });
+        }
+
+        const {
+          member_name,
+          member_postion,
+          member_profile_picture_key,
+          member_crn,
+          member_urn,
+          member_email,
+          member_department,
+          member_semester,
+          member_club_department,
+          socials,
+          created_by
+        } = m;
+
+        if (!member_name) {
+          return res.status(400).json({ error: `Member at index ${i} is missing member_name` });
+        }
+        if (!member_postion) {
+          return res.status(400).json({ error: `Member at index ${i} is missing member_postion` });
+        }
+        if (!validPositions.includes(member_postion)) {
+          return res.status(400).json({ error: `Member at index ${i} has invalid position: ${member_postion}` });
+        }
+        if (!member_urn) {
+          return res.status(400).json({ error: `Member at index ${i} is missing member_urn` });
+        }
+        if (!member_email) {
+          return res.status(400).json({ error: `Member at index ${i} is missing member_email` });
+        }
+        if (!member_department) {
+          return res.status(400).json({ error: `Member at index ${i} is missing member_department` });
+        }
+        if (!validDepartments.includes(member_department)) {
+          return res.status(400).json({ error: `Member at index ${i} has invalid department: ${member_department}` });
+        }
+        if (member_semester === undefined || member_semester === null) {
+          return res.status(400).json({ error: `Member at index ${i} is missing member_semester` });
+        }
+        const sem = Number(member_semester);
+        if (isNaN(sem) || sem < 0 || sem > 8) {
+          return res.status(400).json({ error: `Member at index ${i} has invalid semester: ${member_semester} (must be 0-8)` });
+        }
+
+        const creator = created_by || user_id;
+        if (!creator) {
+          return res.status(400).json({ error: `Member at index ${i} has no created_by user` });
+        }
+
+        formattedMembers.push({
+          member_name,
+          member_postion,
+          member_profile_picture_key: member_profile_picture_key || null,
+          member_crn: member_crn ? Number(member_crn) : null,
+          member_urn: Number(member_urn),
+          member_email,
+          member_department,
+          member_semester: sem,
+          member_club_department: member_club_department || null,
+          socials: socials || {},
+          created_by: Number(creator)
+        });
+      }
+
+      const { data, error } = await supabase
+        .from('members')
+        .insert(formattedMembers)
+        .select();
+
+      if (error) throw error;
+
+      res.status(201).json({ message: 'Members created successfully', members: data });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
   }
 };
 
