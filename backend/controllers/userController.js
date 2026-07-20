@@ -252,6 +252,28 @@ const userController = {
       console.error('Login error:', err);
       res.status(500).json({ error: err.message || 'Internal Server Error' });
     }
+  },
+
+  // DELETE /api/user/:user_id
+  deleteUser: async (req, res) => {
+    try {
+      const { user_id } = req.params;
+      const { data, error } = await supabase
+        .from('users')
+        .delete()
+        .eq('user_id', user_id)
+        .select();
+
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      res.json({ message: 'User deleted successfully' });
+    } catch (err) {
+      console.error('deleteUser error:', err);
+      res.status(500).json({ error: err.message || 'Internal Server Error' });
+    }
   }
 };
 

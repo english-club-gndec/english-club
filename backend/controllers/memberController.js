@@ -125,6 +125,31 @@ const memberController = {
         return res.status(400).json({ error: 'An array of member_ids is required' });
       }
 
+      // 1. Fetch the members to get their profile picture keys
+      const { data: members, error: fetchError } = await supabase
+        .from('members')
+        .select('member_profile_picture_key')
+        .in('member_id', member_ids);
+
+      if (fetchError) throw fetchError;
+
+      // 2. Delete the profile pictures from Supabase Storage
+      const keysToDelete = members
+        .map(m => m.member_profile_picture_key)
+        .filter(key => key !== null && key !== undefined && key !== '');
+
+      if (keysToDelete.length > 0) {
+        const { error: storageError } = await supabase
+          .storage
+          .from('profile_pictures')
+          .remove(keysToDelete);
+
+        if (storageError) {
+          console.error('Failed to delete profile pictures from storage:', storageError.message);
+        }
+      }
+
+      // 3. Delete the records from the database
       const { data, error } = await supabase
         .from('members')
         .delete()

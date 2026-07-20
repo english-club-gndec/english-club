@@ -105,6 +105,22 @@ export const userService = {
       console.error('Failed to login:', error);
       throw error;
     }
+  },
+
+  deleteUser: async (userId: string) => {
+    try {
+      const response = await fetch(`${BASE_URL}/user/${userId}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Error: ${response.statusText}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Failed to delete user:', error);
+      throw error;
+    }
   }
 };
 

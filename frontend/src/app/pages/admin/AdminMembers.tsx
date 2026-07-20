@@ -276,6 +276,7 @@ export function AdminMembers() {
   const [isCsvDragActive, setIsCsvDragActive] = useState(false);
 
   // States for sub-modal edit unresolved record
+  const [deleteConfirmIds, setDeleteConfirmIds] = useState<string[]>([]);
   const [unresolvedEditRecord, setUnresolvedEditRecord] = useState<any | null>(null);
   const [unresolvedEditForm, setUnresolvedEditForm] = useState({
     member_name: '',
@@ -741,31 +742,13 @@ export function AdminMembers() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!userId) return;
-    if (!confirm("Are you sure you want to delete this member?")) return;
-
-    try {
-      await memberService.deleteMembers(userId, [id]);
-      toast.success("Member deleted successfully!");
-      await fetchMembers();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to delete member");
-    }
+  const handleDelete = (id: string) => {
+    setDeleteConfirmIds([id]);
   };
 
-  const handleBulkDelete = async () => {
-    if (!userId || selectedIds.length === 0) return;
-    if (!confirm(`Are you sure you want to delete ${selectedIds.length} members?`)) return;
-
-    try {
-      await memberService.deleteMembers(userId, selectedIds);
-      toast.success(`${selectedIds.length} members deleted successfully!`);
-      setSelectedIds([]);
-      await fetchMembers();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to delete members");
-    }
+  const handleBulkDelete = () => {
+    if (selectedIds.length === 0) return;
+    setDeleteConfirmIds(selectedIds);
   };
 
   const toggleSelect = (id: string) => {
@@ -1697,6 +1680,67 @@ export function AdminMembers() {
                   className="flex-1 px-6 py-3.5 rounded-xl bg-gradient-to-r from-blue-900 to-purple-700 text-white font-bold hover:shadow-lg transition-all text-sm"
                 >
                   Apply Crop
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {deleteConfirmIds.length > 0 && (
+          <div 
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[80] flex items-center justify-center p-6"
+            onClick={() => setDeleteConfirmIds([])}
+          >
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }} 
+              animate={{ opacity: 1, scale: 1 }} 
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white dark:bg-gray-900 border border-gray-250 dark:border-gray-800 rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl flex flex-col items-center gap-6" 
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="w-16 h-16 rounded-full bg-red-50 dark:bg-red-950/20 flex items-center justify-center text-red-600 dark:text-red-400">
+                <Trash2 className="w-8 h-8" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Delete Member</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {deleteConfirmIds.length === 1 
+                    ? "Are you sure you want to delete this member? This action cannot be undone."
+                    : `Are you sure you want to delete these ${deleteConfirmIds.length} members? This action cannot be undone.`}
+                </p>
+              </div>
+              <div className="flex gap-4 w-full">
+                <button
+                  type="button"
+                  onClick={() => setDeleteConfirmIds([])}
+                  className="flex-1 px-5 py-3 rounded-xl border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-bold hover:bg-gray-50 dark:hover:bg-gray-850 text-xs transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const idsToDelete = deleteConfirmIds;
+                    setDeleteConfirmIds([]);
+                    if (!userId) return;
+                    try {
+                      await memberService.deleteMembers(userId, idsToDelete);
+                      if (idsToDelete.length === 1) {
+                        toast.success("Member deleted successfully!");
+                      } else {
+                        toast.success(`${idsToDelete.length} members deleted successfully!`);
+                        setSelectedIds([]);
+                      }
+                      await fetchMembers();
+                    } catch (error: any) {
+                      toast.error(error.message || "Failed to delete member(s)");
+                    }
+                  }}
+                  className="flex-1 px-5 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs transition-colors shadow-lg shadow-red-500/20"
+                >
+                  Delete
                 </button>
               </div>
             </motion.div>

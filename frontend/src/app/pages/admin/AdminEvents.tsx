@@ -30,6 +30,7 @@ export function AdminEvents() {
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const [viewingEvent, setViewingEvent] = useState<Event | null>(null);
   const [usersMap, setUsersMap] = useState<Record<number, { name: string, profileUrl: string | null }>>({});
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
 
   useEffect(() => {
     fetchEventsList();
@@ -186,8 +187,8 @@ export function AdminEvents() {
     }
   };
 
-  const handleDelete = (_id: number) => {
-    toast.info("Deletion is currently disabled (placeholder)");
+  const handleDelete = (id: number) => {
+    setDeleteConfirmId(id);
   };
 
   const openModal = (event?: Event) => {
@@ -831,6 +832,59 @@ export function AdminEvents() {
               </div>
             </motion.div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {deleteConfirmId !== null && (
+          <div 
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[80] flex items-center justify-center p-6"
+            onClick={() => setDeleteConfirmId(null)}
+          >
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }} 
+              animate={{ opacity: 1, scale: 1 }} 
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white dark:bg-gray-900 border border-gray-250 dark:border-gray-800 rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl flex flex-col items-center gap-6" 
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="w-16 h-16 rounded-full bg-red-50 dark:bg-red-950/20 flex items-center justify-center text-red-600 dark:text-red-400">
+                <Trash2 className="w-8 h-8" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Delete Event</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Are you sure you want to delete this event? This action cannot be undone.
+                </p>
+              </div>
+              <div className="flex gap-4 w-full">
+                <button
+                  type="button"
+                  onClick={() => setDeleteConfirmId(null)}
+                  className="flex-1 px-5 py-3 rounded-xl border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-bold hover:bg-gray-50 dark:hover:bg-gray-850 text-xs transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const id = deleteConfirmId;
+                    setDeleteConfirmId(null);
+                    try {
+                      await eventService.deleteEvent(id);
+                      toast.success("Event deleted successfully");
+                      await fetchEventsList();
+                    } catch (error: any) {
+                      toast.error(error.message || "Failed to delete event");
+                    }
+                  }}
+                  className="flex-1 px-5 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs transition-colors shadow-lg shadow-red-500/20"
+                >
+                  Delete
+                </button>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </>

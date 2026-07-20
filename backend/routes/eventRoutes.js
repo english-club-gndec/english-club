@@ -18,4 +18,8 @@ router.get('/:event_id', eventController.getEventById);
 // Path: /api/events/:event_id/updateEvent
 router.patch('/:event_id/updateEvent', eventController.updateEvent);
 
+// DELETE event
+// Path: /api/events/:event_id
+router.delete('/:event_id', eventController.deleteEvent);
+
 module.exports = router;

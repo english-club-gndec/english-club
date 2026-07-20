@@ -30,4 +30,8 @@ router.get('/:member_id/getUserByMemberId', userController.getUserByMemberId);
 // Path: /api/user/login
 router.post('/login', userController.login);
 
+// DELETE user
+// Path: /api/user/:user_id
+router.delete('/:user_id', userController.deleteUser);
+
 module.exports = router;

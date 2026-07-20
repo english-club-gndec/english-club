@@ -52,5 +52,21 @@ export const eventService = {
       console.error('Failed to update event:', error);
       throw error;
     }
+  },
+
+  deleteEvent: async (eventId: number) => {
+    try {
+      const response = await fetch(`${BASE_URL}/events/${eventId}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Error: ${response.statusText}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Failed to delete event:', error);
+      throw error;
+    }
   }
 };

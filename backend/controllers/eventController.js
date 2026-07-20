@@ -168,6 +168,60 @@ const eventController = {
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
+  },
+
+  // DELETE /api/events/:event_id
+  deleteEvent: async (req, res) => {
+    try {
+      const { event_id } = req.params;
+
+      // 1. Fetch the event to get the poster key
+      const { data: event, error: fetchError } = await supabase
+        .from('events')
+        .select('event_poster_key')
+        .eq('event_id', event_id)
+        .single();
+
+      if (fetchError || !event) {
+        return res.status(404).json({ error: 'Event not found' });
+      }
+
+      // 2. Delete the poster from Supabase Storage if it exists
+      if (event.event_poster_key) {
+        const { error: storageError } = await supabase
+          .storage
+          .from('event_posters')
+          .remove([event.event_poster_key]);
+
+        if (storageError) {
+          console.error('Failed to delete event poster from storage:', storageError.message);
+        }
+      }
+
+      // 3. Delete all participants registered for this event
+      const { error: participantsError } = await supabase
+        .from('participants')
+        .delete()
+        .eq('registered_event', event_id);
+
+      if (participantsError) {
+        console.error('Failed to delete event participants:', participantsError.message);
+        throw participantsError;
+      }
+
+      // 4. Delete the event from the database
+      const { data, error } = await supabase
+        .from('events')
+        .delete()
+        .eq('event_id', event_id)
+        .select();
+
+      if (error) throw error;
+
+      res.json({ message: 'Event deleted successfully' });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
   }
 };
 
