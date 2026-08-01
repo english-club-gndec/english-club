@@ -1,12 +1,18 @@
 import { motion } from "motion/react";
 import { Link } from "react-router";
-import { MessageCircle, Target, Lightbulb } from "lucide-react";
+import { MessageCircle, Target, Lightbulb, Eye, Compass, CheckCircle2, Sparkles } from "lucide-react";
 
 export function Home() {
   const missions = [
     { icon: MessageCircle, title: "Communication", description: "Master the art of effective expression" },
     { icon: Target, title: "Confidence", description: "Build self-assurance through practice" },
     { icon: Lightbulb, title: "Creativity", description: "Unlock your creative potential" },
+  ];
+
+  const missionPoints = [
+    "Develop excellence in speaking, writing, presentation, and interpersonal communication.",
+    "Build confidence to express ideas with clarity, professionalism, and conviction.",
+    "Foster leadership, ethical values, critical thinking, and lifelong learning."
   ];
 
   const container = {
@@ -71,6 +77,105 @@ export function Home() {
         </div>
       </section>
 
+      {/* Vision & Mission Section */}
+      <section className="py-20 bg-gray-50 dark:bg-gray-900/50 border-y border-gray-100 dark:border-gray-800">
+        <div className="max-w-7xl mx-auto px-6">
+          <motion.div
+            className="text-center mb-16"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+          >
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 text-sm font-semibold mb-4">
+              <Sparkles className="w-4 h-4" /> Driven by Purpose
+            </span>
+            <h2 className="text-4xl lg:text-5xl text-gray-900 dark:text-white mb-4" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700 }}>
+              Vision & Mission
+            </h2>
+            <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto" style={{ fontFamily: 'Open Sans, sans-serif' }}>
+              Guiding principles that define our goals and shape our journey towards student excellence.
+            </p>
+          </motion.div>
+
+          <div className="grid lg:grid-cols-2 gap-10 items-stretch">
+            {/* Vision Card */}
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="flex flex-col justify-between p-8 lg:p-10 rounded-3xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-xl shadow-gray-200/50 dark:shadow-none relative overflow-hidden group hover:border-blue-500/50 transition-all"
+            >
+              <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl from-blue-500/10 to-transparent rounded-bl-full pointer-events-none"></div>
+              
+              <div>
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center mb-8 shadow-lg shadow-blue-500/20 group-hover:scale-110 transition-transform">
+                  <Eye className="w-7 h-7 text-white" />
+                </div>
+
+                <h3 className="text-3xl text-gray-900 dark:text-white mb-6" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700 }}>
+                  Our Vision
+                </h3>
+
+                <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed italic border-l-4 border-blue-600 pl-4 py-1 mb-6" style={{ fontFamily: 'Open Sans, sans-serif' }}>
+                  "To empower students to become confident communicators, principled leaders, and lifelong learners who express their ideas with clarity, lead with integrity, and create meaningful impact in their careers, communities, and society."
+                </p>
+              </div>
+
+              <div className="pt-6 border-t border-gray-100 dark:border-gray-800/80">
+                <span className="text-sm font-semibold text-blue-600 dark:text-blue-400 tracking-wider uppercase">
+                  Empowering Future Leaders
+                </span>
+              </div>
+            </motion.div>
+
+            {/* Mission Card */}
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="flex flex-col justify-between p-8 lg:p-10 rounded-3xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-xl shadow-gray-200/50 dark:shadow-none relative overflow-hidden group hover:border-purple-500/50 transition-all"
+            >
+              <div className="absolute top-0 right-0 w-48 h-48 bg-gradient-to-bl from-purple-500/10 to-transparent rounded-bl-full pointer-events-none"></div>
+
+              <div>
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-600 to-pink-700 flex items-center justify-center mb-8 shadow-lg shadow-purple-500/20 group-hover:scale-110 transition-transform">
+                  <Compass className="w-7 h-7 text-white" />
+                </div>
+
+                <h3 className="text-3xl text-gray-900 dark:text-white mb-4" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700 }}>
+                  Our Mission
+                </h3>
+
+                <p className="text-gray-700 dark:text-gray-300 mb-6 leading-relaxed" style={{ fontFamily: 'Open Sans, sans-serif' }}>
+                  The English Club of Guru Nanak Dev Engineering College, under the Department of Applied Sciences, is committed to empowering students with the communication, confidence, and character needed for success beyond graduation. We strive to:
+                </p>
+
+                <ul className="space-y-4 mb-8">
+                  {missionPoints.map((point, index) => (
+                    <li key={index} className="flex items-start gap-3">
+                      <CheckCircle2 className="w-5 h-5 text-purple-600 dark:text-purple-400 shrink-0 mt-1" />
+                      <span className="text-gray-700 dark:text-gray-300 text-base" style={{ fontFamily: 'Open Sans, sans-serif' }}>
+                        {point}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="p-4 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-100 dark:border-purple-900/50">
+                <p className="text-sm font-medium text-purple-900 dark:text-purple-200 italic" style={{ fontFamily: 'Open Sans, sans-serif' }}>
+                  Together, we aspire to shape individuals who communicate with purpose, lead with integrity, and create a meaningful impact in their careers and society.
+                </p>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* About Section */}
       <section className="py-20 bg-white dark:bg-gray-950">
         <div className="max-w-7xl mx-auto px-6">
           <motion.div
