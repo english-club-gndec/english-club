@@ -153,7 +153,7 @@ export function Events() {
             </motion.h2>
 
             <motion.div
-              className="grid md:grid-cols-2 lg:grid-cols-3 gap-8"
+              className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
               variants={container}
               initial="hidden"
               animate="show"
@@ -167,7 +167,7 @@ export function Events() {
                     onClick={() => setSelectedEvent(event)}
                     className="group cursor-pointer rounded-2xl overflow-hidden bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:shadow-2xl hover:shadow-purple-500/10 transition-all hover:-translate-y-2 flex flex-col h-full"
                   >
-                    <div className="relative h-48 overflow-hidden">
+                    <div className="relative aspect-[4/3] w-full overflow-hidden">
                       <img
                         src={getPublicUrl(event.event_poster_key)}
                         alt={event.event_name}
@@ -179,8 +179,8 @@ export function Events() {
                         </div>
                       )}
                     </div>
-                  <div className="p-6 flex flex-col flex-1">
-                    <h3 className="text-xl text-gray-900 dark:text-white mb-3" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 600 }}>
+                  <div className="p-5 flex flex-col flex-1">
+                    <h3 className="text-xl text-gray-900 dark:text-white font-bold mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
                       {event.event_name}
                     </h3>
                     
@@ -225,40 +225,40 @@ export function Events() {
           </section>
         )}
 
-        <section className="mb-20">
-          <motion.h2
-            className="text-3xl lg:text-4xl text-gray-900 dark:text-white mb-12"
-            style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700 }}
-            initial={{ opacity: 0, x: -30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            Upcoming Events
-          </motion.h2>
+        {upcoming.length > 0 && (
+          <section className="mb-20">
+            <motion.h2
+              className="text-3xl lg:text-4xl text-gray-900 dark:text-white mb-12"
+              style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700 }}
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6 }}
+            >
+              Upcoming Events
+            </motion.h2>
 
-          <motion.div
-            className="grid md:grid-cols-2 lg:grid-cols-3 gap-8"
-            variants={container}
-            initial="hidden"
-            animate="show"
-          >
-            {upcoming.length > 0 ? (
-              upcoming.map((event) => (
+            <motion.div
+              className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+              variants={container}
+              initial="hidden"
+              animate="show"
+            >
+              {upcoming.map((event) => (
                 <motion.div
                   key={event.event_id}
                   variants={item}
                   onClick={() => setSelectedEvent(event)}
                   className="group cursor-pointer rounded-2xl overflow-hidden bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:shadow-2xl hover:shadow-purple-500/10 transition-all hover:-translate-y-2 flex flex-col h-full"
                 >
-                  <div className="relative h-48 overflow-hidden">
+                  <div className="relative aspect-[4/3] w-full overflow-hidden">
                     <img
                       src={getPublicUrl(event.event_poster_key)}
                       alt={event.event_name}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                     />
                   </div>
-                  <div className="p-6 flex flex-col flex-1">
-                    <h3 className="text-xl text-gray-900 dark:text-white mb-3" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 600 }}>
+                  <div className="p-5 flex flex-col flex-1">
+                    <h3 className="text-xl text-gray-900 dark:text-white font-bold mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
                       {event.event_name}
                     </h3>
                     
@@ -297,16 +297,10 @@ export function Events() {
                     </button>
                   </div>
                 </motion.div>
-              ))
-            ) : (
-              <div className="col-span-full py-20 text-center rounded-3xl bg-gray-50 dark:bg-gray-800/50 border-2 border-dashed border-gray-200 dark:border-gray-800">
-                <p className="text-2xl text-gray-500 dark:text-gray-400 font-medium" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                  Shhh! Something is cooking in here :)
-                </p>
-              </div>
-            )}
-          </motion.div>
-        </section>
+              ))}
+            </motion.div>
+          </section>
+        )}
 
         <section>
           <motion.h2
@@ -320,7 +314,7 @@ export function Events() {
           </motion.h2>
 
           <motion.div
-            className="grid md:grid-cols-2 lg:grid-cols-3 gap-8"
+            className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
             variants={container}
             initial="hidden"
             animate="show"
@@ -333,15 +327,15 @@ export function Events() {
                   onClick={() => setSelectedEvent(event)}
                   className="group cursor-pointer rounded-2xl overflow-hidden bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:shadow-2xl hover:shadow-purple-500/10 transition-all hover:-translate-y-2 flex flex-col h-full"
                 >
-                  <div className="relative h-48 overflow-hidden">
+                  <div className="relative aspect-[4/3] w-full overflow-hidden">
                     <img
                       src={getPublicUrl(event.event_poster_key)}
                       alt={event.event_name}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                     />
                   </div>
-                  <div className="p-6 flex flex-col flex-1">
-                    <h3 className="text-xl text-gray-900 dark:text-white mb-3" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 600 }}>
+                  <div className="p-5 flex flex-col flex-1">
+                    <h3 className="text-xl text-gray-900 dark:text-white font-bold mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
                       {event.event_name}
                     </h3>
                     

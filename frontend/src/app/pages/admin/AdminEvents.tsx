@@ -31,6 +31,8 @@ export function AdminEvents() {
   const [viewingEvent, setViewingEvent] = useState<Event | null>(null);
   const [usersMap, setUsersMap] = useState<Record<number, { name: string, profileUrl: string | null }>>({});
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     fetchEventsList();
@@ -101,11 +103,68 @@ export function AdminEvents() {
 
   const hours = Array.from({ length: 12 }, (_, i) => (i + 1).toString().padStart(2, '0'));
   const minutes = ["00", "05", "10", "15", "20", "25", "30", "35", "40", "45", "50", "55"];
+  const processImageFile = (file: File, inputElement?: HTMLInputElement) => {
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select a valid image file (JPG or PNG).");
+      if (inputElement) inputElement.value = "";
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    const img = new Image();
+
+    img.onload = () => {
+      const aspectRatio = img.width / img.height;
+      const targetRatio = 4 / 3;
+      const tolerance = 0.05;
+
+      if (Math.abs(aspectRatio - targetRatio) > tolerance) {
+        toast.error(`Invalid image aspect ratio (${img.width}x${img.height}). Only 4:3 images are allowed (e.g. 800x600, 1024x768).`);
+        setPosterFile(null);
+        setPreviewUrl(editingEvent?.poster ? getPublicUrl(editingEvent.poster) : "");
+        if (inputElement) inputElement.value = "";
+        URL.revokeObjectURL(objectUrl);
+      } else {
+        setPosterFile(file);
+        setPreviewUrl(objectUrl);
+      }
+    };
+
+    img.onerror = () => {
+      toast.error("Failed to load image file.");
+      setPosterFile(null);
+      if (inputElement) inputElement.value = "";
+      URL.revokeObjectURL(objectUrl);
+    };
+
+    img.src = objectUrl;
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setPosterFile(file);
-      setPreviewUrl(URL.createObjectURL(file));
+      processImageFile(e.target.files[0], e.target);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isDragging) setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      processImageFile(e.dataTransfer.files[0]);
     }
   };
 
@@ -132,9 +191,11 @@ export function AdminEvents() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSaving) return;
 
-    if (editingEvent) {
-      try {
+    setIsSaving(true);
+    try {
+      if (editingEvent) {
         let posterKey = formData.eventPoster;
         if (posterFile) {
           posterKey = await uploadImage(posterFile, formData.name);
@@ -154,13 +215,11 @@ export function AdminEvents() {
         
         await fetchEventsList();
         closeModal();
-      } catch (error: any) {
-        toast.error(error.message || "Failed to update event");
-        return;
-      }
-    } else {
-      if (!userId) return;
-      try {
+      } else {
+        if (!userId) {
+          setIsSaving(false);
+          return;
+        }
         let posterKey = "";
         if (posterFile) {
           posterKey = await uploadImage(posterFile, formData.name);
@@ -180,10 +239,11 @@ export function AdminEvents() {
         
         await fetchEventsList();
         closeModal();
-      } catch (error: any) {
-        toast.error(error.message || "Failed to create event");
-        return;
       }
+    } catch (error: any) {
+      toast.error(error.message || "Failed to save event");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -232,6 +292,8 @@ export function AdminEvents() {
     setEditingEvent(null);
     setPosterFile(null);
     setPreviewUrl("");
+    setIsDragging(false);
+    setIsSaving(false);
   };
 
   return (
@@ -315,7 +377,7 @@ export function AdminEvents() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.5 }}
-              className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 w-full"
+              className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 w-full"
             >
               {events.map((event) => (
                 <motion.div
@@ -323,9 +385,9 @@ export function AdminEvents() {
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   onClick={() => setViewingEvent(event)}
-                  className="rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 overflow-hidden hover:shadow-xl hover:shadow-purple-500/10 transition-all group cursor-pointer"
+                  className="rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 overflow-hidden hover:shadow-xl hover:shadow-purple-500/10 transition-all group cursor-pointer flex flex-col h-full"
                 >
-                  <div className="h-48 w-full overflow-hidden relative">
+                  <div className="w-full aspect-[4/3] overflow-hidden relative">
                     <img 
                       src={event.poster ? getPublicUrl(event.poster) : "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&q=80&w=800"} 
                       alt={event.name}
@@ -333,18 +395,18 @@ export function AdminEvents() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
-                  <div className="p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <h3 className="text-xl text-gray-900 dark:text-white flex-1" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 600 }}>
+                  <div className="p-5 flex flex-col flex-1">
+                    <div className="flex items-start justify-between mb-2 gap-2">
+                      <h3 className="text-xl text-gray-900 dark:text-white flex-1 font-bold line-clamp-1" style={{ fontFamily: 'Poppins, sans-serif' }}>
                         {event.name}
                       </h3>
-                      <div className="flex gap-2">
+                      <div className="flex gap-1 flex-shrink-0">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             openModal(event);
                           }}
-                          className="p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 transition-colors"
+                          className="p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 transition-colors"
                         >
                           <Edit2 className="w-4 h-4" />
                         </button>
@@ -353,46 +415,46 @@ export function AdminEvents() {
                             e.stopPropagation();
                             handleDelete(event.id);
                           }}
-                          className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 transition-colors"
+                          className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 transition-colors"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
 
-                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-4" style={{ fontFamily: 'Open Sans, sans-serif' }}>
+                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-3 line-clamp-2" style={{ fontFamily: 'Open Sans, sans-serif' }}>
                       {event.shortDescription}
                     </p>
 
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                        <CalendarIcon className="w-4 h-4 text-purple-700 dark:text-purple-400" />
+                    <div className="space-y-2 mb-4 text-sm">
+                      <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                        <CalendarIcon className="w-4 h-4 text-purple-700 dark:text-purple-400 flex-shrink-0" />
                         <span style={{ fontFamily: 'Open Sans, sans-serif' }}>
-                          {new Date(event.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                          {new Date(event.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                        <Clock className="w-4 h-4 text-purple-700 dark:text-purple-400" />
+                      <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                        <Clock className="w-4 h-4 text-purple-700 dark:text-purple-400 flex-shrink-0" />
                         <span style={{ fontFamily: 'Open Sans, sans-serif' }}>{event.time}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                        <MapPin className="w-4 h-4 text-purple-700 dark:text-purple-400" />
-                        <span style={{ fontFamily: 'Open Sans, sans-serif' }}>{event.venue}</span>
+                      <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                        <MapPin className="w-4 h-4 text-purple-700 dark:text-purple-400 flex-shrink-0" />
+                        <span className="truncate" style={{ fontFamily: 'Open Sans, sans-serif' }}>{event.venue}</span>
                       </div>
                     </div>
 
-                    <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-800 flex items-center justify-between">
+                    <div className="mt-auto pt-4 border-t border-gray-200 dark:border-gray-800 flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         {usersMap[event.creatorId]?.profileUrl ? (
-                          <div className="w-6 h-6 rounded-full overflow-hidden border border-purple-500/20">
+                          <div className="w-7 h-7 rounded-full overflow-hidden border border-purple-500/20">
                             <img src={usersMap[event.creatorId].profileUrl!} alt="" className="w-full h-full object-cover" />
                           </div>
                         ) : (
-                          <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-purple-500 to-blue-500 flex items-center justify-center text-white text-[10px] font-bold">
+                          <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-purple-500 to-blue-500 flex items-center justify-center text-white text-xs font-bold">
                             {event.createdBy.charAt(0)}
                           </div>
                         )}
-                        <p className="text-xs text-gray-500 dark:text-gray-400" style={{ fontFamily: 'Open Sans, sans-serif' }}>
+                        <p className="text-sm text-gray-600 dark:text-gray-300" style={{ fontFamily: 'Open Sans, sans-serif' }}>
                           <span className="font-semibold">{event.createdBy}</span>
                         </p>
                       </div>
@@ -681,23 +743,34 @@ export function AdminEvents() {
 
                 <div>
                   <label className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                    Event Poster
+                    Event Poster <span className="text-xs text-purple-600 dark:text-purple-400 font-normal">(4:3 Aspect Ratio Only)</span>
                   </label>
                   <div className="flex items-center justify-center w-full">
-                    <label className="flex flex-col items-center justify-center w-full min-h-[160px] border-2 border-gray-300 dark:border-gray-700 border-dashed rounded-xl cursor-pointer bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all overflow-hidden relative group">
+                    <label
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
+                      className={`flex flex-col items-center justify-center w-full min-h-[160px] border-2 border-dashed rounded-xl cursor-pointer transition-all overflow-hidden relative group ${
+                        isDragging
+                          ? 'border-purple-500 bg-purple-500/10 scale-[1.01] shadow-lg shadow-purple-500/20'
+                          : 'border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800'
+                      }`}
+                    >
                       {previewUrl ? (
                         <>
-                          <img src={previewUrl} className="w-full h-40 object-cover" />
-                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <img src={previewUrl} className="w-full aspect-[4/3] object-cover" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                             <Plus className="w-8 h-8 text-white" />
+                            <span className="text-white text-xs font-semibold">Replace Poster</span>
                           </div>
                         </>
                       ) : (
-                        <div className="flex flex-col items-center justify-center pt-5 pb-6 text-gray-500 dark:text-gray-400">
-                          <Plus className="w-8 h-8 mb-2" />
+                        <div className="flex flex-col items-center justify-center pt-5 pb-6 text-gray-500 dark:text-gray-400 p-4 text-center">
+                          <Plus className={`w-8 h-8 mb-2 transition-transform ${isDragging ? 'scale-125 text-purple-500 animate-bounce' : ''}`} />
                           <p className="text-xs uppercase font-bold tracking-widest" style={{ fontFamily: 'Open Sans, sans-serif' }}>
-                            Upload Poster
+                            {isDragging ? 'Drop 4:3 Poster Here' : 'Upload or Drag & Drop 4:3 Poster'}
                           </p>
+                          <p className="text-[11px] text-gray-400 mt-1">Supports JPG or PNG (4:3 ratio)</p>
                         </div>
                       )}
                       <input type="file" className="hidden" accept="image/jpeg,image/png" onChange={handleFileChange} />
@@ -709,17 +782,26 @@ export function AdminEvents() {
                   <button
                     type="button"
                     onClick={closeModal}
-                    className="flex-1 px-6 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
+                    disabled={isSaving}
+                    className="flex-1 px-6 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-blue-900 to-purple-700 text-white hover:shadow-lg hover:shadow-purple-500/50 transition-all"
+                    disabled={isSaving}
+                    className="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-blue-900 to-purple-700 text-white hover:shadow-lg hover:shadow-purple-500/50 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}
                   >
-                    {editingEvent ? "Update Event" : "Create Event"}
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin text-white" />
+                        <span>{editingEvent ? "Updating Event..." : "Creating Event..."}</span>
+                      </>
+                    ) : (
+                      <span>{editingEvent ? "Update Event" : "Create Event"}</span>
+                    )}
                   </button>
                 </div>
               </form>
