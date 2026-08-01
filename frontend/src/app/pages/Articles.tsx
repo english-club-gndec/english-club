@@ -6,7 +6,11 @@ import {
   PenTool, 
   Search, 
   Calendar, 
-  Tag 
+  Tag,
+  Sparkles,
+  RotateCcw,
+  BookOpen,
+  ArrowRight
 } from "lucide-react";
 import { Link } from "react-router";
 import { submissionService, Submission } from "../../services/submissionService";
@@ -128,12 +132,93 @@ export function Articles() {
               <div className="animate-spin w-10 h-10 border-4 border-purple-600 border-t-transparent rounded-full mx-auto mb-4"></div>
               <p className="text-gray-500">Loading publications...</p>
             </div>
+          ) : submissions.length === 0 ? (
+            /* Scenario A: No publications exist in database yet */
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-purple-950 to-blue-950 border border-purple-500/20 shadow-2xl p-8 sm:p-12 text-center text-white"
+            >
+              {/* Glow Accents */}
+              <div className="absolute -top-24 -left-24 w-72 h-72 bg-purple-500/20 rounded-full blur-3xl pointer-events-none" />
+              <div className="absolute -bottom-24 -right-24 w-72 h-72 bg-blue-500/20 rounded-full blur-3xl pointer-events-none" />
+
+              <div className="relative z-10 max-w-2xl mx-auto space-y-6">
+                <div className="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-tr from-purple-600 to-pink-500 p-0.5 shadow-xl shadow-purple-500/30">
+                  <div className="w-full h-full bg-slate-950 rounded-[22px] flex items-center justify-center text-purple-400">
+                    <Sparkles className="w-10 h-10 animate-pulse" />
+                  </div>
+                </div>
+
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs font-semibold tracking-wide uppercase">
+                  Call For Student Writers
+                </div>
+
+                <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  Be the Pioneer — Publish the <span className="bg-gradient-to-r from-purple-400 via-pink-300 to-blue-400 bg-clip-text text-transparent">First Article!</span>
+                </h2>
+
+                <p className="text-gray-300 text-base sm:text-lg leading-relaxed" style={{ fontFamily: 'Open Sans, sans-serif' }}>
+                  The English Club student publication showcase is waiting for your voice. Share your blogs, opinion pieces, technical writing, or creative stories with GNDEC.
+                </p>
+
+                <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-4">
+                  <Link
+                    to="/submit-article"
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold text-base shadow-xl shadow-purple-600/30 hover:shadow-purple-600/50 hover:scale-105 transition-all cursor-pointer"
+                  >
+                    <PenTool className="w-5 h-5" /> Submit Your Article
+                  </Link>
+                </div>
+
+                {/* Inspiring Topics Ideas */}
+                <div className="pt-8 border-t border-white/10 mt-8">
+                  <p className="text-xs uppercase font-bold text-purple-300 tracking-wider mb-4">
+                    Need Inspiration? Ideas you can write about:
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-left">
+                    <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm hover:border-purple-400/30 transition-colors">
+                      <div className="text-purple-400 font-semibold text-sm mb-1">💡 Tech & Innovation</div>
+                      <div className="text-xs text-gray-300">How modern tech and AI are shaping campus learning.</div>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm hover:border-pink-400/30 transition-colors">
+                      <div className="text-pink-400 font-semibold text-sm mb-1">🎙️ Communication</div>
+                      <div className="text-xs text-gray-300">Public speaking guides, debates & oratory experiences.</div>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm hover:border-blue-400/30 transition-colors">
+                      <div className="text-blue-400 font-semibold text-sm mb-1">📖 Creative & Stories</div>
+                      <div className="text-xs text-gray-300">Short stories, poems, book reviews & student journeys.</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
           ) : filteredArticles.length === 0 ? (
-            <div className="text-center py-20 bg-white dark:bg-gray-900 rounded-3xl border border-dashed border-gray-200 dark:border-gray-800">
-              <ImageIcon className="w-16 h-16 mx-auto mb-4 text-gray-300 dark:text-gray-700" />
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">No publications found</h3>
-              <p className="text-gray-500 dark:text-gray-400">Try adjusting your search terms or selecting another tag.</p>
-            </div>
+            /* Scenario B: Search/Filter returned 0 results */
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center py-16 px-6 bg-white dark:bg-gray-900 rounded-3xl border border-dashed border-gray-200 dark:border-gray-800 shadow-xl space-y-4"
+            >
+              <div className="w-16 h-16 rounded-2xl bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 flex items-center justify-center mx-auto">
+                <Search className="w-8 h-8" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                No matching publications found
+              </h3>
+              <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto" style={{ fontFamily: 'Open Sans, sans-serif' }}>
+                We couldn't find any articles matching {searchTerm ? `"${searchTerm}"` : "your filter"}. Try adjusting your search query or resetting filters.
+              </p>
+              <button
+                onClick={() => {
+                  setSearchTerm("");
+                  setSelectedTag(null);
+                }}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-semibold text-sm transition-all shadow-md shadow-purple-500/20 cursor-pointer"
+              >
+                <RotateCcw className="w-4 h-4" /> Reset Search & Filters
+              </button>
+            </motion.div>
           ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               {filteredArticles.map((article, index) => (
