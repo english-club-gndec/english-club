@@ -1,14 +1,8 @@
 import { motion } from "motion/react";
 import { Link } from "react-router";
-import { MessageCircle, Users, Trophy, Target, Lightbulb } from "lucide-react";
+import { MessageCircle, Target, Lightbulb } from "lucide-react";
 
 export function Home() {
-  const stats = [
-    { label: "Events Conducted", value: "50+", icon: Trophy },
-    { label: "Active Members", value: "200+", icon: Users },
-    { label: "Achievements", value: "25+", icon: Target },
-  ];
-
   const missions = [
     { icon: MessageCircle, title: "Communication", description: "Master the art of effective expression" },
     { icon: Target, title: "Confidence", description: "Build self-assurance through practice" },
@@ -122,46 +116,6 @@ export function Home() {
         </div>
       </section>
 
-      <section className="py-20 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-900 dark:to-gray-950">
-        <div className="max-w-7xl mx-auto px-6">
-          <motion.h2
-            className="text-4xl lg:text-5xl text-center text-gray-900 dark:text-white mb-16"
-            style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700 }}
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-          >
-            Our Achievements
-          </motion.h2>
-
-          <motion.div
-            className="grid md:grid-cols-3 gap-8"
-            variants={container}
-            initial="hidden"
-            whileInView="show"
-            viewport={{ once: true }}
-          >
-            {stats.map((stat, index) => (
-              <motion.div
-                key={index}
-                variants={item}
-                className="p-8 rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:shadow-xl hover:shadow-purple-500/20 transition-all group"
-              >
-                <stat.icon className="w-12 h-12 text-purple-700 dark:text-purple-400 mb-4 group-hover:scale-110 transition-transform" />
-                <div className="text-5xl text-gray-900 dark:text-white mb-2" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 800 }}>
-                  {stat.value}
-                </div>
-                <div className="text-lg text-gray-600 dark:text-gray-300" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                  {stat.label}
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
-      
     </div>
   );
 }
