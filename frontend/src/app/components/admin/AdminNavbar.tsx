@@ -12,10 +12,19 @@ export function AdminNavbar() {
   const [adminEmail, setAdminEmail] = useState("admin@englishclub.edu");
   const [adminProfilePic, setAdminProfilePic] = useState<string | null>(null);
   const { theme, toggleTheme } = useTheme();
-  const { logout, userId } = useAuth();
+  const { logout, userId, user } = useAuth();
 
   useEffect(() => {
     async function fetchAdminName() {
+      if (user) {
+        setAdminName(user.user_name);
+        if (user.members) {
+          setAdminEmail(user.members.member_email);
+          setAdminProfilePic(user.members.member_profile_picture_key);
+        }
+        return;
+      }
+
       if (userId) {
         try {
           const userData = await userService.getUserById(userId);
@@ -28,7 +37,6 @@ export function AdminNavbar() {
           }
         } catch (err: any) {
           console.error("Failed to fetch admin name:", err);
-          // If the user is not found (404), the session is invalid (e.g. after DB reset)
           if (err.message && err.message.includes("404")) {
             logout();
           }
@@ -36,7 +44,7 @@ export function AdminNavbar() {
       }
     }
     fetchAdminName();
-  }, [userId]);
+  }, [user, userId]);
 
 
   return (
