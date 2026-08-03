@@ -3,7 +3,9 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 export const memberService = {
   // GET /api/members/getAllMembers
   getAllMembers: async () => {
-    const response = await fetch(`${API_BASE_URL}/members/getAllMembers`);
+    const response = await fetch(`${API_BASE_URL}/members/getAllMembers`, {
+      credentials: 'include'
+    });
     if (!response.ok) {
       const error = await response.json();
       throw new Error(`Error ${response.status}: ${error.error || 'Failed to fetch members'}`);
@@ -16,6 +18,7 @@ export const memberService = {
     const response = await fetch(`${API_BASE_URL}/members/${userId}/createMember`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify(memberData)
     });
     if (!response.ok) {
@@ -30,6 +33,7 @@ export const memberService = {
     const response = await fetch(`${API_BASE_URL}/members/${userId}/${memberId}/updateMemberById`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify(memberData)
     });
     if (!response.ok) {
@@ -44,6 +48,7 @@ export const memberService = {
     const response = await fetch(`${API_BASE_URL}/members/${userId}/deleteMembersById`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ member_ids: memberIds })
     });
     if (!response.ok) {
@@ -58,6 +63,7 @@ export const memberService = {
     const response = await fetch(`${API_BASE_URL}/members/${userId}/createMultipleMembers`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify(membersList)
     });
     if (!response.ok) {

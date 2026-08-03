@@ -2,7 +2,9 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 
 export const settingsServices = {
   getSettings: async () => {
-    const response = await fetch(`${API_BASE_URL}/settings`);
+    const response = await fetch(`${API_BASE_URL}/settings`, {
+      credentials: 'include'
+    });
     if (!response.ok) {
       throw new Error(`Failed to fetch settings`);
     }
@@ -15,6 +17,7 @@ export const settingsServices = {
       headers: {
         'Content-Type': 'application/json',
       },
+      credentials: 'include',
       body: JSON.stringify(settings),
     });
     if (!response.ok) {

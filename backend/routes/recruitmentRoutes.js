@@ -1,23 +1,24 @@
 const express = require('express');
 const router = express.Router();
 const recruitmentController = require('../controllers/recruitmentController');
+const { verifyToken } = require('../middleware/authMiddleware');
 
-// POST /api/recruitment/createCandidate
+// POST /api/recruitment/createCandidate (Public candidate application)
 router.post('/createCandidate', recruitmentController.createCandidate);
 
-// GET /api/recruitment/:user_id/getAllCandidates
-router.get('/:user_id/getAllCandidates', recruitmentController.getAllCandidates);
+// GET /api/recruitment/:user_id/getAllCandidates (Admin protected)
+router.get('/:user_id/getAllCandidates', verifyToken, recruitmentController.getAllCandidates);
 
-// GET /api/recruitment/:userId/:candidate_id/getCandidateById
-router.get('/:userId/:candidate_id/getCandidateById', recruitmentController.getCandidateById);
+// GET /api/recruitment/:userId/:candidate_id/getCandidateById (Admin protected)
+router.get('/:userId/:candidate_id/getCandidateById', verifyToken, recruitmentController.getCandidateById);
 
-// PATCH /api/recruitment/:candidate_id/updateCandidateById
-router.patch('/:candidate_id/updateCandidateById', recruitmentController.updateCandidateById);
+// PATCH /api/recruitment/:candidate_id/updateCandidateById (Admin protected)
+router.patch('/:candidate_id/updateCandidateById', verifyToken, recruitmentController.updateCandidateById);
 
-// PATCH /api/recruitment/:user_id/:candidate_id/updateCandidateStatusById
-router.patch('/:user_id/:candidate_id/updateCandidateStatusById', recruitmentController.updateCandidateStatusById);
+// PATCH /api/recruitment/:user_id/:candidate_id/updateCandidateStatusById (Admin protected)
+router.patch('/:user_id/:candidate_id/updateCandidateStatusById', verifyToken, recruitmentController.updateCandidateStatusById);
 
-// DELETE /api/recruitment/:user_id/archiveAllData
-router.delete('/:user_id/archiveAllData', recruitmentController.archiveAllData);
+// DELETE /api/recruitment/:user_id/archiveAllData (Admin protected)
+router.delete('/:user_id/archiveAllData', verifyToken, recruitmentController.archiveAllData);
 
 module.exports = router;

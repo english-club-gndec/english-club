@@ -3,7 +3,9 @@ const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 export const registrationService = {
   getAllParticipants: async () => {
     try {
-      const response = await fetch(`${BASE_URL}/registration/getAllParticipants`);
+      const response = await fetch(`${BASE_URL}/registration/getAllParticipants`, {
+        credentials: 'include'
+      });
       if (!response.ok) {
         throw new Error(`Error: ${response.statusText}`);
       }

@@ -8,6 +8,7 @@ export const recruitmentServices = {
       headers: {
         "Content-Type": "application/json",
       },
+      credentials: "include",
       body: JSON.stringify(candidateData),
     });
 
@@ -20,7 +21,9 @@ export const recruitmentServices = {
   },
 
   getAllCandidates: async (userId: string) => {
-    const response = await fetch(`${API_BASE_URL}/${userId}/getAllCandidates`);
+    const response = await fetch(`${API_BASE_URL}/${userId}/getAllCandidates`, {
+      credentials: "include",
+    });
     if (!response.ok) {
       const errorText = await response.text();
       throw new Error(`Failed to fetch candidates: ${errorText}`);
@@ -29,7 +32,9 @@ export const recruitmentServices = {
   },
 
   getCandidateById: async (userId: string, candidateId: string) => {
-    const response = await fetch(`${API_BASE_URL}/${userId}/${candidateId}/getCandidateById`);
+    const response = await fetch(`${API_BASE_URL}/${userId}/${candidateId}/getCandidateById`, {
+      credentials: "include",
+    });
     if (!response.ok) {
       const errorText = await response.text();
       throw new Error(`Failed to fetch candidate details: ${errorText}`);
@@ -43,6 +48,7 @@ export const recruitmentServices = {
       headers: {
         "Content-Type": "application/json",
       },
+      credentials: "include",
       body: JSON.stringify(candidateData),
     });
 
@@ -60,6 +66,7 @@ export const recruitmentServices = {
       headers: {
         "Content-Type": "application/json",
       },
+      credentials: "include",
       body: JSON.stringify(statusData),
     });
 

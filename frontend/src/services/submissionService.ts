@@ -37,6 +37,7 @@ export const submissionService = {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify(data),
       });
       
@@ -54,7 +55,9 @@ export const submissionService = {
 
   getApprovedSubmissions: async (): Promise<Submission[]> => {
     try {
-      const response = await fetch(`${BASE_URL}/submission/approved`);
+      const response = await fetch(`${BASE_URL}/submission/approved`, {
+        credentials: 'include',
+      });
       if (!response.ok) {
         throw new Error(`Error: ${response.statusText}`);
       }
@@ -67,7 +70,9 @@ export const submissionService = {
 
   getAllSubmissions: async (): Promise<Submission[]> => {
     try {
-      const response = await fetch(`${BASE_URL}/submission`);
+      const response = await fetch(`${BASE_URL}/submission`, {
+        credentials: 'include',
+      });
       if (!response.ok) {
         throw new Error(`Error: ${response.statusText}`);
       }
@@ -90,6 +95,7 @@ export const submissionService = {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           status,
           rejection_reason: rejectionReason || null,
@@ -112,6 +118,7 @@ export const submissionService = {
     try {
       const response = await fetch(`${BASE_URL}/submission/${submissionId}`, {
         method: 'DELETE',
+        credentials: 'include',
       });
 
       if (!response.ok) {

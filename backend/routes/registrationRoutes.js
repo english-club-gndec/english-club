@@ -1,29 +1,26 @@
 const express = require('express');
 const router = express.Router();
 const registrationController = require('../controllers/registrationController');
+const { verifyToken } = require('../middleware/authMiddleware');
 
-// POST register participant
+// POST register participant (Public event registration)
 // Path: /api/registration/register
 router.post('/register', registrationController.registerParticipant);
 
-// GET all participants
+// GET all participants (Admin protected)
 // Path: /api/registration/getAllParticipants
-router.get('/getAllParticipants', registrationController.getAllParticipants);
+router.get('/getAllParticipants', verifyToken, registrationController.getAllParticipants);
 
-// GET participants by event ID
+// GET participants by event ID (Admin protected)
 // Path: /api/registration/:event_id/getParticipantsByEventId
-router.get('/:event_id/getParticipantsByEventId', registrationController.getParticipantsByEventId);
+router.get('/:event_id/getParticipantsByEventId', verifyToken, registrationController.getParticipantsByEventId);
 
-// GET participation count by event ID
+// GET participation count by event ID (Public)
 // Path: /api/registration/:event_id/getParticipationCountByEventId
 router.get('/:event_id/getParticipationCountByEventId', registrationController.getParticipationCountByEventId);
 
-// PATCH update participant
+// PATCH update participant (Admin protected)
 // Path: /api/registration/:participant_id/updateParticipant
-router.patch('/:participant_id/updateParticipant', registrationController.updateParticipant);
-
-//In future will add new API where we'll se if that participant really participated in that event or not.
-//Path: /api/registration/:participant_id/checkParticipation
-//TODO: router.get('/:participant_id/checkParticipation', registrationController.checkParticipation);
+router.patch('/:participant_id/updateParticipant', verifyToken, registrationController.updateParticipant);
 
 module.exports = router;

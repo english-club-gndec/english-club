@@ -3,7 +3,9 @@ const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 export const eventService = {
   getAllEvents: async () => {
     try {
-      const response = await fetch(`${BASE_URL}/events/getAllEvents`);
+      const response = await fetch(`${BASE_URL}/events/getAllEvents`, {
+        credentials: 'include',
+      });
       if (!response.ok) {
         throw new Error(`Error: ${response.statusText}`);
       }
@@ -21,6 +23,7 @@ export const eventService = {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify(eventData),
       });
       if (!response.ok) {
@@ -41,6 +44,7 @@ export const eventService = {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify(eventData),
       });
       if (!response.ok) {
@@ -58,6 +62,7 @@ export const eventService = {
     try {
       const response = await fetch(`${BASE_URL}/events/${eventId}`, {
         method: 'DELETE',
+        credentials: 'include',
       });
       if (!response.ok) {
         const errorData = await response.json();

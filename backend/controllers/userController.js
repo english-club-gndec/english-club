@@ -1,5 +1,6 @@
 const supabase = require('../config/supabase');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
 const userController = {
   // GET /api/users/:user_id/getUsers
@@ -245,11 +246,73 @@ const userController = {
         return res.status(401).json({ error: 'Invalid username or password' });
       }
 
-      // Return user data (excluding password)
+      // Generate JWT token
+      if (!process.env.JWT_SECRET) {
+        throw new Error('JWT_SECRET environment variable is not defined');
+      }
+
+      const token = jwt.sign(
+        { user_id: user.user_id, user_name: user.user_name, user_role: user.user_role },
+        process.env.JWT_SECRET,
+        { expiresIn: '1d' }
+      );
+
+      // Set HTTP-Only Cookie
+      res.cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 24 * 60 * 60 * 1000 // 1 day
+      });
+
+      // Return user data (excluding password) and token
       delete user.user_password;
-      res.json({ message: 'Login successful', user });
+      res.json({ message: 'Login successful', user, token });
     } catch (err) {
       console.error('Login error:', err);
+      res.status(500).json({ error: err.message || 'Internal Server Error' });
+    }
+  },
+
+  // POST /api/user/logout
+  logout: async (req, res) => {
+    res.clearCookie('token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax'
+    });
+    res.json({ message: 'Logged out successfully' });
+  },
+
+  // GET /api/user/me
+  getMe: async (req, res) => {
+    try {
+      const userId = req.user.user_id;
+      const { data: user, error } = await supabase
+        .from('users')
+        .select(`
+          user_id,
+          member_id,
+          user_name,
+          user_role,
+          created_at,
+          updated_at,
+          members:members!users_member_id_fkey (
+            member_name,
+            member_email,
+            member_profile_picture_key,
+            member_postion
+          )
+        `)
+        .eq('user_id', userId)
+        .single();
+
+      if (error || !user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      res.json({ user });
+    } catch (err) {
+      console.error('getMe error:', err);
       res.status(500).json({ error: err.message || 'Internal Server Error' });
     }
   },
