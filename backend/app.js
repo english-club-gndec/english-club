@@ -1,8 +1,10 @@
 const express = require('express');
-const cors = require('cors');
 const cookieParser = require('cookie-parser');
 
 const app = express();
+
+// Disable ETag to prevent 304 caching issues with Vercel & CORS credentials
+app.set('etag', false);
 
 // Helper to normalize URLs (strip trailing slashes)
 const normalizeUrl = (url) => (url || '').trim().replace(/\/+$/, '');
@@ -10,6 +12,11 @@ const normalizeUrl = (url) => (url || '').trim().replace(/\/+$/, '');
 // CORS Middleware with explicit header reflection for credentials support
 app.use((req, res, next) => {
   const origin = req.headers.origin;
+
+  // Prevent browser & CDN caching of authenticated API endpoints (prevents 304 CORS mismatch)
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
 
   if (origin) {
     const reqOrigin = normalizeUrl(origin);
@@ -57,8 +64,5 @@ app.use('/api/submission', require('./routes/submissionRoutes'));
 app.get('/', (req, res) => {
   res.json({ message: 'English Club API is running' });
 });
-
-// For future routes:
-// app.use('/api/v1/users', require('./routes/userRoutes'));
 
 module.exports = app;
