@@ -257,11 +257,13 @@ const userController = {
         { expiresIn: '1d' }
       );
 
+      const isProduction = process.env.NODE_ENV === 'production';
+
       // Set HTTP-Only Cookie
       res.cookie('token', token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
+        secure: isProduction,
+        sameSite: isProduction ? 'none' : 'lax',
         maxAge: 24 * 60 * 60 * 1000 // 1 day
       });
 
@@ -276,10 +278,11 @@ const userController = {
 
   // POST /api/user/logout
   logout: async (req, res) => {
+    const isProduction = process.env.NODE_ENV === 'production';
     res.clearCookie('token', {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax'
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax'
     });
     res.json({ message: 'Logged out successfully' });
   },

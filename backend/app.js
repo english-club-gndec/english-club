@@ -4,19 +4,35 @@ const cookieParser = require('cookie-parser');
 
 const app = express();
 
-// Middleware
-const allowedOrigins = [
-  process.env.FRONTEND_URL,
-  'http://localhost:5173',
-  'http://127.0.0.1:5173'
-].filter(Boolean);
+// Helper to normalize URLs (strip trailing slashes)
+const normalizeUrl = (url) => (url || '').trim().replace(/\/+$/, '');
 
+// Middleware
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin) return callback(null, true);
+
+    const reqOrigin = normalizeUrl(origin);
+    const configuredOrigins = (process.env.FRONTEND_URL || '')
+      .split(',')
+      .map(normalizeUrl)
+      .filter(Boolean);
+
+    const defaultOrigins = [
+      'http://localhost:5173',
+      'http://127.0.0.1:5173',
+      'https://english-club-beta.vercel.app'
+    ].map(normalizeUrl);
+
+    const allowedOrigins = [...configuredOrigins, ...defaultOrigins];
+
+    const isAllowed = allowedOrigins.includes(reqOrigin) || reqOrigin.endsWith('.vercel.app');
+
+    if (isAllowed) {
       callback(null, true);
     } else {
-      callback(new Error(`CORS policy error: Origin ${origin} is not allowed`));
+      console.warn(`[CORS] Request from origin ${origin} blocked.`);
+      callback(null, false);
     }
   },
   credentials: true
