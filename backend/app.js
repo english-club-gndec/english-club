@@ -7,11 +7,11 @@ const app = express();
 // Helper to normalize URLs (strip trailing slashes)
 const normalizeUrl = (url) => (url || '').trim().replace(/\/+$/, '');
 
-// Middleware
-app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
+// CORS Middleware with explicit header reflection for credentials support
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
 
+  if (origin) {
     const reqOrigin = normalizeUrl(origin);
     const configuredOrigins = (process.env.FRONTEND_URL || '')
       .split(',')
@@ -25,18 +25,23 @@ app.use(cors({
     ].map(normalizeUrl);
 
     const allowedOrigins = [...configuredOrigins, ...defaultOrigins];
-
     const isAllowed = allowedOrigins.includes(reqOrigin) || reqOrigin.endsWith('.vercel.app');
 
     if (isAllowed) {
-      callback(null, true);
-    } else {
-      console.warn(`[CORS] Request from origin ${origin} blocked.`);
-      callback(null, false);
+      res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
     }
-  },
-  credentials: true
-}));
+  }
+
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
+
+  next();
+});
+
 app.use(express.json());
 app.use(cookieParser());
 
