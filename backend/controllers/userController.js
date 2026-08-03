@@ -232,7 +232,19 @@ const userController = {
       // Fetch user from database
       const { data: user, error } = await supabase
         .from('users')
-        .select('user_id, user_name, user_password, user_role')
+        .select(`
+          user_id,
+          member_id,
+          user_name,
+          user_password,
+          user_role,
+          members:members!users_member_id_fkey (
+            member_name,
+            member_email,
+            member_profile_picture_key,
+            member_postion
+          )
+        `)
         .eq('user_name', username)
         .single();
 

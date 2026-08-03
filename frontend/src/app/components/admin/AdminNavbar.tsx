@@ -15,35 +15,41 @@ export function AdminNavbar() {
   const { logout, userId, user } = useAuth();
 
   useEffect(() => {
-    async function fetchAdminName() {
-      if (user) {
-        setAdminName(user.user_name);
-        if (user.members) {
-          setAdminEmail(user.members.member_email);
-          setAdminProfilePic(user.members.member_profile_picture_key);
-        }
-        return;
-      }
+    async function fetchAdminDetails() {
+      let current = user;
 
-      if (userId) {
+      if (!current?.members && userId) {
         try {
           const userData = await userService.getUserById(userId);
           if (userData) {
-            setAdminName(userData.user_name);
-            if (userData.members) {
-              setAdminEmail(userData.members.member_email);
-              setAdminProfilePic(userData.members.member_profile_picture_key);
-            }
+            current = userData;
           }
         } catch (err: any) {
-          console.error("Failed to fetch admin name:", err);
+          console.error("Failed to fetch admin details:", err);
           if (err.message && err.message.includes("404")) {
             logout();
           }
         }
       }
+
+      if (current) {
+        if (current.members?.member_name) {
+          setAdminName(current.members.member_name);
+        } else if (current.user_name) {
+          setAdminName(current.user_name);
+        }
+
+        if (current.members) {
+          if (current.members.member_email) {
+            setAdminEmail(current.members.member_email);
+          }
+          if (current.members.member_profile_picture_key) {
+            setAdminProfilePic(current.members.member_profile_picture_key);
+          }
+        }
+      }
     }
-    fetchAdminName();
+    fetchAdminDetails();
   }, [user, userId]);
 
 
