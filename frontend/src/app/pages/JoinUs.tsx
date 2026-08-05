@@ -18,6 +18,17 @@ import {
 import { recruitmentServices } from "../../services/recruitmentServices";
 import { settingsServices } from "../../services/settingsServices";
 
+interface RecruitmentQuestion {
+  question_id: string;
+  question_label: string;
+  question_type: 'SHORT_TEXT' | 'LONG_TEXT' | 'DROPDOWN' | 'MULTIPLE_CHOICE' | 'CHECKBOX';
+  options: string[];
+  placeholder?: string;
+  is_required: boolean;
+  order_index: number;
+  is_active: boolean;
+}
+
 const WhatsAppIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
   <svg
     className={className}
@@ -45,6 +56,9 @@ export function JoinUs() {
     candidate_description: "",
     candidate_why_eligible: "",
   });
+
+  const [dynamicQuestions, setDynamicQuestions] = useState<RecruitmentQuestion[]>([]);
+  const [customAnswers, setCustomAnswers] = useState<Record<string, any>>({});
   const [recruitmentsActive, setRecruitmentsActive] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -52,17 +66,21 @@ export function JoinUs() {
   const POSTER_IMAGE = "/images/recruitment-poster.jpg";
 
   useEffect(() => {
-    const fetchSettings = async () => {
+    const fetchData = async () => {
       try {
-        const data = await settingsServices.getSettings();
-        setRecruitmentsActive(data.recruitmentsActive || false);
+        const [settingsData, questionsData] = await Promise.all([
+          settingsServices.getSettings(),
+          recruitmentServices.getPublicQuestions().catch(() => [])
+        ]);
+        setRecruitmentsActive(settingsData.recruitmentsActive || false);
+        setDynamicQuestions(questionsData || []);
       } catch (error) {
-        console.error("Failed to fetch settings:", error);
+        console.error("Failed to fetch recruitment details:", error);
       } finally {
         setIsLoading(false);
       }
     };
-    fetchSettings();
+    fetchData();
   }, []);
 
   const benefits = [
@@ -91,6 +109,13 @@ export function JoinUs() {
     { label: "Supportive Team", desc: "Grow together with an energetic community" },
   ];
 
+  const handleCustomAnswerChange = (questionId: string, value: any) => {
+    setCustomAnswers(prev => ({
+      ...prev,
+      [questionId]: value
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -103,6 +128,7 @@ export function JoinUs() {
         interested_department: formData.interested_department,
         candidate_description: formData.candidate_description,
         candidate_why_eligible: formData.candidate_why_eligible,
+        custom_answers: customAnswers
       };
 
       await recruitmentServices.createCandidate(payload);
@@ -117,10 +143,11 @@ export function JoinUs() {
           candidate_crn: "",
           candidate_urn: "",
           candidate_email: "",
-          interested_department: "",
+          interested_department: "TECHNICAL",
           candidate_description: "",
           candidate_why_eligible: "",
         });
+        setCustomAnswers({});
         setIsSubmitted(false);
       }, 3000);
     } catch (error: any) {
@@ -160,19 +187,14 @@ export function JoinUs() {
     );
   }
 
-  // -------------------------------------------------------------
-  // STATE: RECRUITMENTS NOT YET ACTIVE (STARTING SOON PAGE)
-  // -------------------------------------------------------------
+  // RECRUITMENTS NOT ACTIVE
   if (!recruitmentsActive) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-purple-950 text-white py-16 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-        {/* Decorative Background Elements */}
         <div className="absolute top-1/4 left-10 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-1/4 right-10 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="max-w-6xl mx-auto relative z-10 space-y-12">
-          
-          {/* Header Banner */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -196,10 +218,7 @@ export function JoinUs() {
             </p>
           </motion.div>
 
-          {/* Main Grid: Poster Showcase & Action Cards */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            
-            {/* Left Column: Official Poster Preview (5 columns) */}
             <motion.div
               initial={{ opacity: 0, x: -30 }}
               animate={{ opacity: 1, x: 0 }}
@@ -235,14 +254,12 @@ export function JoinUs() {
               </div>
             </motion.div>
 
-            {/* Right Column: WhatsApp CTA & Info (7 columns) */}
             <motion.div
               initial={{ opacity: 0, x: 30 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6, delay: 0.3 }}
               className="lg:col-span-7 space-y-6"
             >
-              {/* WhatsApp Group CTA Box */}
               <div className="relative rounded-3xl p-6 sm:p-8 bg-gradient-to-br from-emerald-950/80 via-slate-900 to-emerald-900/40 border border-emerald-500/30 shadow-2xl backdrop-blur-xl overflow-hidden group">
                 <div className="absolute -top-12 -right-12 w-40 h-40 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/20 transition-all pointer-events-none" />
                 
@@ -280,7 +297,6 @@ export function JoinUs() {
                 </div>
               </div>
 
-              {/* What You'll Do Highlights */}
               <div className="rounded-3xl p-6 sm:p-8 bg-white/5 border border-white/10 backdrop-blur-xl space-y-4">
                 <h3 className="text-xl font-bold text-white flex items-center gap-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
                   <Megaphone className="w-5 h-5 text-purple-400" /> What You'll Experience in English Club
@@ -299,7 +315,6 @@ export function JoinUs() {
                 </div>
               </div>
 
-              {/* Queries & Contact */}
               <div className="rounded-2xl p-5 bg-blue-900/20 border border-blue-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
@@ -322,19 +337,14 @@ export function JoinUs() {
                   Chat on WhatsApp (+91 76960 45458)
                 </a>
               </div>
-
             </motion.div>
-
           </div>
 
-          {/* Footer Slogan */}
           <div className="text-center pt-6 border-t border-white/10 text-xs sm:text-sm text-gray-400 font-medium tracking-wide">
             COMMUNICATE &nbsp;|&nbsp; CREATE &nbsp;|&nbsp; CONNECT &nbsp;|&nbsp; GROW TOGETHER
           </div>
-
         </div>
 
-        {/* Poster Lightbox Modal */}
         <AnimatePresence>
           {isPosterOpen && (
             <motion.div
@@ -364,16 +374,11 @@ export function JoinUs() {
     );
   }
 
-  // -------------------------------------------------------------
-  // STATE: RECRUITMENTS ARE ACTIVE (SHOW POSTER + FORM)
-  // -------------------------------------------------------------
+  // RECRUITMENTS ARE ACTIVE
   return (
     <div className="bg-white dark:bg-gray-950">
-      
-      {/* Top Banner with Recruitment Poster & WhatsApp Link */}
       <section className="relative py-12 bg-gradient-to-br from-blue-900 via-slate-900 to-purple-950 text-white overflow-hidden">
         <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-12 gap-8 items-center">
-          
           <div className="md:col-span-7 space-y-4">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-semibold uppercase tracking-wider">
               <Sparkles className="w-3.5 h-3.5" /> Applications Now Open!
@@ -421,11 +426,9 @@ export function JoinUs() {
               </div>
             </div>
           </div>
-
         </div>
       </section>
 
-      {/* Benefits Grid */}
       <section className="py-16 bg-gray-50 dark:bg-gray-900/50">
         <div className="max-w-7xl mx-auto px-6">
           <motion.div
@@ -473,13 +476,13 @@ export function JoinUs() {
             </p>
           </motion.div>
 
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <div className="grid lg:grid-cols-2 gap-12 items-start">
             <motion.div
               initial={{ opacity: 0, x: -30 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
-              className="relative"
+              className="relative sticky top-24"
             >
               <div
                 onClick={() => setIsPosterOpen(true)}
@@ -655,41 +658,138 @@ export function JoinUs() {
                       <option value="ANCHORING">Anchoring</option>
                     </select>
                   </div>
-
-                  <div className="md:col-span-2">
-                    <label htmlFor="candidate_description" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                      Introduce Yourself *
-                    </label>
-                    <textarea
-                      id="candidate_description"
-                      name="candidate_description"
-                      value={formData.candidate_description}
-                      onChange={handleChange}
-                      required
-                      rows={3}
-                      placeholder="Tell us a little about yourself..."
-                      className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all resize-none"
-                      style={{ fontFamily: 'Open Sans, sans-serif' }}
-                    />
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <label htmlFor="candidate_why_eligible" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                      Why do you want to be part of this club and how can you contribute? *
-                    </label>
-                    <textarea
-                      id="candidate_why_eligible"
-                      name="candidate_why_eligible"
-                      value={formData.candidate_why_eligible}
-                      onChange={handleChange}
-                      required
-                      rows={4}
-                      placeholder="Share your motivation and potential contributions..."
-                      className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all resize-none"
-                      style={{ fontFamily: 'Open Sans, sans-serif' }}
-                    />
-                  </div>
                 </div>
+
+                {/* --- DYNAMIC CUSTOM FORM QUESTIONS --- */}
+                {dynamicQuestions.length > 0 ? (
+                  <div className="space-y-6 pt-4 border-t border-gray-200 dark:border-gray-800">
+                    {dynamicQuestions.map((q) => (
+                      <div key={q.question_id} className="space-y-2">
+                        <label className="block text-sm text-gray-700 dark:text-gray-300 font-semibold">
+                          {q.question_label} {q.is_required && <span className="text-red-500">*</span>}
+                        </label>
+
+                        {/* SHORT TEXT */}
+                        {q.question_type === 'SHORT_TEXT' && (
+                          <input
+                            type="text"
+                            value={customAnswers[q.question_id] || ''}
+                            onChange={(e) => handleCustomAnswerChange(q.question_id, e.target.value)}
+                            placeholder={q.placeholder || ''}
+                            required={q.is_required}
+                            className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                          />
+                        )}
+
+                        {/* LONG TEXT */}
+                        {q.question_type === 'LONG_TEXT' && (
+                          <textarea
+                            value={customAnswers[q.question_id] || ''}
+                            onChange={(e) => handleCustomAnswerChange(q.question_id, e.target.value)}
+                            placeholder={q.placeholder || ''}
+                            required={q.is_required}
+                            rows={4}
+                            className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all resize-none"
+                          />
+                        )}
+
+                        {/* DROPDOWN */}
+                        {q.question_type === 'DROPDOWN' && (
+                          <select
+                            value={customAnswers[q.question_id] || ''}
+                            onChange={(e) => handleCustomAnswerChange(q.question_id, e.target.value)}
+                            required={q.is_required}
+                            className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                          >
+                            <option value="" disabled>Select an option...</option>
+                            {q.options?.map((opt) => (
+                              <option key={opt} value={opt}>{opt}</option>
+                            ))}
+                          </select>
+                        )}
+
+                        {/* MULTIPLE CHOICE CHECKBOXES */}
+                        {q.question_type === 'MULTIPLE_CHOICE' && (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                            {q.options?.map((opt) => {
+                              const selectedList: string[] = customAnswers[q.question_id] || [];
+                              const isChecked = selectedList.includes(opt);
+                              return (
+                                <label key={opt} className="flex items-center gap-3 p-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer transition-colors">
+                                  <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    onChange={(e) => {
+                                      const newList = e.target.checked
+                                        ? [...selectedList, opt]
+                                        : selectedList.filter((item) => item !== opt);
+                                      handleCustomAnswerChange(q.question_id, newList);
+                                    }}
+                                    className="w-4 h-4 text-purple-600 rounded border-gray-300 focus:ring-purple-500"
+                                  />
+                                  <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{opt}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {/* SINGLE CHECKBOX */}
+                        {q.question_type === 'CHECKBOX' && (
+                          <label className="flex items-center gap-3 p-3.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={!!customAnswers[q.question_id]}
+                              onChange={(e) => handleCustomAnswerChange(q.question_id, e.target.checked)}
+                              required={q.is_required}
+                              className="w-4 h-4 text-purple-600 rounded border-gray-300 focus:ring-purple-500"
+                            />
+                            <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                              {q.placeholder || 'I confirm / agree'}
+                            </span>
+                          </label>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  /* Fallback standard questions if no dynamic questions exist in DB */
+                  <>
+                    <div>
+                      <label htmlFor="candidate_description" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
+                        Introduce Yourself *
+                      </label>
+                      <textarea
+                        id="candidate_description"
+                        name="candidate_description"
+                        value={formData.candidate_description}
+                        onChange={handleChange}
+                        required
+                        rows={3}
+                        placeholder="Tell us a little about yourself..."
+                        className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all resize-none"
+                        style={{ fontFamily: 'Open Sans, sans-serif' }}
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="candidate_why_eligible" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
+                        Why do you want to be part of this club and how can you contribute? *
+                      </label>
+                      <textarea
+                        id="candidate_why_eligible"
+                        name="candidate_why_eligible"
+                        value={formData.candidate_why_eligible}
+                        onChange={handleChange}
+                        required
+                        rows={4}
+                        placeholder="Share your motivation and potential contributions..."
+                        className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all resize-none"
+                        style={{ fontFamily: 'Open Sans, sans-serif' }}
+                      />
+                    </div>
+                  </>
+                )}
 
                 <button
                   type="submit"
@@ -765,4 +865,3 @@ export function JoinUs() {
     </div>
   );
 }
-

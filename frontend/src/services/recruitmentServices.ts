@@ -121,4 +121,68 @@ export const recruitmentServices = {
     }
     return response.json();
   },
+
+  getPublicQuestions: async () => {
+    const response = await fetch(`${API_BASE_URL}/questions`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to fetch recruitment questions: ${errorText}`);
+    }
+    return response.json();
+  },
+
+  getAdminQuestions: async (userId: string) => {
+    const response = await fetch(`${API_BASE_URL}/${userId}/adminQuestions`, {
+      credentials: "include",
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to fetch questions: ${errorText}`);
+    }
+    return response.json();
+  },
+
+  createQuestion: async (userId: string, questionData: any) => {
+    const response = await fetch(`${API_BASE_URL}/${userId}/createQuestion`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify(questionData),
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to create question: ${errorText}`);
+    }
+    return response.json();
+  },
+
+  updateQuestion: async (userId: string, questionId: string, questionData: any) => {
+    const response = await fetch(`${API_BASE_URL}/${userId}/${questionId}/updateQuestion`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify(questionData),
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to update question: ${errorText}`);
+    }
+    return response.json();
+  },
+
+  deleteQuestion: async (userId: string, questionId: string) => {
+    const response = await fetch(`${API_BASE_URL}/${userId}/${questionId}/deleteQuestion`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to delete question: ${errorText}`);
+    }
+    return response.json();
+  },
 };

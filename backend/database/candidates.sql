@@ -35,14 +35,17 @@ CREATE TABLE IF NOT EXISTS candidates (
     candidate_urn BIGINT,
     candidate_email TEXT NOT NULL,
     interested_department interested_department NOT NULL,
-    candidate_description TEXT NOT NULL,
-    candidate_why_eligible TEXT NOT NULL,
+    candidate_description TEXT,
+    candidate_why_eligible TEXT,
+    custom_answers JSONB DEFAULT '{}'::jsonb,
     candidate_status candidate_status NOT NULL DEFAULT 'PENDING',
     candidate_comment VARCHAR,
     status_updated_by BIGINT REFERENCES users(user_id) ON DELETE SET NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );
+
+ALTER TABLE candidates ADD COLUMN IF NOT EXISTS custom_answers JSONB DEFAULT '{}'::jsonb;
 
 -- Trigger to update updated_at on change
 CREATE OR REPLACE FUNCTION update_candidates_updated_at_column()

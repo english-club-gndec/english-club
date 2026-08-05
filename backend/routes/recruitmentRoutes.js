@@ -27,4 +27,19 @@ router.delete('/:user_id/deleteMultipleCandidates', verifyToken, recruitmentCont
 // DELETE /api/recruitment/:user_id/archiveAllData (Admin protected)
 router.delete('/:user_id/archiveAllData', verifyToken, recruitmentController.archiveAllData);
 
+// GET /api/recruitment/questions (Public active questions)
+router.get('/questions', recruitmentController.getPublicQuestions);
+
+// GET /api/recruitment/:user_id/adminQuestions (Admin protected all questions)
+router.get('/:user_id/adminQuestions', verifyToken, recruitmentController.getAdminQuestions);
+
+// POST /api/recruitment/:user_id/createQuestion (Admin protected)
+router.post('/:user_id/createQuestion', verifyToken, recruitmentController.createQuestion);
+
+// PATCH /api/recruitment/:user_id/:question_id/updateQuestion (Admin protected)
+router.patch('/:user_id/:question_id/updateQuestion', verifyToken, recruitmentController.updateQuestion);
+
+// DELETE /api/recruitment/:user_id/:question_id/deleteQuestion (Admin protected)
+router.delete('/:user_id/:question_id/deleteQuestion', verifyToken, recruitmentController.deleteQuestion);
+
 module.exports = router;
