@@ -652,6 +652,7 @@ export function JoinUs() {
                       <option value="DISICIPLINE">Discipline</option>
                       <option value="PHOTOGRAPHY">Photography/Videography</option>
                       <option value="DATABASE">Database</option>
+                      <option value="ANCHORING">Anchoring</option>
                     </select>
                   </div>
 

@@ -10,10 +10,12 @@ BEGIN
             'DISICIPLINE', 
             'PHOTOGRAPHY', 
             'PHOTOGRAPHY_VIDEOGRAPHY',
-            'DATABASE'
+            'DATABASE',
+            'ANCHORING'
         );
     END IF;
     ALTER TYPE interested_department ADD VALUE IF NOT EXISTS 'PHOTOGRAPHY_VIDEOGRAPHY';
+    ALTER TYPE interested_department ADD VALUE IF NOT EXISTS 'ANCHORING';
 
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'candidate_status') THEN
         CREATE TYPE candidate_status AS ENUM (
