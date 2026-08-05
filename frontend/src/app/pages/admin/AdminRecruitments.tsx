@@ -53,8 +53,18 @@ export function AdminRecruitments() {
   });
   const [isArchiving, setIsArchiving] = useState(false);
 
+  const formatDepartment = (dept: string) => {
+    if (!dept) return '';
+    if (dept === "PHOTOGRAPHY" || dept === "PHOTOGRAPHY_VIDEOGRAPHY") {
+      return "Photography/Videography";
+    }
+    return dept;
+  };
+
   const filteredCandidates = candidates.filter(candidate => {
-    const matchesDepartment = filterDepartment === "ALL" || candidate.interested_department === filterDepartment;
+    const matchesDepartment = filterDepartment === "ALL" || 
+      candidate.interested_department === filterDepartment ||
+      (filterDepartment === "PHOTOGRAPHY" && (candidate.interested_department === "PHOTOGRAPHY" || candidate.interested_department === "PHOTOGRAPHY_VIDEOGRAPHY"));
     const matchesStatus = filterStatus === "ALL" || candidate.candidate_status === filterStatus;
     
     if (filterStatus === "PENDING" && !candidate.candidate_status) {
@@ -305,7 +315,7 @@ export function AdminRecruitments() {
               <option value="PROMOTION">Promotion</option>
               <option value="EVENT_MANAGEMENT">Event Management</option>
               <option value="DISICIPLINE">Discipline</option>
-              <option value="PHOTOGRAPHY">Photography</option>
+              <option value="PHOTOGRAPHY">Photography/Videography</option>
               <option value="DATABASE">Database</option>
             </select>
 
@@ -460,7 +470,7 @@ export function AdminRecruitments() {
                           <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{candidate.candidate_class}</td>
                           <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{candidate.candidate_crn || 'N/A'}</td>
                           <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{candidate.candidate_urn || 'N/A'}</td>
-                          <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{candidate.interested_department}</td>
+                          <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{formatDepartment(candidate.interested_department)}</td>
                           <td className="px-6 py-4 text-sm">
                             <span className={`px-3 py-1 rounded-full text-xs font-bold ${
                               candidate.candidate_status === 'SELECTED' ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' :
@@ -611,7 +621,7 @@ export function AdminRecruitments() {
                     <option value="PROMOTION">Promotion</option>
                     <option value="EVENT_MANAGEMENT">Event Management</option>
                     <option value="DISICIPLINE">Discipline</option>
-                    <option value="PHOTOGRAPHY">Photography</option>
+                    <option value="PHOTOGRAPHY">Photography/Videography</option>
                     <option value="DATABASE">Database</option>
                   </select>
                 </div>
@@ -680,7 +690,7 @@ export function AdminRecruitments() {
                   </div>
                   <div>
                     <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400">Department</h4>
-                    <p className="text-gray-900 dark:text-white mt-1 font-medium">{viewingCandidate.interested_department}</p>
+                    <p className="text-gray-900 dark:text-white mt-1 font-medium">{formatDepartment(viewingCandidate.interested_department)}</p>
                   </div>
                   <div>
                     <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400">CRN</h4>
