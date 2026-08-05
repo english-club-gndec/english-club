@@ -150,6 +150,52 @@ const recruitmentController = {
     }
   },
 
+  // DELETE /:user_id/:candidate_id/deleteCandidateById
+  deleteCandidateById: async (req, res) => {
+    try {
+      const { candidate_id } = req.params;
+
+      const { data, error } = await supabase
+        .from('candidates')
+        .delete()
+        .eq('candidate_id', candidate_id)
+        .select();
+
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        return res.status(404).json({ error: 'Candidate not found' });
+      }
+
+      res.json({ message: 'Candidate deleted successfully', candidate: data[0] });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+
+  // DELETE /:user_id/deleteMultipleCandidates
+  // Payload: candidate_ids array
+  deleteMultipleCandidates: async (req, res) => {
+    try {
+      const { candidate_ids } = req.body;
+
+      if (!candidate_ids || !Array.isArray(candidate_ids) || candidate_ids.length === 0) {
+        return res.status(400).json({ error: 'candidate_ids array is required' });
+      }
+
+      const { data, error } = await supabase
+        .from('candidates')
+        .delete()
+        .in('candidate_id', candidate_ids)
+        .select();
+
+      if (error) throw error;
+
+      res.json({ message: `${data ? data.length : 0} candidates deleted successfully`, count: data ? data.length : 0 });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+
   // DELETE /:user_id/archiveAllData
   // Payload: recruitment_date
   archiveAllData: async (req, res) => {

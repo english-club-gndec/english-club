@@ -18,6 +18,12 @@ router.patch('/:candidate_id/updateCandidateById', verifyToken, recruitmentContr
 // PATCH /api/recruitment/:user_id/:candidate_id/updateCandidateStatusById (Admin protected)
 router.patch('/:user_id/:candidate_id/updateCandidateStatusById', verifyToken, recruitmentController.updateCandidateStatusById);
 
+// DELETE /api/recruitment/:user_id/:candidate_id/deleteCandidateById (Admin protected)
+router.delete('/:user_id/:candidate_id/deleteCandidateById', verifyToken, recruitmentController.deleteCandidateById);
+
+// DELETE /api/recruitment/:user_id/deleteMultipleCandidates (Admin protected)
+router.delete('/:user_id/deleteMultipleCandidates', verifyToken, recruitmentController.deleteMultipleCandidates);
+
 // DELETE /api/recruitment/:user_id/archiveAllData (Admin protected)
 router.delete('/:user_id/archiveAllData', verifyToken, recruitmentController.archiveAllData);
 

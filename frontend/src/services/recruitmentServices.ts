@@ -77,4 +77,48 @@ export const recruitmentServices = {
 
     return response.json();
   },
+
+  deleteCandidateById: async (userId: string, candidateId: string) => {
+    const response = await fetch(`${API_BASE_URL}/${userId}/${candidateId}/deleteCandidateById`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to delete candidate: ${errorText}`);
+    }
+    return response.json();
+  },
+
+  deleteMultipleCandidates: async (userId: string, candidateIds: string[]) => {
+    const response = await fetch(`${API_BASE_URL}/${userId}/deleteMultipleCandidates`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify({ candidate_ids: candidateIds }),
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to delete selected candidates: ${errorText}`);
+    }
+    return response.json();
+  },
+
+  archiveAllData: async (userId: string, recruitmentDate: string) => {
+    const response = await fetch(`${API_BASE_URL}/${userId}/archiveAllData`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify({ recruitment_date: recruitmentDate }),
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to archive recruitment data: ${errorText}`);
+    }
+    return response.json();
+  },
 };

@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "motion/react";
 import { useState, useEffect } from "react";
-import { Loader2, CheckCircle2, Circle, Edit2, X } from "lucide-react";
+import { Loader2, Edit2, X, Trash2, Archive, CheckSquare, Square, AlertTriangle } from "lucide-react";
 import { toast, Toaster } from "sonner";
 import { useAuth } from "../../context/AuthContext";
 import { recruitmentServices } from "../../../services/recruitmentServices";
@@ -37,11 +37,26 @@ export function AdminRecruitments() {
   const [newComment, setNewComment] = useState<string>("");
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
+  // Selection & Delete States
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [deleteConfirmIds, setDeleteConfirmIds] = useState<string[]>([]);
+  const [candidateToDelete, setCandidateToDelete] = useState<Candidate | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Archive States
+  const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false);
+  const [recruitmentArchiveDate, setRecruitmentArchiveDate] = useState<string>(() => {
+    const now = new Date();
+    const month = now.toLocaleString('default', { month: 'long' });
+    return `Recruitment ${month} ${now.getFullYear()}`;
+  });
+  const [isArchiving, setIsArchiving] = useState(false);
+
   const filteredCandidates = candidates.filter(candidate => {
     const matchesDepartment = filterDepartment === "ALL" || candidate.interested_department === filterDepartment;
     const matchesStatus = filterStatus === "ALL" || candidate.candidate_status === filterStatus;
     
-    // For pending, if the DB returns null, it might be interpreted as "PENDING"
     if (filterStatus === "PENDING" && !candidate.candidate_status) {
       return matchesDepartment && true;
     }
@@ -168,20 +183,117 @@ export function AdminRecruitments() {
     }
   };
 
+  // Selection Handlers
+  const toggleSelectCandidate = (id: string) => {
+    setSelectedIds(prev =>
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
+  };
+
+  const selectAllCandidates = () => {
+    setSelectedIds(filteredCandidates.map(c => c.candidate_id));
+  };
+
+  const unselectAllCandidates = () => {
+    setSelectedIds([]);
+  };
+
+  // Delete Handlers
+  const promptDeleteSingle = (candidate: Candidate) => {
+    setCandidateToDelete(candidate);
+    setDeleteConfirmIds([candidate.candidate_id]);
+  };
+
+  const promptDeleteSelected = () => {
+    if (selectedIds.length === 0) return;
+    setCandidateToDelete(null);
+    setDeleteConfirmIds(selectedIds);
+  };
+
+  const confirmDeleteCandidates = async () => {
+    if (!userId || deleteConfirmIds.length === 0) return;
+    try {
+      setIsDeleting(true);
+      if (deleteConfirmIds.length === 1) {
+        await recruitmentServices.deleteCandidateById(userId, deleteConfirmIds[0]);
+        toast.success("Candidate deleted successfully");
+      } else {
+        await recruitmentServices.deleteMultipleCandidates(userId, deleteConfirmIds);
+        toast.success(`${deleteConfirmIds.length} candidates deleted successfully`);
+      }
+
+      // Clear selection of deleted candidates
+      setSelectedIds(prev => prev.filter(id => !deleteConfirmIds.includes(id)));
+      
+      // Close viewing modal if the viewed candidate was deleted
+      if (viewingCandidate && deleteConfirmIds.includes(viewingCandidate.candidate_id)) {
+        setViewingCandidate(null);
+      }
+
+      setDeleteConfirmIds([]);
+      setCandidateToDelete(null);
+      fetchCandidates();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to delete candidate(s)");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // Archive Handlers
+  const handleArchiveConfirm = async () => {
+    if (!userId || !recruitmentArchiveDate.trim()) {
+      toast.error("Please enter a valid recruitment date/title");
+      return;
+    }
+    try {
+      setIsArchiving(true);
+      const result = await recruitmentServices.archiveAllData(userId, recruitmentArchiveDate.trim());
+      toast.success(result.message || "Recruitment data archived successfully");
+      setIsArchiveModalOpen(false);
+      setSelectedIds([]);
+      fetchCandidates();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to archive recruitment data");
+    } finally {
+      setIsArchiving(false);
+    }
+  };
+
   return (
     <>
       <Toaster position="top-right" />
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
             <h1 className="text-3xl text-gray-900 dark:text-white mb-2" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700 }}>
               Recruitments
             </h1>
             <p className="text-gray-600 dark:text-gray-400" style={{ fontFamily: 'Open Sans, sans-serif' }}>
-              View candidate applications
+              View candidate applications and manage recruitments
             </p>
           </div>
-          <div className="flex gap-4 items-center flex-wrap">
+          <div className="flex gap-3 items-center flex-wrap">
+            {selectedIds.length > 0 && (
+              <button
+                onClick={promptDeleteSelected}
+                className="px-5 py-3 rounded-xl font-semibold text-white bg-red-600 hover:bg-red-700 transition-all shadow-lg shadow-red-500/30 flex items-center gap-2 hover:-translate-y-0.5"
+              >
+                <Trash2 className="w-5 h-5" />
+                Delete Selected ({selectedIds.length})
+              </button>
+            )}
+
+            <button
+              onClick={() => setIsArchiveModalOpen(true)}
+              disabled={candidates.length === 0}
+              className="px-5 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 transition-all shadow-lg shadow-amber-500/20 flex items-center gap-2 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Archive current recruitment data to history and clear list"
+            >
+              <Archive className="w-5 h-5" />
+              Archive & Clear All
+            </button>
+
             <select
               value={filterDepartment}
               onChange={(e) => setFilterDepartment(e.target.value)}
@@ -234,7 +346,44 @@ export function AdminRecruitments() {
           </div>
         </div>
 
-        <div className="rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 overflow-hidden min-h-[400px] flex flex-col">
+        {/* Selection Control Bar */}
+        <div className="flex items-center gap-4">
+          {!isSelectionMode ? (
+            <button
+              onClick={() => setIsSelectionMode(true)}
+              className="text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 hover:underline flex items-center gap-1.5"
+            >
+              <CheckSquare className="w-4 h-4" />
+              Select Multiple
+            </button>
+          ) : (
+            <div className="flex items-center gap-4">
+              <button
+                onClick={selectAllCandidates}
+                className="text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 hover:underline"
+              >
+                Select All ({filteredCandidates.length})
+              </button>
+              <button
+                onClick={unselectAllCandidates}
+                className="text-sm font-semibold text-gray-500 hover:text-gray-700 dark:text-gray-400 hover:underline"
+              >
+                Unselect All
+              </button>
+              <button
+                onClick={() => {
+                  setIsSelectionMode(false);
+                  unselectAllCandidates();
+                }}
+                className="text-sm font-semibold text-red-500 hover:text-red-600 hover:underline"
+              >
+                Exit Selection
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 overflow-hidden min-h-[400px] flex flex-col shadow-sm">
           <div className="overflow-x-auto flex-1">
             <AnimatePresence mode="wait">
               {loading ? (
@@ -248,8 +397,22 @@ export function AdminRecruitments() {
                 </div>
               ) : (
                 <table className="w-full">
-                  <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                  <thead className="bg-gray-50 dark:bg-gray-800/80 border-b border-gray-200 dark:border-gray-700">
                     <tr>
+                      {isSelectionMode && (
+                        <th className="px-4 py-4 text-center w-12">
+                          <button
+                            onClick={selectedIds.length === filteredCandidates.length ? unselectAllCandidates : selectAllCandidates}
+                            className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                          >
+                            {selectedIds.length > 0 && selectedIds.length === filteredCandidates.length ? (
+                              <CheckSquare className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                            ) : (
+                              <Square className="w-5 h-5" />
+                            )}
+                          </button>
+                        </th>
+                      )}
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Name</th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Email</th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Class</th>
@@ -257,49 +420,85 @@ export function AdminRecruitments() {
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">URN</th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Department</th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Status</th>
-                      {!isRecruitmentStarted && (
-                        <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Actions</th>
-                      )}
+                      <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
-                    {filteredCandidates.map((candidate) => (
-                      <tr 
-                        key={candidate.candidate_id} 
-                        onClick={() => handleViewCandidate(candidate)}
-                        className={`transition-colors ${isRecruitmentStarted ? 'hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer' : ''}`}
-                      >
-                        <td className="px-6 py-4 font-semibold text-gray-900 dark:text-white">{candidate.candidate_name}</td>
-                        <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{candidate.candidate_email}</td>
-                        <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{candidate.candidate_class}</td>
-                        <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{candidate.candidate_crn || 'N/A'}</td>
-                        <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{candidate.candidate_urn || 'N/A'}</td>
-                        <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{candidate.interested_department}</td>
-                        <td className="px-6 py-4 text-sm">
-                          <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                            candidate.candidate_status === 'SELECTED' ? 'bg-green-100 text-green-700' :
-                            candidate.candidate_status === 'REJECTED' ? 'bg-red-100 text-red-700' :
-                            'bg-yellow-100 text-yellow-700'
-                          }`}>
-                            {candidate.candidate_status || 'PENDING'}
-                          </span>
-                        </td>
-                        {!isRecruitmentStarted && (
-                          <td className="px-6 py-4 text-sm text-center">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEditClick(candidate);
-                              }}
-                              className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/50 rounded-lg transition-colors"
-                              title="Edit Candidate"
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </button>
+                    {filteredCandidates.map((candidate) => {
+                      const isSelected = selectedIds.includes(candidate.candidate_id);
+                      return (
+                        <tr 
+                          key={candidate.candidate_id} 
+                          onClick={() => {
+                            if (isSelectionMode) {
+                              toggleSelectCandidate(candidate.candidate_id);
+                            } else {
+                              handleViewCandidate(candidate);
+                            }
+                          }}
+                          className={`transition-colors ${
+                            isSelected ? 'bg-blue-50/60 dark:bg-blue-950/30' : ''
+                          } ${
+                            isRecruitmentStarted || isSelectionMode ? 'hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer' : ''
+                          }`}
+                        >
+                          {isSelectionMode && (
+                            <td className="px-4 py-4 text-center">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={(e) => {
+                                  e.stopPropagation();
+                                  toggleSelectCandidate(candidate.candidate_id);
+                                }}
+                                className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800"
+                              />
+                            </td>
+                          )}
+                          <td className="px-6 py-4 font-semibold text-gray-900 dark:text-white">{candidate.candidate_name}</td>
+                          <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{candidate.candidate_email}</td>
+                          <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{candidate.candidate_class}</td>
+                          <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{candidate.candidate_crn || 'N/A'}</td>
+                          <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{candidate.candidate_urn || 'N/A'}</td>
+                          <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{candidate.interested_department}</td>
+                          <td className="px-6 py-4 text-sm">
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                              candidate.candidate_status === 'SELECTED' ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' :
+                              candidate.candidate_status === 'REJECTED' ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' :
+                              'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300'
+                            }`}>
+                              {candidate.candidate_status || 'PENDING'}
+                            </span>
                           </td>
-                        )}
-                      </tr>
-                    ))}
+                          <td className="px-6 py-4 text-sm text-center">
+                            <div className="flex items-center justify-center gap-1">
+                              {!isRecruitmentStarted && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleEditClick(candidate);
+                                  }}
+                                  className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/50 rounded-lg transition-colors"
+                                  title="Edit Candidate"
+                                >
+                                  <Edit2 className="w-4 h-4" />
+                                </button>
+                              )}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  promptDeleteSingle(candidate);
+                                }}
+                                className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/50 rounded-lg transition-colors"
+                                title="Delete Candidate"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               )}
@@ -308,6 +507,7 @@ export function AdminRecruitments() {
         </div>
       </div>
 
+      {/* Edit Modal */}
       <AnimatePresence>
         {editingCandidate && (
           <motion.div
@@ -317,7 +517,7 @@ export function AdminRecruitments() {
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-lg overflow-hidden shadow-xl"
+              className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-lg overflow-hidden shadow-xl border border-gray-200 dark:border-gray-800"
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
@@ -420,14 +620,14 @@ export function AdminRecruitments() {
                   <button
                     type="button"
                     onClick={() => setEditingCandidate(null)}
-                    className="px-5 py-2 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                    className="px-5 py-2 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors font-medium"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={isUpdating}
-                    className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white transition-colors flex items-center gap-2"
+                    className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold transition-colors flex items-center gap-2 shadow-md shadow-blue-500/20"
                   >
                     {isUpdating && <Loader2 className="w-4 h-4 animate-spin" />}
                     {isUpdating ? "Updating..." : "Save Changes"}
@@ -439,6 +639,7 @@ export function AdminRecruitments() {
         )}
       </AnimatePresence>
 
+      {/* Candidate Details Modal */}
       <AnimatePresence>
         {viewingCandidate && (
           <motion.div
@@ -448,7 +649,7 @@ export function AdminRecruitments() {
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-2xl overflow-hidden shadow-xl"
+              className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-2xl overflow-hidden shadow-xl border border-gray-200 dark:border-gray-800"
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
@@ -467,27 +668,27 @@ export function AdminRecruitments() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400">Name</h4>
-                    <p className="text-gray-900 dark:text-white mt-1">{viewingCandidate.candidate_name}</p>
+                    <p className="text-gray-900 dark:text-white mt-1 font-medium">{viewingCandidate.candidate_name}</p>
                   </div>
                   <div>
                     <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400">Email</h4>
-                    <p className="text-gray-900 dark:text-white mt-1">{viewingCandidate.candidate_email}</p>
+                    <p className="text-gray-900 dark:text-white mt-1 font-medium">{viewingCandidate.candidate_email}</p>
                   </div>
                   <div>
                     <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400">Class</h4>
-                    <p className="text-gray-900 dark:text-white mt-1">{viewingCandidate.candidate_class}</p>
+                    <p className="text-gray-900 dark:text-white mt-1 font-medium">{viewingCandidate.candidate_class}</p>
                   </div>
                   <div>
                     <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400">Department</h4>
-                    <p className="text-gray-900 dark:text-white mt-1">{viewingCandidate.interested_department}</p>
+                    <p className="text-gray-900 dark:text-white mt-1 font-medium">{viewingCandidate.interested_department}</p>
                   </div>
                   <div>
                     <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400">CRN</h4>
-                    <p className="text-gray-900 dark:text-white mt-1">{viewingCandidate.candidate_crn || 'N/A'}</p>
+                    <p className="text-gray-900 dark:text-white mt-1 font-medium">{viewingCandidate.candidate_crn || 'N/A'}</p>
                   </div>
                   <div>
                     <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400">URN</h4>
-                    <p className="text-gray-900 dark:text-white mt-1">{viewingCandidate.candidate_urn || 'N/A'}</p>
+                    <p className="text-gray-900 dark:text-white mt-1 font-medium">{viewingCandidate.candidate_urn || 'N/A'}</p>
                   </div>
                   <div>
                     <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400">Status</h4>
@@ -495,28 +696,28 @@ export function AdminRecruitments() {
                       value={newStatus}
                       onChange={(e) => setNewStatus(e.target.value)}
                       className={`mt-1 px-3 py-1 rounded-full text-xs font-bold border-2 transition-colors focus:outline-none ${
-                        newStatus === 'SELECTED' ? 'bg-green-100 text-green-700 border-green-200' :
-                        newStatus === 'REJECTED' ? 'bg-red-100 text-red-700 border-red-200' :
-                        'bg-yellow-100 text-yellow-700 border-yellow-200'
+                        newStatus === 'SELECTED' ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/40 dark:text-green-300 dark:border-green-800' :
+                        newStatus === 'REJECTED' ? 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/40 dark:text-red-300 dark:border-red-800' :
+                        'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/40 dark:text-yellow-300 dark:border-yellow-800'
                       }`}
                     >
-                      <option value="PENDING" className="bg-white text-gray-900 font-semibold">PENDING</option>
-                      <option value="SELECTED" className="bg-white text-green-700 font-semibold">SELECTED</option>
-                      <option value="REJECTED" className="bg-white text-red-700 font-semibold">REJECTED</option>
+                      <option value="PENDING" className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white font-semibold">PENDING</option>
+                      <option value="SELECTED" className="bg-white dark:bg-gray-900 text-green-700 dark:text-green-400 font-semibold">SELECTED</option>
+                      <option value="REJECTED" className="bg-white dark:bg-gray-900 text-red-700 dark:text-red-400 font-semibold">REJECTED</option>
                     </select>
                   </div>
                 </div>
 
                 <div className="border-t border-gray-200 dark:border-gray-800 pt-6">
                   <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-2">Introduction</h4>
-                  <p className="text-gray-900 dark:text-gray-300 whitespace-pre-wrap bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
+                  <p className="text-gray-900 dark:text-gray-300 whitespace-pre-wrap bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
                     {viewingCandidate.candidate_description || 'Not provided'}
                   </p>
                 </div>
 
                 <div className="border-t border-gray-200 dark:border-gray-800 pt-6">
                   <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-2">Why eligible & Contribution</h4>
-                  <p className="text-gray-900 dark:text-gray-300 whitespace-pre-wrap bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
+                  <p className="text-gray-900 dark:text-gray-300 whitespace-pre-wrap bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
                     {viewingCandidate.candidate_why_eligible || 'Not provided'}
                   </p>
                 </div>
@@ -531,9 +732,17 @@ export function AdminRecruitments() {
                     className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 transition-all resize-none"
                   />
                 </div>
-                
-                {viewingCandidate && (newStatus !== viewingCandidate.candidate_status || newComment !== (viewingCandidate.candidate_comment || '')) && (
-                  <div className="flex justify-end pt-4 border-t border-gray-200 dark:border-gray-800">
+
+                <div className="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-800">
+                  <button
+                    onClick={() => promptDeleteSingle(viewingCandidate)}
+                    className="px-4 py-2 rounded-xl text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 font-semibold transition-colors flex items-center gap-2 border border-red-200 dark:border-red-900/50"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Delete Candidate
+                  </button>
+
+                  {newStatus !== viewingCandidate.candidate_status || newComment !== (viewingCandidate.candidate_comment || '') ? (
                     <button
                       onClick={handleStatusUpdate}
                       disabled={isUpdatingStatus}
@@ -542,8 +751,147 @@ export function AdminRecruitments() {
                       {isUpdatingStatus && <Loader2 className="w-4 h-4 animate-spin" />}
                       {isUpdatingStatus ? "Saving..." : "Save Status"}
                     </button>
-                  </div>
+                  ) : null}
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {deleteConfirmIds.length > 0 && (
+          <motion.div
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl border border-gray-200 dark:border-gray-800 p-6 space-y-4"
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+            >
+              <div className="flex items-center gap-3 text-red-600 dark:text-red-500">
+                <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-xl">
+                  <AlertTriangle className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">Confirm Deletion</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">This action cannot be undone</p>
+                </div>
+              </div>
+
+              <div className="text-sm text-gray-600 dark:text-gray-300">
+                {deleteConfirmIds.length === 1 ? (
+                  <p>
+                    Are you sure you want to delete candidate{" "}
+                    <span className="font-semibold text-gray-900 dark:text-white">
+                      {candidateToDelete?.candidate_name || 'this candidate'}
+                    </span>
+                    ?
+                  </p>
+                ) : (
+                  <p>
+                    Are you sure you want to delete{" "}
+                    <span className="font-semibold text-gray-900 dark:text-white">
+                      {deleteConfirmIds.length} candidate applications
+                    </span>
+                    ?
+                  </p>
                 )}
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDeleteConfirmIds([]);
+                    setCandidateToDelete(null);
+                  }}
+                  disabled={isDeleting}
+                  className="px-4 py-2 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors font-medium text-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmDeleteCandidates}
+                  disabled={isDeleting}
+                  className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold transition-colors flex items-center gap-2 text-sm shadow-md shadow-red-500/20"
+                >
+                  {isDeleting && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {isDeleting ? "Deleting..." : "Delete Permanently"}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Archive Confirmation Modal */}
+      <AnimatePresence>
+        {isArchiveModalOpen && (
+          <motion.div
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl border border-gray-200 dark:border-gray-800 p-6 space-y-4"
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+            >
+              <div className="flex items-center gap-3 text-amber-600 dark:text-amber-500">
+                <div className="p-3 bg-amber-100 dark:bg-amber-900/30 rounded-xl">
+                  <Archive className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">Archive Recruitment Data</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Save to history and clear candidates</p>
+                </div>
+              </div>
+
+              <div className="text-sm text-gray-600 dark:text-gray-300 space-y-3">
+                <p>
+                  This operation will archive all current candidate records ({candidates.length}) into the recruitment history table, and then clear the current active candidates list.
+                </p>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    Recruitment Session / Date Label
+                  </label>
+                  <input
+                    type="text"
+                    value={recruitmentArchiveDate}
+                    onChange={(e) => setRecruitmentArchiveDate(e.target.value)}
+                    placeholder="e.g. Recruitment August 2026"
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 font-medium text-sm"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsArchiveModalOpen(false)}
+                  disabled={isArchiving}
+                  className="px-4 py-2 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors font-medium text-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleArchiveConfirm}
+                  disabled={isArchiving}
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-semibold transition-colors flex items-center gap-2 text-sm shadow-md shadow-amber-500/20"
+                >
+                  {isArchiving && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {isArchiving ? "Archiving..." : "Archive & Clear All"}
+                </button>
               </div>
             </motion.div>
           </motion.div>
