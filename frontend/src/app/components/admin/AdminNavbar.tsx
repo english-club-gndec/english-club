@@ -71,6 +71,10 @@ export function AdminNavbar({ onOpenMobileMenu }: AdminNavbarProps) {
                 <Menu className="w-5 h-5" />
               </button>
             )}
+            <div className="lg:hidden flex items-center gap-1.5 shrink-0">
+              <img src="/images/gndec-logo.png" alt="GNDEC Logo" className="w-8 h-8 object-contain p-0.5 rounded-lg border border-gray-200 dark:border-gray-800 bg-white" />
+              <img src="/images/logo.png" alt="English Club Logo" className="w-8 h-8 object-contain p-0.5 rounded-lg border border-gray-200 dark:border-gray-800 bg-white" />
+            </div>
             <div className="relative flex-1">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input

@@ -67,10 +67,11 @@ export function AdminSidebar({ isMobileOpen: propMobileOpen, setIsMobileOpen: pr
       >
         <div className="flex flex-col h-full">
           <div className="p-6 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
-            <Link to="/" className="flex items-center gap-3">
-              <img src="/images/logo.png" alt="English Club Logo" className="w-10 h-10 object-contain rounded-full border border-gray-200 dark:border-gray-800" />
+            <Link to="/" className="flex items-center gap-2">
+              <img src="/images/gndec-logo.png" alt="GNDEC Logo" className="w-8 h-8 object-contain p-0.5 rounded-full border border-gray-200 dark:border-gray-800 bg-white shrink-0" />
+              <img src="/images/logo.png" alt="English Club Logo" className="w-8 h-8 object-contain p-0.5 rounded-full border border-gray-200 dark:border-gray-800 bg-white shrink-0" />
               <div>
-                <div className="text-lg text-gray-900 dark:text-white" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700 }}>
+                <div className="text-base text-gray-900 dark:text-white leading-tight" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700 }}>
                   English Club
                 </div>
                 <div className="text-xs text-gray-500 dark:text-gray-400" style={{ fontFamily: 'Open Sans, sans-serif' }}>

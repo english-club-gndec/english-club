@@ -23,11 +23,14 @@ export function Navbar() {
     <nav className="sticky top-0 z-50 bg-white/80 dark:bg-gray-950/80 backdrop-blur-lg border-b border-gray-200 dark:border-gray-800">
       <div className="max-w-7xl mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center bg-white shadow-sm border border-gray-100 dark:border-gray-800">
+          <Link to="/" className="flex items-center gap-2.5 sm:gap-3">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg overflow-hidden flex items-center justify-center bg-white shadow-sm border border-gray-100 dark:border-gray-800 shrink-0">
+              <img src="/images/gndec-logo.png" alt="GNDEC Logo" className="w-full h-full object-contain p-0.5" />
+            </div>
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg overflow-hidden flex items-center justify-center bg-white shadow-sm border border-gray-100 dark:border-gray-800 shrink-0">
               <img src="/images/logo.png" alt="English Club Logo" className="w-full h-full object-contain p-0.5" />
             </div>
-            <span className="text-2xl text-gray-900 dark:text-white" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700 }}>English Club</span>
+            <span className="text-xl sm:text-2xl text-gray-900 dark:text-white" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700 }}>English Club</span>
           </Link>
 
           <div className="hidden md:flex items-center gap-8">
@@ -35,11 +38,10 @@ export function Navbar() {
               <Link
                 key={link.path}
                 to={link.path}
-                className={`relative text-sm transition-colors ${
-                  isActive(link.path)
+                className={`relative text-sm transition-colors ${isActive(link.path)
                     ? "text-blue-900 dark:text-purple-400"
                     : "text-gray-600 dark:text-gray-400 hover:text-blue-900 dark:hover:text-purple-400"
-                }`}
+                  }`}
                 style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}
               >
                 {link.label}
@@ -116,11 +118,10 @@ export function Navbar() {
                     key={link.path}
                     to={link.path}
                     onClick={() => setIsOpen(false)}
-                    className={`block px-4 py-2 rounded-lg transition-colors ${
-                      isActive(link.path)
+                    className={`block px-4 py-2 rounded-lg transition-colors ${isActive(link.path)
                         ? "bg-gradient-to-r from-blue-900 to-purple-700 text-white"
                         : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
-                    }`}
+                      }`}
                     style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}
                   >
                     {link.label}
