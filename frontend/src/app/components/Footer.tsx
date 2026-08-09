@@ -24,7 +24,13 @@ export function Footer() {
               Enhancing communication, creativity, and confidence through the power of language.
             </p>
             <div className="flex gap-4">
-              <a href="#" className="w-10 h-10 rounded-lg bg-gray-800 hover:bg-gradient-to-br hover:from-blue-900 hover:to-purple-700 flex items-center justify-center transition-all hover:scale-110">
+              <a
+                href="https://www.instagram.com/englishclub_gndec/"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Instagram"
+                className="w-10 h-10 rounded-lg bg-gray-800 hover:bg-gradient-to-br hover:from-blue-900 hover:to-purple-700 flex items-center justify-center transition-all hover:scale-110"
+              >
                 <Instagram className="w-5 h-5" />
               </a>
               <a href="#" className="w-10 h-10 rounded-lg bg-gray-800 hover:bg-gradient-to-br hover:from-blue-900 hover:to-purple-700 flex items-center justify-center transition-all hover:scale-110">
@@ -57,8 +63,11 @@ export function Footer() {
             <h3 className="text-white text-lg mb-6" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 600 }}>Contact Info</h3>
             <ul className="space-y-4">
               <li className="flex items-start gap-3">
-                <Mail className="w-5 h-5 text-purple-400 mt-0.5 flex-shrink-0" />
-                <span className="text-sm" style={{ fontFamily: 'Open Sans, sans-serif' }}>englishclub@college.edu</span>
+                <Phone className="w-5 h-5 text-purple-400 mt-0.5 flex-shrink-0" />
+                <span className="text-sm" style={{ fontFamily: 'Open Sans, sans-serif' }}>
+                  +91 76960 45458<br />
+                  <span className="text-xs text-gray-400 font-medium">Raghav Kamboj (Convenor)</span>
+                </span>
               </li>
               <li className="flex items-start gap-3">
                 <MapPin className="w-5 h-5 text-purple-400 mt-0.5 flex-shrink-0" />

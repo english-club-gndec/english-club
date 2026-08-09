@@ -124,18 +124,18 @@ export function Events() {
   }
 
   return (
-    <div className="bg-white dark:bg-gray-950 py-20">
-      <div className="max-w-7xl mx-auto px-6">
+    <div className="bg-white dark:bg-gray-950 py-12 sm:py-20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <motion.div
-          className="text-center mb-16"
+          className="text-center mb-10 sm:mb-16"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          <h1 className="text-5xl lg:text-6xl text-gray-900 dark:text-white mb-6" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 800 }}>
+          <h1 className="text-3xl sm:text-5xl lg:text-6xl text-gray-900 dark:text-white mb-4 sm:mb-6" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 800 }}>
             Our Events
           </h1>
-          <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto" style={{ fontFamily: 'Open Sans, sans-serif' }}>
+          <p className="text-base sm:text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto" style={{ fontFamily: 'Open Sans, sans-serif' }}>
             Join us for exciting events that enhance your skills and broaden your horizons
           </p>
         </motion.div>
@@ -384,7 +384,7 @@ export function Events() {
 
       {selectedEvent && (
         <motion.div
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-6"
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -411,7 +411,7 @@ export function Events() {
                 <X className="w-5 h-5 text-gray-900 dark:text-white" />
               </button>
             </div>
-            <div className="p-8">
+            <div className="p-4 sm:p-8">
               <h2 className="text-3xl text-gray-900 dark:text-white mb-4" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700 }}>
                 {selectedEvent.event_name}
               </h2>

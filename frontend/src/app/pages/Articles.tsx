@@ -53,19 +53,19 @@ export function Articles() {
   const allTags = Array.from(new Set(submissions.flatMap(art => art.tags || [])));
 
   return (
-    <div className="bg-gray-50 dark:bg-gray-950 min-h-screen py-16 md:py-24 transition-colors duration-300">
-      <div className="max-w-7xl mx-auto px-6">
+    <div className="bg-gray-50 dark:bg-gray-950 min-h-screen py-10 md:py-24 transition-colors duration-300">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <motion.div
           key="articles-feed"
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="space-y-16"
+          className="space-y-10 sm:space-y-16"
         >
           {/* Header Hero */}
           <div className="text-center max-w-3xl mx-auto">
             <motion.h1
-              className="text-5xl lg:text-6xl text-gray-900 dark:text-white mb-6 tracking-tight"
+              className="text-3xl sm:text-5xl lg:text-6xl text-gray-900 dark:text-white mb-4 sm:mb-6 tracking-tight"
               style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 800 }}
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -73,12 +73,12 @@ export function Articles() {
             >
               Student <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600">Publications</span>
             </motion.h1>
-            <p className="text-xl text-gray-600 dark:text-gray-400 mb-8" style={{ fontFamily: 'Open Sans, sans-serif' }}>
+            <p className="text-base sm:text-xl text-gray-600 dark:text-gray-400 mb-6 sm:mb-8" style={{ fontFamily: 'Open Sans, sans-serif' }}>
               Explore student blogs, writing pieces, and communication guides, or submit your own work.
             </p>
             <Link
               to="/submit-article"
-              className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-gradient-to-r from-blue-900 to-purple-700 text-white font-bold text-lg hover:shadow-2xl hover:shadow-purple-500/30 transition-all hover:scale-105 active:scale-95 cursor-pointer"
+              className="inline-flex items-center gap-3 px-6 sm:px-8 py-3.5 sm:py-4 rounded-2xl bg-gradient-to-r from-blue-900 to-purple-700 text-white font-bold text-base sm:text-lg hover:shadow-2xl hover:shadow-purple-500/30 transition-all hover:scale-105 active:scale-95 cursor-pointer"
               style={{ fontFamily: 'Open Sans, sans-serif' }}
             >
               <PenTool className="w-5 h-5 animate-pulse" />

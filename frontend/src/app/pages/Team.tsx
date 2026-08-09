@@ -106,6 +106,8 @@ export function Team() {
   const executives = members.filter(m => m.member_postion === 'EXECUTIVE_MEMBER');
 
   function MemberCard({ member, index }: { member: Member; index: number }) {
+    const [showSocials, setShowSocials] = useState(false);
+
     return (
       <motion.div
         initial={{ opacity: 0, y: 30 }}
@@ -114,7 +116,10 @@ export function Team() {
         transition={{ duration: 0.5, delay: index * 0.05 }}
         className="group relative rounded-3xl overflow-hidden bg-white dark:bg-gray-900/60 backdrop-blur-md border border-gray-200/80 dark:border-gray-800/80 hover:border-purple-500/50 hover:shadow-2xl hover:shadow-purple-500/10 transition-all duration-300 hover:-translate-y-2 flex flex-col h-full w-full sm:w-[280px]"
       >
-        <div className="relative aspect-[4/5] overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+        <div
+          onClick={() => setShowSocials(prev => !prev)}
+          className="relative aspect-[4/5] overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center cursor-pointer"
+        >
           {member.member_profile_picture_key ? (
             <img
               src={getPublicUrl(member.member_profile_picture_key)}
@@ -125,14 +130,23 @@ export function Team() {
             <UserIcon className="w-20 h-20 text-gray-400 group-hover:scale-105 transition-transform duration-500" />
           )}
 
-          {/* Socials Hover Overlay */}
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
-            <div className="flex justify-center gap-4 translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+          {/* Socials Hover/Touch Overlay */}
+          <div
+            className={`absolute inset-0 bg-black/50 backdrop-blur-[2px] transition-opacity duration-300 flex flex-col justify-end p-4 sm:p-6 ${
+              showSocials ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+            }`}
+          >
+            <div
+              className={`flex justify-center gap-3 sm:gap-4 transition-transform duration-300 ${
+                showSocials ? 'translate-y-0' : 'translate-y-4 group-hover:translate-y-0'
+              }`}
+            >
               {member.socials?.linkedin && (
                 <a
                   href={member.socials.linkedin}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
                   className="w-10 h-10 rounded-full bg-white/10 hover:bg-purple-600 border border-white/20 flex items-center justify-center transition-all hover:scale-110"
                 >
                   <Linkedin className="w-5 h-5 text-white" />
@@ -143,6 +157,7 @@ export function Team() {
                   href={member.socials.github}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
                   className="w-10 h-10 rounded-full bg-white/10 hover:bg-purple-600 border border-white/20 flex items-center justify-center transition-all hover:scale-110"
                 >
                   <Github className="w-5 h-5 text-white" />
@@ -153,6 +168,7 @@ export function Team() {
                   href={member.socials.instagram}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
                   className="w-10 h-10 rounded-full bg-white/10 hover:bg-purple-600 border border-white/20 flex items-center justify-center transition-all hover:scale-110"
                 >
                   <Instagram className="w-5 h-5 text-white" />
@@ -161,6 +177,7 @@ export function Team() {
               {member.member_email && (
                 <a
                   href={`mailto:${member.member_email}`}
+                  onClick={(e) => e.stopPropagation()}
                   className="w-10 h-10 rounded-full bg-white/10 hover:bg-purple-600 border border-white/20 flex items-center justify-center transition-all hover:scale-110"
                 >
                   <Mail className="w-5 h-5 text-white" />
@@ -170,7 +187,7 @@ export function Team() {
           </div>
         </div>
 
-        <div className="p-6 flex flex-col flex-1">
+        <div className="p-5 sm:p-6 flex flex-col flex-1">
           <span className="text-[10px] uppercase tracking-widest font-extrabold text-purple-600 dark:text-purple-400 mb-2">
             {member.member_postion.replace(/_/g, ' ')}
           </span>
@@ -183,26 +200,26 @@ export function Team() {
   }
 
   return (
-    <div className="bg-white dark:bg-gray-950 py-20">
-      <div className="max-w-7xl mx-auto px-6">
+    <div className="bg-white dark:bg-gray-950 py-12 sm:py-20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <motion.div
-          className="text-center mb-16"
+          className="text-center mb-10 sm:mb-16"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          <h1 className="text-5xl lg:text-6xl text-gray-900 dark:text-white mb-6" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 800 }}>
+          <h1 className="text-3xl sm:text-5xl lg:text-6xl text-gray-900 dark:text-white mb-4 sm:mb-6" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 800 }}>
             Meet Our Team
           </h1>
-          <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto" style={{ fontFamily: 'Open Sans, sans-serif' }}>
+          <p className="text-base sm:text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto" style={{ fontFamily: 'Open Sans, sans-serif' }}>
             Dedicated individuals working together to create an inspiring community
           </p>
         </motion.div>
 
-        <section className="mb-24">
-          <div className="text-center mb-16">
+        <section className="mb-16 sm:mb-24">
+          <div className="text-center mb-10 sm:mb-16">
             <motion.h2
-              className="text-4xl lg:text-5xl text-center text-gray-900 dark:text-white mb-4 bg-clip-text text-transparent bg-gradient-to-r from-purple-600 via-pink-500 to-blue-600 dark:from-purple-400 dark:via-pink-400 dark:to-blue-400 font-extrabold"
+              className="text-3xl sm:text-4xl lg:text-5xl text-center text-gray-900 dark:text-white mb-3 sm:mb-4 bg-clip-text text-transparent bg-gradient-to-r from-purple-600 via-pink-500 to-blue-600 dark:from-purple-400 dark:via-pink-400 dark:to-blue-400 font-extrabold"
               style={{ fontFamily: 'Poppins, sans-serif' }}
               initial={{ opacity: 0, y: -20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -211,13 +228,13 @@ export function Team() {
             >
               Faculty Mentors
             </motion.h2>
-            <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto text-sm sm:text-base" style={{ fontFamily: 'Open Sans, sans-serif' }}>
+            <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto text-xs sm:text-base" style={{ fontFamily: 'Open Sans, sans-serif' }}>
               The guiding pillars of our club, providing wisdom, academic guidance, and unwavering support.
             </p>
           </div>
 
           <motion.div
-            className="grid md:grid-cols-2 gap-10 max-w-6xl mx-auto"
+            className="grid md:grid-cols-2 gap-6 sm:gap-10 max-w-6xl mx-auto"
             variants={container}
             initial="hidden"
             whileInView="show"
@@ -233,7 +250,7 @@ export function Team() {
                 <div className="absolute -right-24 -top-24 w-56 h-56 bg-purple-500/10 dark:bg-purple-500/5 rounded-full blur-3xl group-hover:scale-150 transition-all duration-700 pointer-events-none" />
                 <div className="absolute -left-24 -bottom-24 w-56 h-56 bg-pink-500/10 dark:bg-pink-500/5 rounded-full blur-3xl group-hover:scale-150 transition-all duration-700 pointer-events-none" />
                 
-                <div className="p-10 sm:p-12 flex flex-col sm:flex-row gap-8 items-center sm:items-start text-center sm:text-left relative z-10">
+                <div className="p-6 sm:p-10 lg:p-12 flex flex-col sm:flex-row gap-6 sm:gap-8 items-center sm:items-start text-center sm:text-left relative z-10">
                   {/* Glowing dynamic ring wrapper around image */}
                   <div className="relative flex-shrink-0 w-36 h-36 sm:w-44 sm:h-44 rounded-3xl overflow-hidden p-[4px] bg-gradient-to-tr from-purple-600 via-pink-500 to-blue-500 shadow-xl group-hover:rotate-3 transition-transform duration-500">
                     <div className="w-full h-full rounded-[20px] overflow-hidden bg-white dark:bg-gray-900">

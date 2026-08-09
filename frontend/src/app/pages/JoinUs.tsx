@@ -482,7 +482,7 @@ export function JoinUs() {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
-              className="relative sticky top-24"
+              className="hidden lg:block relative sticky top-24"
             >
               <div
                 onClick={() => setIsPosterOpen(true)}

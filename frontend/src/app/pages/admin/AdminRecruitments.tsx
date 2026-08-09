@@ -543,11 +543,11 @@ export function AdminRecruitments() {
         </div>
 
         {/* Navigation Tabs (Applications vs Form Builder) */}
-        <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-800 pb-2">
-          <div className="flex gap-2 bg-gray-100 dark:bg-gray-800 p-1.5 rounded-2xl">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-gray-200 dark:border-gray-800 pb-3 gap-4">
+          <div className="flex gap-2 bg-gray-100 dark:bg-gray-800 p-1.5 rounded-2xl overflow-x-auto">
             <button
               onClick={() => setActiveTab('applications')}
-              className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center gap-2 ${
+              className={`px-4 sm:px-6 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center gap-2 whitespace-nowrap ${
                 activeTab === 'applications'
                   ? 'bg-white dark:bg-gray-900 text-blue-600 dark:text-blue-400 shadow-md'
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
@@ -559,19 +559,19 @@ export function AdminRecruitments() {
 
             <button
               onClick={() => setActiveTab('form_builder')}
-              className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center gap-2 ${
+              className={`px-4 sm:px-6 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center gap-2 whitespace-nowrap ${
                 activeTab === 'form_builder'
                   ? 'bg-white dark:bg-gray-900 text-purple-600 dark:text-purple-400 shadow-md'
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
               }`}
             >
               <Layers className="w-4 h-4" />
-              Form Builder ({questions.length} Questions)
+              Form Builder ({questions.length})
             </button>
           </div>
 
           {activeTab === 'applications' && (
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               <select
                 value={filterDepartment}
                 onChange={(e) => setFilterDepartment(e.target.value)}

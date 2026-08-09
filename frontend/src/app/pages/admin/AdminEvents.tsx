@@ -300,16 +300,16 @@ export function AdminEvents() {
     <>
       <Toaster position="top-right" />
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl text-gray-900 dark:text-white mb-2" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700 }}>
+            <h1 className="text-2xl sm:text-3xl text-gray-900 dark:text-white mb-1 sm:mb-2" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700 }}>
               Events Management
             </h1>
-            <p className="text-gray-600 dark:text-gray-400" style={{ fontFamily: 'Open Sans, sans-serif' }}>
+            <p className="text-sm text-gray-600 dark:text-gray-400" style={{ fontFamily: 'Open Sans, sans-serif' }}>
               Create and manage club events
             </p>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <div className="flex items-center bg-gray-100 dark:bg-gray-800 p-1 rounded-xl border border-gray-200 dark:border-gray-700">
               <button
                 onClick={() => setViewMode('grid')}
@@ -328,8 +328,8 @@ export function AdminEvents() {
             </div>
             <button
               onClick={() => openModal()}
-              className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-blue-900 to-purple-700 text-white hover:shadow-lg hover:shadow-purple-500/50 transition-all"
-              style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}
+              className="flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-blue-900 to-purple-700 text-white hover:shadow-lg hover:shadow-purple-500/50 transition-all text-xs sm:text-sm font-semibold"
+              style={{ fontFamily: 'Open Sans, sans-serif' }}
             >
               <Plus className="w-5 h-5" />
               Create Event

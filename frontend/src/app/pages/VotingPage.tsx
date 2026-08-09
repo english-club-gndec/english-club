@@ -137,23 +137,23 @@ export function VotingPage() {
         />
       </div>
 
-      <div className="relative z-10 max-w-4xl mx-auto px-6 py-20">
+      <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 py-10 sm:py-20">
         {/* Hero Section */}
-        <div className="text-center mb-16">
+        <div className="text-center mb-10 sm:mb-16">
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 mb-6"
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 mb-4 sm:mb-6"
           >
-            <Trophy className="w-5 h-5" />
-            <span className="text-sm font-bold uppercase tracking-wider">English Club Presents</span>
+            <Trophy className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="text-xs sm:text-sm font-bold uppercase tracking-wider">English Club Presents</span>
           </motion.div>
           
           <motion.h1 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-5xl md:text-7xl text-gray-900 dark:text-white mb-6"
+            className="text-3xl sm:text-5xl md:text-7xl text-gray-900 dark:text-white mb-4 sm:mb-6"
             style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 800 }}
           >
             People's Choice <br/>
@@ -164,7 +164,7 @@ export function VotingPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
-            className="text-xl text-gray-600 dark:text-gray-400 max-w-xl mx-auto"
+            className="text-base sm:text-xl text-gray-600 dark:text-gray-400 max-w-xl mx-auto"
             style={{ fontFamily: 'Open Sans, sans-serif' }}
           >
             Your voice matters. Vote for your favorite participant and help them win the most prestigious award of the year.
@@ -177,7 +177,7 @@ export function VotingPage() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.3 }}
-            className="w-full max-w-lg bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200 dark:border-gray-800 rounded-[2.5rem] shadow-2xl p-8 md:p-12"
+            className="w-full max-w-lg bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border border-gray-200 dark:border-gray-800 rounded-3xl sm:rounded-[2.5rem] shadow-2xl p-5 sm:p-8 md:p-12"
           >
             <AnimatePresence mode="wait">
               {hasVoted ? (

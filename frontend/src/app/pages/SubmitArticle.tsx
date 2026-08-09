@@ -477,8 +477,8 @@ export function SubmitArticle() {
   };
 
   return (
-    <div className="bg-gray-50 dark:bg-gray-950 min-h-screen py-16 md:py-24 transition-colors duration-300">
-      <div className="max-w-7xl mx-auto px-6">
+    <div className="bg-gray-50 dark:bg-gray-950 min-h-screen py-10 md:py-24 transition-colors duration-300">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <motion.div
           key="submission-form"
           initial={{ opacity: 0, y: 15 }}
@@ -488,24 +488,24 @@ export function SubmitArticle() {
         >
           <button
             onClick={() => navigate("/submit")}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all cursor-pointer font-semibold mb-8 text-sm"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all cursor-pointer font-semibold mb-6 sm:mb-8 text-sm"
           >
             <ArrowLeft size={16} />
             Back to Articles
           </button>
 
-          <div className="text-center mb-12">
-            <h1 className="text-4xl lg:text-5xl text-gray-900 dark:text-white mb-4 tracking-tight font-extrabold" style={{ fontFamily: 'Poppins, sans-serif' }}>
+          <div className="text-center mb-8 sm:mb-12">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl text-gray-900 dark:text-white mb-3 sm:mb-4 tracking-tight font-extrabold" style={{ fontFamily: 'Poppins, sans-serif' }}>
               Submit Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-blue-600">Contribution</span>
             </h1>
-            <p className="text-lg text-gray-600 dark:text-gray-400" style={{ fontFamily: 'Open Sans, sans-serif' }}>
+            <p className="text-base sm:text-lg text-gray-600 dark:text-gray-400" style={{ fontFamily: 'Open Sans, sans-serif' }}>
               Fill out your academic details and compose your publication using the rich text editor.
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-8 bg-white dark:bg-gray-900 rounded-[2rem] shadow-xl p-8 lg:p-12 border border-gray-100 dark:border-gray-800">
+          <form onSubmit={handleSubmit} className="space-y-8 bg-white dark:bg-gray-900 rounded-3xl sm:rounded-[2rem] shadow-xl p-4 sm:p-8 lg:p-12 border border-gray-100 dark:border-gray-800">
             {errorMsg && (
-              <div className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 p-4 rounded-xl flex items-center gap-3">
+              <div className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 p-4 rounded-xl flex items-center gap-3 text-sm">
                 <X className="w-5 h-5 shrink-0" />
                 <p className="font-medium">{errorMsg}</p>
               </div>
@@ -513,8 +513,8 @@ export function SubmitArticle() {
 
             {/* Personal Details Section */}
             <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-800 pb-4">Personal Details</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-800 pb-4">Personal Details</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Full Name</label>
                   <input required type="text" value={studentName} onChange={e => setStudentName(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all outline-none" placeholder="John Doe" />
@@ -523,7 +523,7 @@ export function SubmitArticle() {
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Email Address</label>
                   <input required type="email" value={studentEmail} onChange={e => setStudentEmail(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all outline-none" placeholder="john@example.com" />
                 </div>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Year</label>
                     <input required type="text" value={year} onChange={e => setYear(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 transition-all outline-none" placeholder="3" />
@@ -540,7 +540,7 @@ export function SubmitArticle() {
                     <input required type="text" value={section} onChange={e => setSection(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 transition-all outline-none" placeholder="B" />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">URN</label>
                     <input required type="text" value={studentUrn} onChange={e => setStudentUrn(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 transition-all outline-none" placeholder="" />
@@ -614,11 +614,11 @@ export function SubmitArticle() {
               </div>
             </div>
 
-            <div className="pt-6 flex gap-4">
-              <button type="button" onClick={resetForm} className="px-6 py-4 rounded-xl font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors w-1/3 border border-transparent">
+            <div className="pt-6 flex flex-col-reverse sm:flex-row gap-4">
+              <button type="button" onClick={resetForm} className="px-6 py-3.5 sm:py-4 rounded-xl font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors w-full sm:w-1/3 border border-transparent">
                 Clear
               </button>
-              <button type="submit" disabled={isSubmitting} className="flex-1 flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold text-lg hover:shadow-lg hover:shadow-purple-500/30 transition-all disabled:opacity-70 disabled:cursor-not-allowed">
+              <button type="submit" disabled={isSubmitting} className="w-full sm:flex-1 flex items-center justify-center gap-2 px-8 py-3.5 sm:py-4 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold text-base sm:text-lg hover:shadow-lg hover:shadow-purple-500/30 transition-all disabled:opacity-70 disabled:cursor-not-allowed">
                 {isSubmitting ? <><Loader2 className="animate-spin" size={24} /> Publishing...</> : "Submit Blog"}
               </button>
             </div>
@@ -633,13 +633,13 @@ export function SubmitArticle() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-4"
           >
             <motion.div
               initial={{ scale: 0.95, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.95, y: 20 }}
-              className="bg-white dark:bg-gray-950 rounded-[2.5rem] max-w-xl w-full p-6 md:p-8 shadow-2xl border border-gray-100 dark:border-gray-800 flex flex-col items-center gap-6"
+              className="bg-white dark:bg-gray-950 rounded-3xl sm:rounded-[2.5rem] max-w-xl w-[92vw] p-4 sm:p-8 shadow-2xl border border-gray-100 dark:border-gray-800 flex flex-col items-center gap-4 sm:gap-6"
             >
               <div className="w-full text-center">
                 <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2" style={{ fontFamily: 'Poppins, sans-serif' }}>

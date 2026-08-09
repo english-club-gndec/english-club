@@ -214,6 +214,38 @@ const processCsvRows = (rows: any[], overridePos: string, userId: string) => {
   return { valid, unresolved };
 };
 
+const POSITION_RANK: Record<string, number> = {
+  'CONVENOR': 1,
+  'CO-CONVENOR': 2,
+  'TECH_HEAD': 3,
+  'CO-TECH_HEAD': 4,
+  'CREATIVE_HEAD': 5,
+  'CO-CREATIVE_HEAD': 6,
+  'EXECUTIVE_MEMBER': 7,
+  'ACTIVE_MEMBER': 8,
+};
+
+const getPositionRank = (position: string): number => {
+  if (!position) return 99;
+  const upperPos = position.toUpperCase().trim();
+  if (POSITION_RANK[upperPos]) return POSITION_RANK[upperPos];
+  if (upperPos.includes('HEAD')) return 6.5;
+  if (upperPos.includes('EXECUTIVE')) return 7;
+  if (upperPos.includes('ACTIVE')) return 8;
+  return 9;
+};
+
+const sortMembersByHierarchy = (memberList: Member[]): Member[] => {
+  return [...memberList].sort((a, b) => {
+    const rankA = getPositionRank(a.member_postion);
+    const rankB = getPositionRank(b.member_postion);
+    if (rankA !== rankB) {
+      return rankA - rankB;
+    }
+    return a.member_name.localeCompare(b.member_name);
+  });
+};
+
 export function AdminMembers() {
   const { userId, logout } = useAuth();
   const [members, setMembers] = useState<Member[]>([]);
@@ -226,7 +258,7 @@ export function AdminMembers() {
     try {
       setLoading(true);
       const data = await memberService.getAllMembers();
-      setMembers(data);
+      setMembers(sortMembersByHierarchy(data));
     } catch (error: any) {
       toast.error(error.message || "Failed to fetch members");
       // If the admin's own ID is not found, force logout
@@ -828,30 +860,30 @@ export function AdminMembers() {
     <>
       <Toaster position="top-right" />
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl text-gray-900 dark:text-white mb-2" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700 }}>
+            <h1 className="text-2xl sm:text-3xl text-gray-900 dark:text-white mb-1 sm:mb-2" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700 }}>
               Club Members
             </h1>
-            <p className="text-gray-600 dark:text-gray-400" style={{ fontFamily: 'Open Sans, sans-serif' }}>
+            <p className="text-sm text-gray-600 dark:text-gray-400" style={{ fontFamily: 'Open Sans, sans-serif' }}>
               Manage English Club members and their information
             </p>
           </div>
-          <div className="flex gap-4">
+          <div className="flex flex-wrap gap-3">
             {selectedIds.length > 0 && (
               <button
                 onClick={handleBulkDelete}
-                className="flex items-center gap-2 px-6 py-3 rounded-xl bg-red-600 text-white hover:bg-red-700 transition-all shadow-lg shadow-red-500/30"
+                className="flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-red-600 text-white hover:bg-red-700 transition-all shadow-lg shadow-red-500/30 text-xs sm:text-sm font-semibold"
               >
-                <Trash2 className="w-5 h-5" />
+                <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />
                 Delete Selected ({selectedIds.length})
               </button>
             )}
             <button
               onClick={() => openModal()}
-              className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-blue-900 to-purple-700 text-white hover:shadow-lg hover:shadow-purple-500/50 transition-all"
+              className="flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-blue-900 to-purple-700 text-white hover:shadow-lg hover:shadow-purple-500/50 transition-all text-xs sm:text-sm font-semibold"
             >
-              <Plus className="w-5 h-5" />
+              <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
               Add Member
             </button>
           </div>

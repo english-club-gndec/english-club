@@ -1,12 +1,16 @@
 import { useState, useEffect } from "react";
-import { Search, Bell, User, LogOut, Settings as SettingsIcon, Moon, Sun } from "lucide-react";
+import { Search, Bell, User, LogOut, Settings as SettingsIcon, Moon, Sun, Menu } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useTheme } from "../ThemeProvider";
 import { useAuth } from "../../context/AuthContext";
 import { userService } from "../../../services/userService";
 import { supabase } from "../../../lib/supabase";
 
-export function AdminNavbar() {
+interface AdminNavbarProps {
+  onOpenMobileMenu?: () => void;
+}
+
+export function AdminNavbar({ onOpenMobileMenu }: AdminNavbarProps) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [adminName, setAdminName] = useState("Admin User");
   const [adminEmail, setAdminEmail] = useState("admin@englishclub.edu");
@@ -55,15 +59,24 @@ export function AdminNavbar() {
 
   return (
     <header className="sticky top-0 z-30 bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg border-b border-gray-200 dark:border-gray-800">
-      <div className="px-6 py-4">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex-1 max-w-2xl">
-            <div className="relative">
+      <div className="px-4 sm:px-6 py-4">
+        <div className="flex items-center justify-between gap-3 sm:gap-4">
+          <div className="flex items-center gap-3 flex-1 max-w-2xl">
+            {onOpenMobileMenu && (
+              <button
+                onClick={onOpenMobileMenu}
+                className="lg:hidden p-3 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors shrink-0"
+                aria-label="Open Mobile Menu"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+            )}
+            <div className="relative flex-1">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search..."
-                className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm sm:text-base"
                 style={{ fontFamily: 'Open Sans, sans-serif' }}
               />
             </div>

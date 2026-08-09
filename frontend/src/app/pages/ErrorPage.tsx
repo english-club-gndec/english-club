@@ -14,12 +14,12 @@ export function ErrorPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center p-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center p-4 sm:p-6">
       <PageTitle />
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="max-w-md w-full bg-white dark:bg-gray-900 rounded-3xl shadow-xl p-8 text-center border border-gray-100 dark:border-gray-800"
+        className="max-w-md w-full bg-white dark:bg-gray-900 rounded-3xl shadow-xl p-6 sm:p-8 text-center border border-gray-100 dark:border-gray-800"
       >
         <div className="w-20 h-20 bg-red-100 dark:bg-red-900/30 rounded-2xl flex items-center justify-center mx-auto mb-6">
           <AlertTriangle className="w-10 h-10 text-red-600 dark:text-red-400" />

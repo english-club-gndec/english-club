@@ -16,8 +16,15 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
-export function AdminSidebar() {
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
+interface AdminSidebarProps {
+  isMobileOpen?: boolean;
+  setIsMobileOpen?: (open: boolean) => void;
+}
+
+export function AdminSidebar({ isMobileOpen: propMobileOpen, setIsMobileOpen: propSetMobileOpen }: AdminSidebarProps) {
+  const [internalMobileOpen, setInternalMobileOpen] = useState(false);
+  const isMobileOpen = propMobileOpen !== undefined ? propMobileOpen : internalMobileOpen;
+  const setIsMobileOpen = propSetMobileOpen || setInternalMobileOpen;
   const location = useLocation();
 
   const menuItems = [
@@ -41,12 +48,6 @@ export function AdminSidebar() {
 
   return (
     <>
-      <button
-        onClick={() => setIsMobileOpen(true)}
-        className="lg:hidden fixed top-4 left-4 z-40 p-2 rounded-lg bg-white dark:bg-gray-900 shadow-lg"
-      >
-        <Menu className="w-6 h-6 text-gray-900 dark:text-white" />
-      </button>
 
       <AnimatePresence>
         {isMobileOpen && (
@@ -61,9 +62,8 @@ export function AdminSidebar() {
       </AnimatePresence>
 
       <aside
-        className={`fixed top-0 left-0 h-screen w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 z-50 transition-transform lg:translate-x-0 ${
-          isMobileOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={`fixed top-0 left-0 h-screen w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 z-50 transition-transform lg:translate-x-0 ${isMobileOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
       >
         <div className="flex flex-col h-full">
           <div className="p-6 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
@@ -92,11 +92,10 @@ export function AdminSidebar() {
                 key={item.path}
                 to={item.path}
                 onClick={() => setIsMobileOpen(false)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                  isActive(item.path)
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive(item.path)
                     ? "bg-gradient-to-r from-blue-900 to-purple-700 text-white shadow-lg shadow-purple-500/30"
                     : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
-                }`}
+                  }`}
                 style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}
               >
                 <item.icon className="w-5 h-5" />
