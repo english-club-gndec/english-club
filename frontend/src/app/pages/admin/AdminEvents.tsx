@@ -1,12 +1,13 @@
 import { motion, AnimatePresence } from "motion/react";
 import { useState, useEffect } from "react";
-import { Plus, Edit2, Trash2, X, Calendar as CalendarIcon, Clock, MapPin, Loader2, Image as ImageIcon, LayoutGrid, List } from "lucide-react";
+import { Plus, Edit2, Trash2, X, Calendar as CalendarIcon, Clock, MapPin, Loader2, Image as ImageIcon, LayoutGrid, List, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
 import { Toaster } from "sonner";
 import { eventService } from "../../../services/eventService";
 import { userService } from "../../../services/userService";
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../../lib/supabase";
+import { AdminFeedbackModal } from "../../components/admin/AdminFeedbackModal";
 
 interface Event {
   id: number;
@@ -29,6 +30,7 @@ export function AdminEvents() {
   const [posterFile, setPosterFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const [viewingEvent, setViewingEvent] = useState<Event | null>(null);
+  const [feedbackEvent, setFeedbackEvent] = useState<{ id: number; name: string } | null>(null);
   const [usersMap, setUsersMap] = useState<Record<number, { name: string, profileUrl: string | null }>>({});
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -404,6 +406,16 @@ export function AdminEvents() {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
+                            setFeedbackEvent({ id: event.id, name: event.name });
+                          }}
+                          className="p-1.5 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 text-purple-600 dark:text-purple-400 transition-colors"
+                          title="Feedback Results"
+                        >
+                          <BarChart3 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
                             openModal(event);
                           }}
                           className="p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 transition-colors"
@@ -520,6 +532,14 @@ export function AdminEvents() {
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => setFeedbackEvent({ id: event.id, name: event.name })}
+                              className="p-2 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 text-purple-600 dark:text-purple-400 transition-colors flex items-center gap-1.5 text-xs font-semibold"
+                              title="Feedback Results"
+                            >
+                              <BarChart3 className="w-4 h-4" />
+                              <span className="hidden sm:inline">Feedback</span>
+                            </button>
                             <button
                               onClick={() => openModal(event)}
                               className="p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 transition-colors"
@@ -919,14 +939,11 @@ export function AdminEvents() {
 
       <AnimatePresence>
         {deleteConfirmId !== null && (
-          <div 
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[80] flex items-center justify-center p-6"
-            onClick={() => setDeleteConfirmId(null)}
-          >
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-6" onClick={() => setDeleteConfirmId(null)}>
             <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }} 
-              animate={{ opacity: 1, scale: 1 }} 
-              exit={{ opacity: 0, scale: 0.95 }}
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
               className="bg-white dark:bg-gray-900 border border-gray-250 dark:border-gray-800 rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl flex flex-col items-center gap-6" 
               onClick={e => e.stopPropagation()}
             >
@@ -967,6 +984,14 @@ export function AdminEvents() {
               </div>
             </motion.div>
           </div>
+        )}
+
+        {feedbackEvent && (
+          <AdminFeedbackModal
+            eventId={feedbackEvent.id}
+            eventName={feedbackEvent.name}
+            onClose={() => setFeedbackEvent(null)}
+          />
         )}
       </AnimatePresence>
     </>

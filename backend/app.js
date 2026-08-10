@@ -60,6 +60,7 @@ app.use('/api/members', require('./routes/memberRoutes'));
 app.use('/api/recruitment', require('./routes/recruitmentRoutes'));
 app.use('/api/settings', require('./routes/settingsRoutes'));
 app.use('/api/submission', require('./routes/submissionRoutes'));
+app.use('/api/feedback', require('./routes/feedbackRoutes'));
 
 app.get('/', (req, res) => {
   res.json({ message: 'English Club API is running' });

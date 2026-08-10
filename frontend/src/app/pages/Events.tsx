@@ -1,12 +1,12 @@
 import { motion } from "motion/react";
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
-import { Calendar, Clock, MapPin, Users, X, Info } from "lucide-react";
+import { Calendar, Clock, MapPin, Users, X, Info, MessageSquareHeart } from "lucide-react";
 import { eventService } from "../../services/eventService";
 import { supabase } from "../../lib/supabase";
 import { toast } from "sonner";
-
 import { userService } from "../../services/userService";
+import { FeedbackModal } from "../components/FeedbackModal";
 
 interface Event {
   event_id: number;
@@ -25,12 +25,36 @@ export function Events() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [feedbackEvent, setFeedbackEvent] = useState<{ id: number; name: string } | null>(null);
   const [usersMap, setUsersMap] = useState<Record<number, { name: string, profileUrl: string | null }>>({});
   const navigate = useNavigate();
+
+  const isFeedbackEligible = (eventDateStr: string) => {
+    if (!eventDateStr) return false;
+    const cleanDateStr = eventDateStr.split('T')[0];
+    const parts = cleanDateStr.split('-');
+    if (parts.length !== 3) return false;
+
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10);
+    const day = parseInt(parts[2], 10);
+
+    const eventStart = new Date(year, month - 1, day, 0, 0, 0);
+    // Cutoff is 1 day after event date ends (23:59:59 of day after event)
+    const feedbackCutoff = new Date(year, month - 1, day + 1, 23, 59, 59, 999);
+    const now = new Date();
+
+    return now >= eventStart && now <= feedbackCutoff;
+  };
 
   const handleRegister = (e: React.MouseEvent, eventId: number) => {
     e.stopPropagation();
     navigate('/register', { state: { selectedEventId: eventId } });
+  };
+
+  const handleOpenFeedback = (e: React.MouseEvent, event: Event) => {
+    e.stopPropagation();
+    setFeedbackEvent({ id: event.event_id, name: event.event_name });
   };
 
   const fetchUsers = async () => {
@@ -210,13 +234,25 @@ export function Events() {
                       </div>
                     </div>
 
-                    <button 
-                      onClick={(e) => handleRegister(e, event.event_id)}
-                      className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 text-white text-sm font-bold hover:shadow-lg hover:shadow-purple-500/30 transition-all active:scale-95" 
-                      style={{ fontFamily: 'Poppins, sans-serif' }}
-                    >
-                      Register Now
-                    </button>
+                    <div className="flex flex-col gap-2">
+                      <button 
+                        onClick={(e) => handleRegister(e, event.event_id)}
+                        className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 text-white text-sm font-bold hover:shadow-lg hover:shadow-purple-500/30 transition-all active:scale-95" 
+                        style={{ fontFamily: 'Poppins, sans-serif' }}
+                      >
+                        Register Now
+                      </button>
+                      {isFeedbackEligible(event.event_date) && (
+                        <button 
+                          onClick={(e) => handleOpenFeedback(e, event)}
+                          className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-xs font-bold hover:shadow-lg hover:shadow-emerald-500/30 transition-all flex items-center justify-center gap-1.5 active:scale-95" 
+                          style={{ fontFamily: 'Poppins, sans-serif' }}
+                        >
+                          <MessageSquareHeart className="w-4 h-4" />
+                          Give Feedback ✨
+                        </button>
+                      )}
+                    </div>
                     </div>
                   </motion.div>
                 );
@@ -365,9 +401,20 @@ export function Events() {
                       </div>
                     </div>
 
-                    <button className="w-full py-3 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-sm font-bold cursor-not-allowed" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                      Event Closed
-                    </button>
+                    {isFeedbackEligible(event.event_date) ? (
+                      <button 
+                        onClick={(e) => handleOpenFeedback(e, event)}
+                        className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-sm font-bold hover:shadow-lg hover:shadow-purple-500/30 transition-all flex items-center justify-center gap-2 active:scale-95" 
+                        style={{ fontFamily: 'Poppins, sans-serif' }}
+                      >
+                        <MessageSquareHeart className="w-4 h-4" />
+                        Give Feedback ✨
+                      </button>
+                    ) : (
+                      <button className="w-full py-3 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 text-sm font-bold cursor-not-allowed" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                        Event Closed
+                      </button>
+                    )}
                   </div>
                 </motion.div>
               ))
@@ -445,7 +492,27 @@ export function Events() {
                     {selectedEvent.event_long_description || "That's all for now, folks :)"}
                   </p>
 
-                  {new Date(selectedEvent.event_date) < new Date(new Date().setHours(0,0,0,0)) ? (
+                  {isFeedbackEligible(selectedEvent.event_date) ? (
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      {new Date(selectedEvent.event_date) >= new Date(new Date().setHours(0,0,0,0)) && (
+                        <button 
+                          onClick={(e) => handleRegister(e, selectedEvent.event_id)}
+                          className="flex-1 py-4 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold hover:shadow-xl hover:shadow-purple-500/40 transition-all active:scale-95" 
+                          style={{ fontFamily: 'Poppins, sans-serif' }}
+                        >
+                          Register Now
+                        </button>
+                      )}
+                      <button 
+                        onClick={(e) => handleOpenFeedback(e, selectedEvent)}
+                        className="flex-1 py-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold hover:shadow-xl hover:shadow-emerald-500/40 transition-all flex items-center justify-center gap-2 active:scale-95" 
+                        style={{ fontFamily: 'Poppins, sans-serif' }}
+                      >
+                        <MessageSquareHeart className="w-5 h-5" />
+                        Give Feedback ✨
+                      </button>
+                    </div>
+                  ) : new Date(selectedEvent.event_date) < new Date(new Date().setHours(0,0,0,0)) ? (
                     <button className="w-full py-4 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 font-bold cursor-not-allowed" style={{ fontFamily: 'Poppins, sans-serif' }}>
                       Event Closed
                     </button>
@@ -463,6 +530,14 @@ export function Events() {
             </div>
           </motion.div>
         </motion.div>
+      )}
+
+      {feedbackEvent && (
+        <FeedbackModal
+          eventId={feedbackEvent.id}
+          eventName={feedbackEvent.name}
+          onClose={() => setFeedbackEvent(null)}
+        />
       )}
     </div>
   );
