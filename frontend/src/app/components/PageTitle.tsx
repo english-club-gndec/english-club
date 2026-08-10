@@ -10,6 +10,8 @@ const routeTitles: Record<string, string> = {
   "/submit": "Student Publications",
   "/submit-article": "Submit Article",
   "/vote": "Voting Page",
+  "/recruitment-results": "Recruitment Results",
+  "/results": "Recruitment Results",
   "/admin/login": "Admin Login",
   "/admin": "Admin Dashboard",
   "/admin/users": "Admin Users",
@@ -34,7 +36,8 @@ export function PageTitle() {
       if (location.pathname.startsWith("/admin/")) {
         title = "Admin";
       } else {
-        title = "Page Not Found";
+        const cleanName = location.pathname.slice(1).replace(/-/g, " ");
+        title = cleanName ? cleanName.charAt(0).toUpperCase() + cleanName.slice(1) : "English Club";
       }
     }
 
