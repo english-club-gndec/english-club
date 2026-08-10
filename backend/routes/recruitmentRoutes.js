@@ -6,6 +6,9 @@ const { verifyToken } = require('../middleware/authMiddleware');
 // POST /api/recruitment/createCandidate (Public candidate application)
 router.post('/createCandidate', recruitmentController.createCandidate);
 
+// GET /api/recruitment/results (Public selected candidates list)
+router.get('/results', recruitmentController.getPublicResults);
+
 // GET /api/recruitment/:user_id/getAllCandidates (Admin protected)
 router.get('/:user_id/getAllCandidates', verifyToken, recruitmentController.getAllCandidates);
 

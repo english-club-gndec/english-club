@@ -361,6 +361,23 @@ const recruitmentController = {
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
+  },
+
+  // GET /results (Public - selected candidates sorted by interested_department and candidate_name)
+  getPublicResults: async (req, res) => {
+    try {
+      const { data, error } = await supabase
+        .from('candidates')
+        .select('candidate_id, candidate_name, candidate_class, candidate_crn, candidate_urn, candidate_email, interested_department, candidate_status, candidate_description, custom_answers, created_at')
+        .eq('candidate_status', 'SELECTED')
+        .order('interested_department', { ascending: true })
+        .order('candidate_name', { ascending: true });
+
+      if (error) throw error;
+      res.json(data || []);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
   }
 };
 

@@ -2,7 +2,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { useState, useEffect } from "react";
 import { 
   Loader2, Edit2, X, Trash2, Archive, CheckSquare, Square, AlertTriangle, 
-  Plus, ArrowUp, ArrowDown, Layers, FileText, ToggleLeft, ToggleRight, CheckCircle2 
+  Plus, ArrowUp, ArrowDown, Layers, FileText, ToggleLeft, ToggleRight, CheckCircle2, Trophy, ExternalLink
 } from "lucide-react";
 import { toast, Toaster } from "sonner";
 import { useAuth } from "../../context/AuthContext";
@@ -515,6 +515,16 @@ export function AdminRecruitments() {
                 Add Question
               </button>
             )}
+
+            <button
+              onClick={() => window.open('/recruitment-results', '_blank')}
+              className="px-5 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-700 hover:to-cyan-700 transition-all shadow-lg shadow-emerald-500/30 flex items-center gap-2 hover:-translate-y-0.5"
+              title="View public selected candidates results page"
+            >
+              <Trophy className="w-5 h-5 text-amber-300 animate-pulse" />
+              Show Results
+              <ExternalLink className="w-4 h-4 text-emerald-200" />
+            </button>
 
             <button
               onClick={toggleRecruitmentStatus}

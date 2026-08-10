@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from "motion/react";
 import { useState, useEffect } from "react";
+import { Link } from "react-router";
 import {
   MessageCircle,
   Users,
@@ -13,7 +14,8 @@ import {
   ArrowRight,
   Megaphone,
   Calendar,
-  Sparkle
+  Sparkle,
+  Trophy
 } from "lucide-react";
 import { recruitmentServices } from "../../services/recruitmentServices";
 import { settingsServices } from "../../services/settingsServices";
@@ -216,6 +218,17 @@ export function JoinUs() {
             <p className="text-lg sm:text-xl text-blue-100/80 font-medium" style={{ fontFamily: 'Open Sans, sans-serif' }}>
               "New voices. New ideas. New you. Be heard. Be you. Belong here."
             </p>
+
+            <div className="pt-2 flex justify-center">
+              <Link
+                to="/recruitment-results"
+                className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-purple-600 to-indigo-600 hover:from-amber-400 hover:to-indigo-500 text-white font-bold text-sm sm:text-base shadow-xl shadow-purple-500/25 hover:shadow-purple-500/40 hover:-translate-y-0.5 transition-all"
+              >
+                <Trophy className="w-5 h-5 text-amber-300 animate-bounce" />
+                View Recruitment Results
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
           </motion.div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -408,6 +421,14 @@ export function JoinUs() {
               >
                 <Maximize2 className="w-4 h-4" /> View Official Poster
               </button>
+
+              <Link
+                to="/recruitment-results"
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-sm shadow-lg shadow-purple-500/30 transition-all"
+              >
+                <Trophy className="w-4 h-4 text-amber-300" />
+                Show Results
+              </Link>
             </div>
           </div>
 

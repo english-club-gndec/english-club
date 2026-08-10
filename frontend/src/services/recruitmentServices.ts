@@ -185,4 +185,13 @@ export const recruitmentServices = {
     }
     return response.json();
   },
+
+  getPublicResults: async () => {
+    const response = await fetch(`${API_BASE_URL}/results`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to fetch public recruitment results: ${errorText}`);
+    }
+    return response.json();
+  },
 };
