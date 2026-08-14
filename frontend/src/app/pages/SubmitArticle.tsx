@@ -15,7 +15,8 @@ import {
   ListOrdered,
   Quote,
   Code,
-  ArrowLeft
+  ArrowLeft,
+  AlertTriangle
 } from "lucide-react";
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -24,7 +25,7 @@ import UnderlineExtension from '@tiptap/extension-underline';
 import Placeholder from '@tiptap/extension-placeholder';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import { all, createLowlight } from 'lowlight';
-import { useNavigate, useBlocker } from "react-router";
+import { useNavigate, useParams, useBlocker } from "react-router";
 import { supabase } from "../../lib/supabase";
 import { submissionService } from "../../services/submissionService";
 
@@ -94,9 +95,13 @@ const MenuBar = ({ editor }: { editor: any }) => {
 
 export function SubmitArticle() {
   const navigate = useNavigate();
+  const { submissionId, editToken } = useParams<{ submissionId?: string; editToken?: string }>();
+  const isEditMode = Boolean(submissionId && editToken);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [loadingSubmission, setLoadingSubmission] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Form States
@@ -411,6 +416,52 @@ export function SubmitArticle() {
     return doc.body.innerHTML;
   };
 
+  useEffect(() => {
+    if (isEditMode && submissionId && editToken) {
+      setLoadingSubmission(true);
+      submissionService.getSubmissionByToken(submissionId, editToken)
+        .then((sub) => {
+          setStudentName(sub.student_name || "");
+          setStudentEmail(sub.student_email || "");
+          setStudentUrn(sub.student_urn?.toString() || "");
+          setStudentCrn(sub.student_crn?.toString() || "");
+          setTitle(sub.title || "");
+          setDescription(sub.description || "");
+          setTags(sub.tags || []);
+          if (sub.image_url) {
+            setCoverPreview(sub.image_url);
+          }
+          if (sub.rejection_reason) {
+            setRejectionReason(sub.rejection_reason);
+          }
+
+          if (sub.student_class) {
+            const match = sub.student_class.match(/^D(\d+)([A-Z]+)(.*)$/i);
+            if (match) {
+              setYear(match[1]);
+              if (branches.includes(match[2].toUpperCase())) {
+                setBranch(match[2].toUpperCase());
+              }
+              setSection(match[3]);
+            } else {
+              setSection(sub.student_class);
+            }
+          }
+
+          if (editor && sub.body) {
+            editor.commands.setContent(sub.body);
+          }
+        })
+        .catch((err) => {
+          console.error("Failed to fetch submission for edit:", err);
+          setErrorMsg(err.message || "Failed to load submission for editing.");
+        })
+        .finally(() => {
+          setLoadingSubmission(false);
+        });
+    }
+  }, [isEditMode, submissionId, editToken, editor]);
+
   const resetForm = () => {
     setStudentName(""); setYear(""); setBranch("Select"); setSection(""); setStudentUrn(""); setStudentCrn(""); setStudentEmail("");
     setTitle(""); setDescription(""); setTags([]); setCoverImage(null); setCoverPreview(null);
@@ -419,7 +470,7 @@ export function SubmitArticle() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!coverImage) { setErrorMsg("Cover image is required."); return; }
+    if (!coverImage && !coverPreview) { setErrorMsg("Cover image is required."); return; }
     if (!editor || editor.isEmpty) { setErrorMsg("Blog content cannot be empty."); return; }
     if (!year || !section) { setErrorMsg("Year and section are required."); return; }
     if (!branch || branch === "Select") { setErrorMsg("Please select a branch."); return; }
@@ -429,26 +480,32 @@ export function SubmitArticle() {
 
     try {
       const titleSlug = slugify(title) || 'article';
-      const coverExt = (coverImage.name.split('.').pop() || 'png').toLowerCase();
-      const uniqueId = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
-      const coverFileName = `${titleSlug}-${uniqueId}.${coverExt}`;
+      let finalImageUrl = coverPreview || "";
 
-      const { error: coverUploadError } = await supabase.storage
-        .from('SubmissionImages')
-        .upload(coverFileName, coverImage, { upsert: false });
+      if (coverImage) {
+        const coverExt = (coverImage.name.split('.').pop() || 'png').toLowerCase();
+        const uniqueId = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+        const coverFileName = `${titleSlug}-${uniqueId}.${coverExt}`;
 
-      if (coverUploadError) throw coverUploadError;
+        const { error: coverUploadError } = await supabase.storage
+          .from('SubmissionImages')
+          .upload(coverFileName, coverImage, { upsert: false });
 
-      const { data: coverPublicUrl } = supabase.storage
-        .from('SubmissionImages')
-        .getPublicUrl(coverFileName);
+        if (coverUploadError) throw coverUploadError;
+
+        const { data: coverPublicUrl } = supabase.storage
+          .from('SubmissionImages')
+          .getPublicUrl(coverFileName);
+
+        finalImageUrl = coverPublicUrl.publicUrl;
+      }
 
       const rawHtml = editor.getHTML();
       const processedHtml = await processTiptapImages(rawHtml, titleSlug);
 
       const student_class = `D${year}${branch}${section}`;
 
-      await submissionService.createSubmission({
+      const payload = {
         student_name: studentName,
         student_class,
         student_urn: studentUrn,
@@ -457,9 +514,15 @@ export function SubmitArticle() {
         title,
         description,
         body: processedHtml,
-        image_url: coverPublicUrl.publicUrl,
+        image_url: finalImageUrl,
         tags
-      });
+      };
+
+      if (isEditMode && submissionId && editToken) {
+        await submissionService.editSubmissionByStudent(submissionId, editToken, payload);
+      } else {
+        await submissionService.createSubmission(payload);
+      }
 
       setIsSubmitted(true);
 
@@ -480,37 +543,58 @@ export function SubmitArticle() {
   return (
     <div className="bg-gray-50 dark:bg-gray-950 min-h-screen py-10 md:py-24 transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        <motion.div
-          key="submission-form"
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="max-w-4xl mx-auto"
-        >
-          <button
-            onClick={() => navigate("/submit")}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all cursor-pointer font-semibold mb-6 sm:mb-8 text-sm"
-          >
-            <ArrowLeft size={16} />
-            Back to Articles
-          </button>
-
-          <div className="text-center mb-8 sm:mb-12">
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl text-gray-900 dark:text-white mb-3 sm:mb-4 tracking-tight font-extrabold" style={{ fontFamily: 'Poppins, sans-serif' }}>
-              Submit Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-blue-600">Contribution</span>
-            </h1>
-            <p className="text-base sm:text-lg text-gray-600 dark:text-gray-400" style={{ fontFamily: 'Open Sans, sans-serif' }}>
-              Fill out your academic details and compose your publication using the rich text editor.
-            </p>
+        {loadingSubmission ? (
+          <div className="text-center py-32">
+            <Loader2 className="w-12 h-12 text-purple-600 animate-spin mx-auto mb-4" />
+            <p className="text-gray-600 dark:text-gray-400 font-medium">Loading your submission details...</p>
           </div>
+        ) : (
+          <motion.div
+            key="submission-form"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="max-w-4xl mx-auto"
+          >
+            <button
+              onClick={() => navigate("/submit")}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all cursor-pointer font-semibold mb-6 sm:mb-8 text-sm"
+            >
+              <ArrowLeft size={16} />
+              Back to Articles
+            </button>
 
-          <form onSubmit={handleSubmit} className="space-y-8 bg-white dark:bg-gray-900 rounded-3xl sm:rounded-[2rem] shadow-xl p-4 sm:p-8 lg:p-12 border border-gray-100 dark:border-gray-800">
-            {errorMsg && (
-              <div className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 p-4 rounded-xl flex items-center gap-3 text-sm">
-                <X className="w-5 h-5 shrink-0" />
-                <p className="font-medium">{errorMsg}</p>
-              </div>
-            )}
+            <div className="text-center mb-8 sm:mb-12">
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl text-gray-900 dark:text-white mb-3 sm:mb-4 tracking-tight font-extrabold" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                {isEditMode ? "Revise Your " : "Submit Your "}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-blue-600">
+                  {isEditMode ? "Article" : "Contribution"}
+                </span>
+              </h1>
+              <p className="text-base sm:text-lg text-gray-600 dark:text-gray-400" style={{ fontFamily: 'Open Sans, sans-serif' }}>
+                {isEditMode ? "Update your article content based on editorial feedback and resubmit for review." : "Fill out your academic details and compose your publication using the rich text editor."}
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-8 bg-white dark:bg-gray-900 rounded-3xl sm:rounded-[2rem] shadow-xl p-4 sm:p-8 lg:p-12 border border-gray-100 dark:border-gray-800">
+              {rejectionReason && (
+                <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 p-5 rounded-2xl flex flex-col gap-2">
+                  <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300 font-bold text-base">
+                    <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
+                    <span>Editorial Feedback / Requested Changes</span>
+                  </div>
+                  <p className="text-sm text-amber-700 dark:text-amber-300 italic pl-7 leading-relaxed font-serif">
+                    "{rejectionReason}"
+                  </p>
+                </div>
+              )}
+
+              {errorMsg && (
+                <div className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 p-4 rounded-xl flex items-center gap-3 text-sm">
+                  <X className="w-5 h-5 shrink-0" />
+                  <p className="font-medium">{errorMsg}</p>
+                </div>
+              )}
 
             {/* Personal Details Section */}
             <div className="space-y-6">
@@ -625,6 +709,7 @@ export function SubmitArticle() {
             </div>
           </form>
         </motion.div>
+        )}
       </div>
 
       {/* Cropper Modal */}

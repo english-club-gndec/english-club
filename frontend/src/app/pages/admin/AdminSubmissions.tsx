@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "motion/react";
 import { useState, useEffect } from "react";
-import { Search, Filter, Check, X, Eye, Calendar, Tag, AlertTriangle, Image as ImageIcon, LayoutGrid, List, Trash2 } from "lucide-react";
+import { Search, Filter, Check, X, Eye, Calendar, Tag, AlertTriangle, Image as ImageIcon, LayoutGrid, List, Trash2, FileEdit, Send, Loader2 } from "lucide-react";
 import { toast, Toaster } from "sonner";
 import { useAuth } from "../../context/AuthContext";
 import { submissionService, Submission } from "../../../services/submissionService";
@@ -17,6 +17,10 @@ export function AdminSubmissions() {
 
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [skipWarningCheckbox, setSkipWarningCheckbox] = useState(false);
+
+  const [requestChangeTarget, setRequestChangeTarget] = useState<Submission | null>(null);
+  const [requestChangeReason, setRequestChangeReason] = useState("");
+  const [isSendingRequest, setIsSendingRequest] = useState(false);
 
   const fetchSubmissions = async () => {
     setLoading(true);
@@ -57,6 +61,37 @@ export function AdminSubmissions() {
     }
   };
 
+  const handleRequestChangeClick = (submission: Submission) => {
+    setRequestChangeTarget(submission);
+    setRequestChangeReason("");
+  };
+
+  const handleRequestChangeConfirm = async () => {
+    if (!requestChangeTarget) return;
+    if (!requestChangeReason.trim()) {
+      toast.error("Please enter a reason or feedback for requested changes");
+      return;
+    }
+
+    setIsSendingRequest(true);
+    try {
+      await submissionService.updateSubmissionStatus(
+        requestChangeTarget.submission_id,
+        userId || "admin",
+        "REQUESTED_CHANGE",
+        requestChangeReason
+      );
+      toast.success(`Request for changes sent to ${requestChangeTarget.student_name}!`);
+      fetchSubmissions();
+      setRequestChangeTarget(null);
+      setRequestChangeReason("");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to request changes");
+    } finally {
+      setIsSendingRequest(false);
+    }
+  };
+
   const handleDeleteConfirm = async (submissionId: string) => {
     try {
       await submissionService.deleteSubmission(submissionId);
@@ -90,16 +125,23 @@ export function AdminSubmissions() {
 
   const getStatusBadge = (status: string) => {
     switch (status.toUpperCase()) {
-      case "PENDING": return "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400";
-      case "APPROVED": return "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400";
-      case "REJECTED": return "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400";
+      case "PENDING": return "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-800/40";
+      case "APPROVED": return "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800/40";
+      case "REJECTED": return "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800/40";
+      case "REQUESTED_CHANGE": return "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/40";
       default: return "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-400";
     }
+  };
+
+  const formatStatusText = (status: string) => {
+    if (status.toUpperCase() === "REQUESTED_CHANGE") return "REQUESTED CHANGE";
+    return status;
   };
 
   const stats = [
     { label: "Total Submissions", value: submissions.length, color: "from-blue-500 to-blue-600" },
     { label: "Pending", value: submissions.filter(s => s.status.toUpperCase() === "PENDING").length, color: "from-yellow-500 to-yellow-600" },
+    { label: "Requested Change", value: submissions.filter(s => s.status.toUpperCase() === "REQUESTED_CHANGE").length, color: "from-purple-500 to-purple-600" },
     { label: "Approved", value: submissions.filter(s => s.status.toUpperCase() === "APPROVED").length, color: "from-green-500 to-green-600" },
   ];
 
@@ -158,6 +200,7 @@ export function AdminSubmissions() {
               >
                 <option value="all">All Status</option>
                 <option value="PENDING">Pending</option>
+                <option value="REQUESTED_CHANGE">Requested Change</option>
                 <option value="APPROVED">Approved</option>
                 <option value="REJECTED">Rejected</option>
               </select>
@@ -233,13 +276,13 @@ export function AdminSubmissions() {
                           </p>
                         </div>
                         <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold shrink-0 ${getStatusBadge(submission.status)}`} style={{ fontFamily: 'Open Sans, sans-serif' }}>
-                          {submission.status}
+                          {formatStatusText(submission.status)}
                         </span>
                       </div>
                       <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 line-clamp-2 leading-relaxed" style={{ fontFamily: 'Open Sans, sans-serif' }}>
                         {submission.description}
                       </p>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 flex-wrap">
                         <button
                           onClick={() => setSelectedSubmission(submission)}
                           className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors text-sm font-semibold cursor-pointer"
@@ -248,7 +291,7 @@ export function AdminSubmissions() {
                           <Eye className="w-4 h-4" />
                           View
                         </button>
-                        {submission.status.toUpperCase() === "PENDING" && (
+                        {(submission.status.toUpperCase() === "PENDING" || submission.status.toUpperCase() === "REQUESTED_CHANGE") && (
                           <>
                             <button
                               onClick={() => handleApprove(submission.submission_id)}
@@ -257,6 +300,14 @@ export function AdminSubmissions() {
                             >
                               <Check className="w-4 h-4" />
                               Approve
+                            </button>
+                            <button
+                              onClick={() => handleRequestChangeClick(submission)}
+                              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-100 dark:bg-purple-900/30 hover:bg-purple-200 dark:hover:bg-purple-900/50 text-purple-700 dark:text-purple-300 transition-colors text-sm font-semibold cursor-pointer"
+                              style={{ fontFamily: 'Open Sans, sans-serif' }}
+                            >
+                              <FileEdit className="w-4 h-4" />
+                              Request Change
                             </button>
                             <button
                               onClick={() => handleReject(submission.submission_id)}
@@ -305,7 +356,7 @@ export function AdminSubmissions() {
                     )}
                     <div className="absolute top-3 right-3">
                       <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-bold shadow-sm ${getStatusBadge(submission.status)}`}>
-                        {submission.status}
+                        {formatStatusText(submission.status)}
                       </span>
                     </div>
                   </div>
@@ -320,24 +371,33 @@ export function AdminSubmissions() {
                     <p className="text-xs text-gray-600 dark:text-gray-300 mb-4 line-clamp-3 leading-relaxed flex-grow" style={{ fontFamily: 'Open Sans, sans-serif' }}>
                       {submission.description}
                     </p>
-                    <div className="pt-4 border-t border-gray-100 dark:border-gray-800 flex gap-2 shrink-0">
+                    <div className="pt-4 border-t border-gray-100 dark:border-gray-800 flex gap-2 shrink-0 flex-wrap">
                       <button
                         onClick={() => setSelectedSubmission(submission)}
-                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors text-xs font-semibold cursor-pointer"
+                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors text-xs font-semibold cursor-pointer min-w-[70px]"
                       >
                         <Eye className="w-3.5 h-3.5" />
                         View
                       </button>
-                      {submission.status.toUpperCase() === "PENDING" && (
+                      {(submission.status.toUpperCase() === "PENDING" || submission.status.toUpperCase() === "REQUESTED_CHANGE") && (
                         <>
                           <button
                             onClick={() => handleApprove(submission.submission_id)}
+                            title="Approve"
                             className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30 hover:bg-green-200 dark:hover:bg-green-900/50 text-green-700 dark:text-green-400 transition-colors cursor-pointer"
                           >
                             <Check className="w-3.5 h-3.5" />
                           </button>
                           <button
+                            onClick={() => handleRequestChangeClick(submission)}
+                            title="Request Change"
+                            className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30 hover:bg-purple-200 dark:hover:bg-purple-900/50 text-purple-700 dark:text-purple-300 transition-colors cursor-pointer"
+                          >
+                            <FileEdit className="w-3.5 h-3.5" />
+                          </button>
+                          <button
                             onClick={() => handleReject(submission.submission_id)}
+                            title="Reject"
                             className="p-2 rounded-lg bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 text-red-700 dark:text-red-400 transition-colors cursor-pointer"
                           >
                             <X className="w-3.5 h-3.5" />
@@ -450,8 +510,8 @@ export function AdminSubmissions() {
 
               {/* Modal Footer */}
               <div className="p-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center shrink-0">
-                <div className="flex gap-2">
-                  {selectedSubmission.status.toUpperCase() === "PENDING" && (
+                <div className="flex gap-2 flex-wrap">
+                  {(selectedSubmission.status.toUpperCase() === "PENDING" || selectedSubmission.status.toUpperCase() === "REQUESTED_CHANGE") && (
                     <>
                       <button
                         onClick={() => {
@@ -462,6 +522,17 @@ export function AdminSubmissions() {
                       >
                         <Check size={16} />
                         Approve
+                      </button>
+                      <button
+                        onClick={() => {
+                          const target = selectedSubmission;
+                          setSelectedSubmission(null);
+                          handleRequestChangeClick(target);
+                        }}
+                        className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold transition-colors flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <FileEdit size={16} />
+                        Request Change
                       </button>
                       <button
                         onClick={() => {
@@ -481,6 +552,86 @@ export function AdminSubmissions() {
                   className="px-6 py-2.5 rounded-xl bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 text-sm font-semibold transition-colors cursor-pointer"
                 >
                   Close Reader
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Request Changes Modal */}
+      <AnimatePresence>
+        {requestChangeTarget && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-6"
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 15 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 15 }}
+              className="bg-white dark:bg-gray-900 rounded-[2rem] p-8 max-w-lg w-full text-left shadow-2xl border border-gray-100 dark:border-gray-800"
+            >
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-14 h-14 bg-purple-100 dark:bg-purple-900/40 rounded-2xl flex items-center justify-center text-purple-600 dark:text-purple-400 shrink-0">
+                  <FileEdit className="w-7 h-7" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                    Request Changes
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    For: <span className="font-semibold">{requestChangeTarget.title}</span> ({requestChangeTarget.student_name})
+                  </p>
+                </div>
+              </div>
+
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 leading-relaxed">
+                Provide specific feedback or requested revisions. An artistic & professional email with an edit link will be dispatched automatically to <span className="font-semibold text-gray-800 dark:text-gray-200">{requestChangeTarget.student_email}</span>.
+              </p>
+
+              <div className="mb-6">
+                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wider">
+                  Editorial Feedback / Revisions Needed
+                </label>
+                <textarea
+                  rows={4}
+                  value={requestChangeReason}
+                  onChange={(e) => setRequestChangeReason(e.target.value)}
+                  placeholder="e.g. Please clarify the second paragraph, review formatting, and resubmit using your link..."
+                  className="w-full p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all text-sm resize-none"
+                />
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex gap-4">
+                <button
+                  type="button"
+                  onClick={() => setRequestChangeTarget(null)}
+                  disabled={isSendingRequest}
+                  className="flex-1 px-5 py-3 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold transition-all text-sm cursor-pointer disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRequestChangeConfirm}
+                  disabled={isSendingRequest}
+                  className="flex-1 px-5 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold transition-all text-sm cursor-pointer shadow-lg shadow-purple-500/20 flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {isSendingRequest ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4" />
+                      Send Request
+                    </>
+                  )}
                 </button>
               </div>
             </motion.div>

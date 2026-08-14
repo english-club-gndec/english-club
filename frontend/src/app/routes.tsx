@@ -36,6 +36,7 @@ export const router = createBrowserRouter([
       { path: "team", Component: Team },
       { path: "submit", Component: Articles },
       { path: "submit-article", Component: SubmitArticle },
+      { path: "edit-submission/:submissionId/:editToken", Component: SubmitArticle },
       { path: "vote", Component: VotingPage }, // Added
       { path: "recruitment-results", Component: RecruitmentResults },
       { path: "results", Component: RecruitmentResults },

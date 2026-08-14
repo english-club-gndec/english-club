@@ -15,6 +15,12 @@ router.get('/approved', submissionController.getApprovedSubmissions);
 // DELETE /api/submission/:submissionId - Delete submission (Admin protected)
 router.delete('/:submissionId', verifyToken, submissionController.deleteSubmission);
 
+// GET /api/submission/:submissionId/:editToken - Get submission for editing by student (Public with valid token)
+router.get('/:submissionId/:editToken', (req, res) => {
+  req.params.edit_token = req.params.editToken;
+  return submissionController.getSubmissionByEditToken(req, res);
+});
+
 // Combined PATCH /api/submission/:submissionId/:param2
 // This avoids Express route collision between "/:submissionId/:userId" and "/:submissionId/:edit_token"
 // If param2 matches UUID format, it treats it as edit_token (student edit).

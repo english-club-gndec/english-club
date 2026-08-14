@@ -24,7 +24,9 @@ export interface Submission {
   description: string;
   body: string;
   image_url?: string;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'DELETED';
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'DELETED' | 'REQUESTED_CHANGE';
+  rejection_reason?: string;
+  edit_token?: string;
   tags: string[];
   submitted_at: string;
 }
@@ -83,10 +85,26 @@ export const submissionService = {
     }
   },
 
+  getSubmissionByToken: async (submissionId: string, editToken: string): Promise<Submission> => {
+    try {
+      const response = await fetch(`${BASE_URL}/submission/${submissionId}/${editToken}`, {
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Error: ${response.statusText}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Failed to get submission by token:', error);
+      throw error;
+    }
+  },
+
   updateSubmissionStatus: async (
     submissionId: string,
     userId: string,
-    status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'DELETED',
+    status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'DELETED' | 'REQUESTED_CHANGE',
     rejectionReason?: string
   ): Promise<any> => {
     try {
@@ -110,6 +128,33 @@ export const submissionService = {
       return await response.json();
     } catch (error) {
       console.error('Failed to update submission status:', error);
+      throw error;
+    }
+  },
+
+  editSubmissionByStudent: async (
+    submissionId: string,
+    editToken: string,
+    data: SubmissionData
+  ): Promise<any> => {
+    try {
+      const response = await fetch(`${BASE_URL}/submission/${submissionId}/${editToken}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Error: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Failed to edit submission by student:', error);
       throw error;
     }
   },

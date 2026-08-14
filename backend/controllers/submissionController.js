@@ -1,4 +1,5 @@
 const supabase = require('../config/supabase');
+const { sendRequestChangesEmail, sendRejectionEmail } = require('../services/emailService');
 
 const submissionController = {
   // POST /
@@ -61,7 +62,7 @@ const submissionController = {
       const { status, rejection_reason, edit_token } = req.body;
 
       // Validate status
-      const validStatuses = ['PENDING', 'APPROVED', 'REJECTED', 'DELETED'];
+      const validStatuses = ['PENDING', 'APPROVED', 'REJECTED', 'DELETED', 'REQUESTED_CHANGE'];
       if (status && !validStatuses.includes(status.toUpperCase())) {
         return res.status(400).json({ error: 'Invalid status value' });
       }
@@ -76,7 +77,7 @@ const submissionController = {
         updates.reviewed_by = userId;
       }
       if (rejection_reason !== undefined) {
-        updates.rejection_reason = statusUpper === 'REJECTED' ? rejection_reason : null;
+        updates.rejection_reason = (statusUpper === 'REJECTED' || statusUpper === 'REQUESTED_CHANGE') ? rejection_reason : null;
       }
       if (edit_token !== undefined) {
         updates.edit_token = edit_token;
@@ -93,9 +94,35 @@ const submissionController = {
         return res.status(404).json({ error: 'Submission not found' });
       }
 
+      const updatedSubmission = data[0];
+
+      // Send email if requested changes or rejected
+      if (statusUpper === 'REQUESTED_CHANGE') {
+        sendRequestChangesEmail({
+          toEmail: updatedSubmission.student_email,
+          studentName: updatedSubmission.student_name,
+          title: updatedSubmission.title,
+          feedback: rejection_reason || updatedSubmission.rejection_reason,
+          submissionId: updatedSubmission.submission_id,
+          editToken: updatedSubmission.edit_token
+        }).catch(emailErr => {
+          console.error('Non-blocking error sending email:', emailErr);
+        });
+      } else if (statusUpper === 'REJECTED') {
+        sendRejectionEmail({
+          toEmail: updatedSubmission.student_email,
+          studentName: updatedSubmission.student_name,
+          title: updatedSubmission.title,
+          rejectionReason: rejection_reason || updatedSubmission.rejection_reason,
+          isAutoRejected: false
+        }).catch(emailErr => {
+          console.error('Non-blocking error sending rejection email:', emailErr);
+        });
+      }
+
       res.json({
         message: 'Submission status updated successfully',
-        submission: data[0]
+        submission: updatedSubmission
       });
     } catch (err) {
       console.error('updateSubmissionStatus error:', err);
@@ -228,6 +255,30 @@ const submissionController = {
       });
     } catch (err) {
       console.error('editSubmissionByStudent error:', err);
+      res.status(500).json({ error: err.message || 'Internal Server Error' });
+    }
+  },
+
+  // GET /:submissionId/:edit_token
+  // Retrieve submission details for student edit form using edit_token
+  getSubmissionByEditToken: async (req, res) => {
+    try {
+      const { submissionId, edit_token } = req.params;
+
+      const { data, error } = await supabase
+        .from('submissions')
+        .select('*')
+        .eq('submission_id', submissionId)
+        .eq('edit_token', edit_token)
+        .single();
+
+      if (error || !data) {
+        return res.status(404).json({ error: 'Submission not found or invalid token' });
+      }
+
+      res.json(data);
+    } catch (err) {
+      console.error('getSubmissionByEditToken error:', err);
       res.status(500).json({ error: err.message || 'Internal Server Error' });
     }
   }

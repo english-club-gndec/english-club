@@ -2,7 +2,9 @@
 DO $$ 
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'submission_status') THEN
-        CREATE TYPE submission_status AS ENUM ('PENDING', 'APPROVED', 'REJECTED', 'DELETED');
+        CREATE TYPE submission_status AS ENUM ('PENDING', 'APPROVED', 'REJECTED', 'DELETED', 'REQUESTED_CHANGE');
+    ELSE
+        ALTER TYPE submission_status ADD VALUE IF NOT EXISTS 'REQUESTED_CHANGE';
     END IF;
 END $$;
 
