@@ -171,13 +171,15 @@ export function AdminEvents() {
   };
 
   const uploadImage = async (file: File, eventName: string) => {
-    const extension = file.name.split('.').pop();
-    const fileName = `${eventName.toLowerCase().replace(/\s+/g, '_')}_${Date.now()}.${extension}`;
-    
+    const ext = (file.name.split('.').pop() || 'png').toLowerCase();
+    const eventSlug = eventName.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') || 'event';
+    const uniqueId = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const fileName = `${eventSlug}-${uniqueId}.${ext}`;
+
     const { error } = await supabase.storage
       .from('event_posters')
       .upload(fileName, file, {
-        upsert: true,
+        upsert: false,
         contentType: file.type
       });
 

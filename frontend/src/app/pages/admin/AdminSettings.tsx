@@ -75,18 +75,15 @@ export function AdminSettings() {
   };
 
   const uploadProfilePhoto = async (file: File) => {
-    const names = profileData.name.split(' ');
-    const firstName = names[0]?.toLowerCase() || 'user';
-    const lastName = names[names.length - 1]?.toLowerCase() || 'name';
-    const position = profileData.position.toLowerCase().replace(/[-\s]+/g, '_');
-    const extension = file.name.split('.').pop();
-    
-    const fileName = `${firstName}_${lastName}_${position}_photo.${extension}`;
-    
+    const ext = (file.name.split('.').pop() || 'png').toLowerCase();
+    const nameSlug = profileData.name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') || 'user';
+    const uniqueId = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const fileName = `${nameSlug}-profile-${uniqueId}.${ext}`;
+
     const { error: uploadError } = await supabase.storage
       .from('profile_pictures')
       .upload(fileName, file, {
-        upsert: true,
+        upsert: false,
         contentType: file.type
       });
 

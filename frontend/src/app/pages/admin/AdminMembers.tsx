@@ -681,18 +681,16 @@ export function AdminMembers() {
   };
 
   const uploadImage = async (file: File, name: string, position: string) => {
-    const names = name.split(' ');
-    const firstName = names[0]?.toLowerCase() || 'member';
-    const lastName = names[names.length - 1]?.toLowerCase() || 'name';
-    const pos = position.toLowerCase().replace(/[-\s]+/g, '_');
-    const extension = file.name.split('.').pop();
-    
-    const fileName = `${firstName}_${lastName}_${pos}_photo.${extension}`;
-    
+    const ext = (file.name.split('.').pop() || 'png').toLowerCase();
+    const nameSlug = name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') || 'member';
+    const posSlug = position.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') || 'pos';
+    const uniqueId = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const fileName = `${nameSlug}-${posSlug}-${uniqueId}.${ext}`;
+
     const { error } = await supabase.storage
       .from('profile_pictures')
       .upload(fileName, file, {
-        upsert: true,
+        upsert: false,
         contentType: file.type
       });
 
