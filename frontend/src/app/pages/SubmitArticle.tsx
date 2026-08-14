@@ -465,9 +465,27 @@ export function SubmitArticle() {
     }
   }, [isEditMode, submissionId, editToken, editor]);
 
+  const sanitizeErrorMessage = (rawError: string): string => {
+    if (!rawError) return "Failed to submit blog. Please check your details and try again.";
+    const lower = rawError.toLowerCase();
+
+    if (lower.includes("invalid input syntax for type bigint") || lower.includes("bigint")) {
+      return "URN and CRN must contain numbers only. Please remove any letters or special characters.";
+    }
+    if (lower.includes("unique constraint") || lower.includes("already exists")) {
+      return "A submission with these academic details already exists.";
+    }
+    if (lower.includes("fetch") || lower.includes("network") || lower.includes("failed to fetch")) {
+      return "Connection error. Please check your internet connection and try again.";
+    }
+
+    return rawError.replace(/invalid input syntax for type \w+: "[^"]*"/gi, "Invalid number entered in input field");
+  };
+
   const scrollToField = (fieldId: string, message: string) => {
-    setErrorMsg(message);
-    toast.error(message);
+    const cleanMsg = sanitizeErrorMessage(message);
+    setErrorMsg(cleanMsg);
+    toast.error(cleanMsg);
     setTimeout(() => {
       const element = document.getElementById(fieldId);
       if (element) {
@@ -476,7 +494,12 @@ export function SubmitArticle() {
           (element as HTMLElement).focus();
         }
       } else {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        const errorBanner = document.getElementById("error-banner");
+        if (errorBanner) {
+          errorBanner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
       }
     }, 50);
   };
@@ -526,8 +549,16 @@ export function SubmitArticle() {
       scrollToField("urn-input", "URN is required.");
       return;
     }
+    if (!/^\d+$/.test(studentUrn.trim())) {
+      scrollToField("urn-input", "URN must contain numbers only (e.g. 2104123).");
+      return;
+    }
     if (!studentCrn.trim()) {
       scrollToField("crn-input", "CRN is required.");
+      return;
+    }
+    if (!/^\d+$/.test(studentCrn.trim())) {
+      scrollToField("crn-input", "CRN must contain numbers only (e.g. 2115123).");
       return;
     }
     if (!title.trim()) {
@@ -616,7 +647,9 @@ export function SubmitArticle() {
 
     } catch (error: unknown) {
       console.error("Submission error:", error);
-      setErrorMsg(error instanceof Error ? error.message : "Failed to submit blog. Please try again.");
+      const rawMsg = error instanceof Error ? error.message : "Failed to submit blog. Please try again.";
+      const cleanMsg = sanitizeErrorMessage(rawMsg);
+      scrollToField("error-banner", cleanMsg);
     } finally {
       setIsSubmitting(false);
     }
