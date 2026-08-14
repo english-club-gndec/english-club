@@ -1,5 +1,6 @@
 const supabase = require('../config/supabase');
 const { sendRequestChangesEmail, sendRejectionEmail } = require('../services/emailService');
+const { validateLegitEmail } = require('../utils/emailValidator');
 
 const submissionController = {
   // POST /
@@ -21,6 +22,12 @@ const submissionController = {
       // Validation
       if (!student_name || !student_class || !student_urn || !student_email || !title || !description || !body) {
         return res.status(400).json({ error: 'Required fields are missing' });
+      }
+
+      // Legit Email & DNS MX Validation
+      const emailCheck = await validateLegitEmail(student_email);
+      if (!emailCheck.valid) {
+        return res.status(400).json({ error: emailCheck.reason });
       }
 
       const { data, error } = await supabase
@@ -213,6 +220,12 @@ const submissionController = {
         return res.status(400).json({ error: 'Required fields are missing' });
       }
 
+      // Legit Email & DNS MX Validation
+      const emailCheck = await validateLegitEmail(student_email);
+      if (!emailCheck.valid) {
+        return res.status(400).json({ error: emailCheck.reason });
+      }
+
       // Verify submission_id and edit_token match
       const { data: existing, error: verifyError } = await supabase
         .from('submissions')
@@ -280,6 +293,20 @@ const submissionController = {
     } catch (err) {
       console.error('getSubmissionByEditToken error:', err);
       res.status(500).json({ error: err.message || 'Internal Server Error' });
+    }
+  },
+
+  // POST /validate-email
+  validateEmail: async (req, res) => {
+    try {
+      const { email } = req.body;
+      const result = await validateLegitEmail(email);
+      if (!result.valid) {
+        return res.status(400).json({ valid: false, error: result.reason });
+      }
+      res.json({ valid: true });
+    } catch (err) {
+      res.status(500).json({ valid: false, error: 'Failed to validate email address' });
     }
   }
 };

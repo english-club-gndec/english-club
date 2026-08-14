@@ -176,5 +176,22 @@ export const submissionService = {
       console.error('Failed to delete submission:', error);
       throw error;
     }
+  },
+
+  validateEmail: async (email: string): Promise<{ valid: boolean; error?: string }> => {
+    try {
+      const response = await fetch(`${BASE_URL}/submission/validate-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        return { valid: false, error: errorData.error || 'Invalid email address' };
+      }
+      return await response.json();
+    } catch (error) {
+      return { valid: false, error: 'Could not verify email server' };
+    }
   }
 };

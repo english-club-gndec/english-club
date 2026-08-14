@@ -103,6 +103,8 @@ export function SubmitArticle() {
   const [loadingSubmission, setLoadingSubmission] = useState(false);
   const [rejectionReason, setRejectionReason] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [isValidatingEmail, setIsValidatingEmail] = useState(false);
 
   // Form States
   const [studentName, setStudentName] = useState("");
@@ -462,9 +464,21 @@ export function SubmitArticle() {
     }
   }, [isEditMode, submissionId, editToken, editor]);
 
+  const handleEmailBlur = async () => {
+    if (!studentEmail.trim() || !studentEmail.includes('@')) return;
+    setIsValidatingEmail(true);
+    setEmailError(null);
+    const result = await submissionService.validateEmail(studentEmail);
+    setIsValidatingEmail(false);
+    if (!result.valid) {
+      setEmailError(result.error || 'Invalid email address');
+    }
+  };
+
   const resetForm = () => {
     setStudentName(""); setYear(""); setBranch("Select"); setSection(""); setStudentUrn(""); setStudentCrn(""); setStudentEmail("");
     setTitle(""); setDescription(""); setTags([]); setCoverImage(null); setCoverPreview(null);
+    setEmailError(null);
     editor?.commands.setContent('');
   };
 
@@ -477,6 +491,16 @@ export function SubmitArticle() {
 
     setIsSubmitting(true);
     setErrorMsg(null);
+    setEmailError(null);
+
+    // Validate email with DNS MX Records & Disposable check before submitting
+    const emailCheck = await submissionService.validateEmail(studentEmail);
+    if (!emailCheck.valid) {
+      setEmailError(emailCheck.error || 'Invalid email address');
+      setErrorMsg(emailCheck.error || 'Please provide a valid and active email address.');
+      setIsSubmitting(false);
+      return;
+    }
 
     try {
       const titleSlug = slugify(title) || 'article';
@@ -606,7 +630,31 @@ export function SubmitArticle() {
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Email Address</label>
-                  <input required type="email" value={studentEmail} onChange={e => setStudentEmail(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all outline-none" placeholder="john@example.com" />
+                  <div className="relative">
+                    <input
+                      required
+                      type="email"
+                      value={studentEmail}
+                      onChange={e => {
+                        setStudentEmail(e.target.value);
+                        if (emailError) setEmailError(null);
+                      }}
+                      onBlur={handleEmailBlur}
+                      className={`w-full px-4 py-3 rounded-xl border ${emailError ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 dark:border-gray-700 focus:ring-purple-500'} bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:border-transparent transition-all outline-none`}
+                      placeholder="john@example.com"
+                    />
+                    {isValidatingEmail && (
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-purple-600 dark:text-purple-400 font-medium animate-pulse">
+                        Checking domain...
+                      </span>
+                    )}
+                  </div>
+                  {emailError && (
+                    <p className="text-xs text-red-500 font-medium mt-1.5 flex items-center gap-1">
+                      <X className="w-3.5 h-3.5" />
+                      {emailError}
+                    </p>
+                  )}
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>

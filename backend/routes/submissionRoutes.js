@@ -6,6 +6,9 @@ const { verifyToken } = require('../middleware/authMiddleware');
 // POST /api/submission/ - Create new blog submission (Public)
 router.post('/', submissionController.createSubmission);
 
+// POST /api/submission/validate-email - Validate legit email with DNS MX records
+router.post('/validate-email', submissionController.validateEmail);
+
 // GET /api/submission/ - Get all submissions (Admin protected)
 router.get('/', verifyToken, submissionController.getAllSubmissions);
 
