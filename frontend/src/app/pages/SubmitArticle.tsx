@@ -26,6 +26,7 @@ import Placeholder from '@tiptap/extension-placeholder';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import { all, createLowlight } from 'lowlight';
 import { useNavigate, useParams, useBlocker } from "react-router";
+import { toast, Toaster } from "sonner";
 import { supabase } from "../../lib/supabase";
 import { submissionService } from "../../services/submissionService";
 
@@ -464,6 +465,22 @@ export function SubmitArticle() {
     }
   }, [isEditMode, submissionId, editToken, editor]);
 
+  const scrollToField = (fieldId: string, message: string) => {
+    setErrorMsg(message);
+    toast.error(message);
+    setTimeout(() => {
+      const element = document.getElementById(fieldId);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if ('focus' in element && typeof element.focus === 'function') {
+          (element as HTMLElement).focus();
+        }
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }, 50);
+  };
+
   const handleEmailBlur = async () => {
     if (!studentEmail.trim() || !studentEmail.includes('@')) return;
     setIsValidatingEmail(true);
@@ -484,10 +501,51 @@ export function SubmitArticle() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!coverImage && !coverPreview) { setErrorMsg("Cover image is required."); return; }
-    if (!editor || editor.isEmpty) { setErrorMsg("Blog content cannot be empty."); return; }
-    if (!year || !section) { setErrorMsg("Year and section are required."); return; }
-    if (!branch || branch === "Select") { setErrorMsg("Please select a branch."); return; }
+
+    if (!studentName.trim()) {
+      scrollToField("student-name-input", "Full Name is required.");
+      return;
+    }
+    if (!studentEmail.trim()) {
+      scrollToField("student-email-input", "Email Address is required.");
+      return;
+    }
+    if (!year.trim()) {
+      scrollToField("year-input", "Academic Year is required.");
+      return;
+    }
+    if (!branch || branch === "Select") {
+      scrollToField("branch-select", "Please select your academic branch.");
+      return;
+    }
+    if (!section.trim()) {
+      scrollToField("section-input", "Section is required.");
+      return;
+    }
+    if (!studentUrn.trim()) {
+      scrollToField("urn-input", "URN is required.");
+      return;
+    }
+    if (!studentCrn.trim()) {
+      scrollToField("crn-input", "CRN is required.");
+      return;
+    }
+    if (!title.trim()) {
+      scrollToField("title-input", "Article Title is required.");
+      return;
+    }
+    if (!description.trim()) {
+      scrollToField("description-input", "Short Description is required.");
+      return;
+    }
+    if (!coverImage && !coverPreview) {
+      scrollToField("cover-image-section", "Cover image is required for your article.");
+      return;
+    }
+    if (!editor || editor.isEmpty) {
+      scrollToField("editor-section", "Blog content cannot be empty.");
+      return;
+    }
 
     setIsSubmitting(true);
     setErrorMsg(null);
@@ -497,7 +555,7 @@ export function SubmitArticle() {
     const emailCheck = await submissionService.validateEmail(studentEmail);
     if (!emailCheck.valid) {
       setEmailError(emailCheck.error || 'Invalid email address');
-      setErrorMsg(emailCheck.error || 'Please provide a valid and active email address.');
+      scrollToField("student-email-input", emailCheck.error || 'Please provide a valid and active email address.');
       setIsSubmitting(false);
       return;
     }
@@ -566,6 +624,7 @@ export function SubmitArticle() {
 
   return (
     <div className="bg-gray-50 dark:bg-gray-950 min-h-screen py-10 md:py-24 transition-colors duration-300">
+      <Toaster position="top-right" richColors />
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         {loadingSubmission ? (
           <div className="text-center py-32">
@@ -614,9 +673,9 @@ export function SubmitArticle() {
               )}
 
               {errorMsg && (
-                <div className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 p-4 rounded-xl flex items-center gap-3 text-sm">
+                <div id="error-banner" className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 p-4 rounded-xl flex items-center gap-3 text-sm animate-pulse">
                   <X className="w-5 h-5 shrink-0" />
-                  <p className="font-medium">{errorMsg}</p>
+                  <p className="font-semibold">{errorMsg}</p>
                 </div>
               )}
 
@@ -626,13 +685,13 @@ export function SubmitArticle() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Full Name</label>
-                  <input required type="text" value={studentName} onChange={e => setStudentName(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all outline-none" placeholder="John Doe" />
+                  <input id="student-name-input" type="text" value={studentName} onChange={e => setStudentName(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all outline-none" placeholder="John Doe" />
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Email Address</label>
                   <div className="relative">
                     <input
-                      required
+                      id="student-email-input"
                       type="email"
                       value={studentEmail}
                       onChange={e => {
@@ -659,28 +718,28 @@ export function SubmitArticle() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Year</label>
-                    <input required type="text" value={year} onChange={e => setYear(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 transition-all outline-none" placeholder="3" />
+                    <input id="year-input" type="text" value={year} onChange={e => setYear(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 transition-all outline-none" placeholder="3" />
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Branch</label>
-                    <select required value={branch} onChange={e => setBranch(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 transition-all outline-none">
+                    <select id="branch-select" value={branch} onChange={e => setBranch(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 transition-all outline-none">
                       <option value="Select" disabled>Select Branch</option>
                       {branches.map(b => <option key={b} value={b}>{b}</option>)}
                     </select>
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Section</label>
-                    <input required type="text" value={section} onChange={e => setSection(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 transition-all outline-none" placeholder="B" />
+                    <input id="section-input" type="text" value={section} onChange={e => setSection(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 transition-all outline-none" placeholder="B" />
                   </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">URN</label>
-                    <input required type="text" value={studentUrn} onChange={e => setStudentUrn(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 transition-all outline-none" placeholder="" />
+                    <input id="urn-input" type="text" value={studentUrn} onChange={e => setStudentUrn(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 transition-all outline-none" placeholder="" />
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">CRN</label>
-                    <input required type="text" value={studentCrn} onChange={e => setStudentCrn(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 transition-all outline-none" placeholder="" />
+                    <input id="crn-input" type="text" value={studentCrn} onChange={e => setStudentCrn(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 transition-all outline-none" placeholder="" />
                   </div>
                 </div>
               </div>
@@ -691,17 +750,17 @@ export function SubmitArticle() {
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-800 pb-4">Blog Details</h2>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Title</label>
-                <input required type="text" value={title} onChange={e => setTitle(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-lg font-medium focus:ring-2 focus:ring-purple-500 transition-all outline-none" placeholder="Enter an engaging title..." />
+                <input id="title-input" type="text" value={title} onChange={e => setTitle(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-lg font-medium focus:ring-2 focus:ring-purple-500 transition-all outline-none" placeholder="Enter an engaging title..." />
               </div>
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Short Description</label>
-                <textarea required rows={3} value={description} onChange={e => setDescription(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 transition-all outline-none resize-none" placeholder="Briefly describe what this blog is about..." />
+                <textarea id="description-input" rows={3} value={description} onChange={e => setDescription(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-purple-500 transition-all outline-none resize-none" placeholder="Briefly describe what this blog is about..." />
               </div>
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Cover Image</label>
-                <div onClick={() => coverInputRef.current?.click()} className="relative overflow-hidden group border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-2xl hover:border-purple-500 dark:hover:border-purple-400 transition-colors cursor-pointer bg-gray-50 dark:bg-gray-800/50 w-full aspect-[16/9] flex flex-col items-center justify-center p-4">
+                <div id="cover-image-section" onClick={() => coverInputRef.current?.click()} className="relative overflow-hidden group border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-2xl hover:border-purple-500 dark:hover:border-purple-400 transition-colors cursor-pointer bg-gray-50 dark:bg-gray-800/50 w-full aspect-[16/9] flex flex-col items-center justify-center p-4">
                   <input ref={coverInputRef} type="file" accept="image/*" onChange={handleCoverImageChange} className="hidden" />
                   {coverPreview ? (
                     <div className="absolute inset-0 w-full h-full">
@@ -741,7 +800,7 @@ export function SubmitArticle() {
             {/* Editor Section */}
             <div className="space-y-6 pt-6">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-800 pb-4">Content</h2>
-              <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-purple-500 transition-all">
+              <div id="editor-section" className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-purple-500 transition-all">
                 <MenuBar editor={editor} />
                 <EditorContent editor={editor} />
               </div>
