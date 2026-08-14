@@ -16,3 +16,6 @@ DROP POLICY IF EXISTS "Allow public insert for SubmissionImages" ON storage.obje
 CREATE POLICY "Allow public insert for SubmissionImages"
 ON storage.objects FOR INSERT
 WITH CHECK (bucket_id = 'SubmissionImages');
+
+
+

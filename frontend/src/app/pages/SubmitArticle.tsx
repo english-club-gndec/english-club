@@ -428,13 +428,14 @@ export function SubmitArticle() {
     setErrorMsg(null);
 
     try {
-      const titleSlug = slugify(title);
-      const coverExt = coverImage.name.split('.').pop() || 'png';
-      const coverFileName = `${titleSlug}.${coverExt}`;
+      const titleSlug = slugify(title) || 'article';
+      const coverExt = (coverImage.name.split('.').pop() || 'png').toLowerCase();
+      const uniqueId = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+      const coverFileName = `${titleSlug}-${uniqueId}.${coverExt}`;
 
       const { error: coverUploadError } = await supabase.storage
         .from('SubmissionImages')
-        .upload(coverFileName, coverImage, { upsert: true });
+        .upload(coverFileName, coverImage, { upsert: false });
 
       if (coverUploadError) throw coverUploadError;
 
