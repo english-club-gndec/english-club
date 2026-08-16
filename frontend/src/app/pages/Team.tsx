@@ -262,20 +262,6 @@ export function Team() {
   return (
     <div className="bg-white dark:bg-gray-950 py-12 sm:py-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        <motion.div
-          className="text-center mb-10 sm:mb-16"
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          <h1 className="text-3xl sm:text-5xl lg:text-6xl text-gray-900 dark:text-white mb-4 sm:mb-6" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 800 }}>
-            Meet Our Team
-          </h1>
-          <p className="text-base sm:text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto" style={{ fontFamily: 'Open Sans, sans-serif' }}>
-            Dedicated individuals working together to create an inspiring community
-          </p>
-        </motion.div>
-
         {/* Faculty Mentors / Teachers Section */}
         <section className="mb-16 sm:mb-24">
           <div className="text-center mb-10 sm:mb-16">
@@ -349,6 +335,20 @@ export function Team() {
           </motion.div>
         </section>
 
+        <motion.div
+          className="text-center mb-10 sm:mb-16"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <h1 className="text-3xl sm:text-5xl lg:text-6xl text-gray-900 dark:text-white mb-4 sm:mb-6" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 800 }}>
+            Meet Our Team
+          </h1>
+          <p className="text-base sm:text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto" style={{ fontFamily: 'Open Sans, sans-serif' }}>
+            Dedicated individuals working together to create an inspiring community
+          </p>
+        </motion.div>
+
         {loading ? (
           <div className="flex justify-center items-center py-20 w-full col-span-full">
             <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
@@ -368,7 +368,7 @@ export function Team() {
           <div className="grid gap-8 md:gap-10 lg:grid-cols-2">
             {requiredSections.map((section) => {
               const sectionMembers = groupedMembers[section] || [];
-              const isFullWidthSection = ['CONVENOR', 'CO-CONVENOR', 'ANCHORING', 'EXECUTIVE'].includes(section);
+              const isFullWidthSection = ['CONVENOR', 'CO-CONVENOR', 'EXECUTIVE'].includes(section);
 
               return (
                 <section

@@ -15,7 +15,8 @@ import {
   Megaphone,
   Calendar,
   Sparkle,
-  Trophy
+  Trophy,
+  ArrowDown
 } from "lucide-react";
 import { recruitmentServices } from "../../services/recruitmentServices";
 import { settingsServices } from "../../services/settingsServices";
@@ -405,31 +406,31 @@ export function JoinUs() {
               Become a Part of <span className="bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text text-transparent">Our Community</span>
             </h1>
 
-            <p className="text-base lg:text-lg text-gray-300" style={{ fontFamily: 'Open Sans, sans-serif' }}>
-              Join a vibrant community of passionate learners, speakers, and creators. Fill out the application form below!
+            <p className="text-base lg:text-lg text-gray-300 max-w-2xl" style={{ fontFamily: 'Open Sans, sans-serif' }}>
+              Join a vibrant community of passionate learners, speakers, and creators. Fill out the application form below to apply!
             </p>
 
-            <div className="pt-2 flex flex-wrap gap-4 items-center">
-              <a
-                href={WHATSAPP_GROUP_LINK}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm shadow-lg hover:shadow-emerald-500/30 transition-all"
-              >
-                <WhatsAppIcon className="w-5 h-5" /> Join WhatsApp Group
-              </a>
-
+            <div className="pt-4 flex flex-wrap gap-4 items-center">
               <button
-                onClick={() => setIsPosterOpen(true)}
-                className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-sm border border-white/20 transition-all"
+                type="button"
+                onClick={() => {
+                  document.getElementById('application-form')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="group inline-flex items-center gap-3 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-purple-600 via-pink-500 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold text-sm shadow-xl shadow-purple-500/30 hover:shadow-purple-500/50 transition-all hover:scale-105"
               >
-                <Maximize2 className="w-4 h-4" /> View Official Poster
+                <span>Scroll Down to Apply</span>
+                <motion.div
+                  animate={{ y: [0, 4, 0] }}
+                  transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+                >
+                  <ArrowDown className="w-4 h-4 text-white group-hover:translate-y-1 transition-transform" />
+                </motion.div>
               </button>
 
               {!settingsLoading && resultsActive && (
                 <Link
                   to="/results"
-                  className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-sm shadow-lg shadow-purple-500/30 transition-all"
+                  className="inline-flex items-center gap-2 px-5 py-3.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold text-sm border border-white/20 shadow-lg transition-all"
                 >
                   <Trophy className="w-4 h-4 text-amber-300" />
                   Show Results
@@ -438,7 +439,7 @@ export function JoinUs() {
             </div>
           </div>
 
-          <div className="md:col-span-5 flex justify-center">
+          <div className="hidden md:flex md:col-span-5 justify-center">
             <div
               onClick={() => setIsPosterOpen(true)}
               className="relative cursor-pointer group w-64 rounded-2xl overflow-hidden shadow-2xl border border-white/20 hover:scale-105 transition-transform"
@@ -486,7 +487,7 @@ export function JoinUs() {
       </section>
 
       {/* Application Form Section */}
-      <section className="py-20 bg-white dark:bg-gray-950">
+      <section id="application-form" className="py-20 bg-white dark:bg-gray-950">
         <div className="max-w-5xl mx-auto px-6">
           <motion.div
             className="text-center mb-12"
@@ -509,7 +510,7 @@ export function JoinUs() {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
-              className="hidden lg:block relative sticky top-24"
+              className="block relative lg:sticky lg:top-24"
             >
               <div
                 onClick={() => setIsPosterOpen(true)}
