@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router";
 import { Search, Bell, User, LogOut, Settings as SettingsIcon, Moon, Sun, Menu } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useTheme } from "../ThemeProvider";
@@ -143,13 +144,15 @@ export function AdminNavbar({ onOpenMobileMenu }: AdminNavbarProps) {
                       exit={{ opacity: 0, y: -10 }}
                     >
                       <div className="p-2">
-                        <button
+                        <Link
+                          to="/admin/settings"
+                          onClick={() => setIsProfileOpen(false)}
                           className="w-full flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-left transition-colors"
                           style={{ fontFamily: 'Open Sans, sans-serif' }}
                         >
                           <SettingsIcon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                           <span className="text-sm text-gray-700 dark:text-gray-300">Settings</span>
-                        </button>
+                        </Link>
                         <button
                           onClick={logout}
                           className="w-full flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-left transition-colors"

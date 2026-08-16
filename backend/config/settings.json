@@ -1,3 +1,4 @@
 {
-  "recruitmentsActive": false
+  "recruitmentsActive": true,
+  "resultsActive": false
 }

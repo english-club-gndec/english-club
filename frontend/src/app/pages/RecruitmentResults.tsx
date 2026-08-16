@@ -28,6 +28,7 @@ import {
 import confetti from "canvas-confetti";
 import { Link } from "react-router";
 import { recruitmentServices } from "../../services/recruitmentServices";
+import { usePublicSettings } from "../hooks/usePublicSettings";
 
 interface SelectedCandidate {
   candidate_id: string;
@@ -125,14 +126,21 @@ const DEFAULT_DEPT = {
 export function RecruitmentResults() {
   const [candidates, setCandidates] = useState<SelectedCandidate[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDeptFilter, setSelectedDeptFilter] = useState("ALL");
   const [expandedCandidateId, setExpandedCandidateId] = useState<string | null>(null);
+  const { loading: settingsLoading, resultsActive } = usePublicSettings();
 
   useEffect(() => {
+    if (settingsLoading || !resultsActive) {
+      return;
+    }
+
     const fetchResults = async () => {
       try {
         setLoading(true);
+        setLoadError("");
         const data = await recruitmentServices.getPublicResults();
         setCandidates(data || []);
         if (data && data.length > 0) {
@@ -145,13 +153,14 @@ export function RecruitmentResults() {
         }
       } catch (err) {
         console.error("Failed to load recruitment results:", err);
+        setLoadError("Unable to load results right now.");
       } finally {
         setLoading(false);
       }
     };
 
     fetchResults();
-  }, []);
+  }, [resultsActive, settingsLoading]);
 
   // Filter candidates based on search & department selection
   const filteredCandidates = useMemo(() => {
@@ -242,6 +251,47 @@ export function RecruitmentResults() {
   const formatDepartmentLabel = (deptKey: string) => {
     return DEPARTMENT_CONFIG[deptKey]?.label || deptKey;
   };
+
+  if (settingsLoading) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center px-4">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-12 h-12 animate-spin text-purple-400" />
+          <p className="text-gray-300" style={{ fontFamily: "Open Sans, sans-serif" }}>
+            Checking result availability...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!resultsActive) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-white selection:bg-purple-500 selection:text-white relative overflow-hidden font-sans">
+        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[140px] pointer-events-none" />
+        <div className="absolute top-1/3 right-10 w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[140px] pointer-events-none" />
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-20 relative z-10 text-center space-y-6">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-gray-300 text-xs sm:text-sm font-semibold backdrop-blur-md mx-auto">
+            <Trophy className="w-4 h-4 text-amber-400" />
+            Results Unavailable
+          </div>
+          <h1 className="text-4xl sm:text-6xl font-black tracking-tight" style={{ fontFamily: "Poppins, sans-serif" }}>
+            Results are currently unavailable
+          </h1>
+          <p className="text-gray-300 text-base sm:text-lg leading-relaxed" style={{ fontFamily: "Open Sans, sans-serif" }}>
+            The admin has turned off public access to recruitment results for now. Please check back later.
+          </p>
+          <Link
+            to="/join"
+            className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-blue-900 to-purple-700 text-white font-semibold shadow-lg shadow-purple-500/20 transition-all"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Join Us
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 text-white selection:bg-purple-500 selection:text-white relative overflow-hidden font-sans">
@@ -339,45 +389,47 @@ export function RecruitmentResults() {
             </div>
 
             {/* Department Filter Tabs */}
-            <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0 scrollbar-none">
-              <button
-                onClick={() => setSelectedDeptFilter("ALL")}
-                className={`px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm whitespace-nowrap transition-all ${
-                  selectedDeptFilter === "ALL"
-                    ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg shadow-purple-500/25"
-                    : "bg-white/5 text-gray-400 hover:text-white border border-white/10"
-                }`}
-              >
-                All Departments ({candidates.length})
-              </button>
+            <div className="w-full min-w-0 overflow-x-auto pb-2 sm:pb-0 custom-scrollbar">
+              <div className="flex w-max items-center gap-2 flex-nowrap">
+                <button
+                  onClick={() => setSelectedDeptFilter("ALL")}
+                  className={`shrink-0 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm whitespace-nowrap transition-all ${
+                    selectedDeptFilter === "ALL"
+                      ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg shadow-purple-500/25"
+                      : "bg-white/5 text-gray-400 hover:text-white border border-white/10"
+                  }`}
+                >
+                  All Departments ({candidates.length})
+                </button>
 
-              {Object.keys(DEPARTMENT_CONFIG).map((deptKey) => {
-                const count = candidates.filter((c) => {
-                  const candidateDept =
-                    c.interested_department === "PHOTOGRAPHY"
-                      ? "PHOTOGRAPHY_VIDEOGRAPHY"
-                      : c.interested_department;
-                  return candidateDept === deptKey;
-                }).length;
+                {Object.keys(DEPARTMENT_CONFIG).map((deptKey) => {
+                  const count = candidates.filter((c) => {
+                    const candidateDept =
+                      c.interested_department === "PHOTOGRAPHY"
+                        ? "PHOTOGRAPHY_VIDEOGRAPHY"
+                        : c.interested_department;
+                    return candidateDept === deptKey;
+                  }).length;
 
-                if (count === 0 && selectedDeptFilter !== deptKey) return null;
+                  if (count === 0 && selectedDeptFilter !== deptKey) return null;
 
-                const cfg = DEPARTMENT_CONFIG[deptKey];
-                return (
-                  <button
-                    key={deptKey}
-                    onClick={() => setSelectedDeptFilter(deptKey)}
-                    className={`px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm whitespace-nowrap transition-all flex items-center gap-2 ${
-                      selectedDeptFilter === deptKey
-                        ? `bg-gradient-to-r ${cfg.gradient} text-white shadow-lg`
-                        : "bg-white/5 text-gray-400 hover:text-white border border-white/10"
-                    }`}
-                  >
-                    <cfg.icon className="w-3.5 h-3.5" />
-                    {cfg.label} ({count})
-                  </button>
-                );
-              })}
+                  const cfg = DEPARTMENT_CONFIG[deptKey];
+                  return (
+                    <button
+                      key={deptKey}
+                      onClick={() => setSelectedDeptFilter(deptKey)}
+                      className={`shrink-0 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm whitespace-nowrap transition-all flex items-center gap-2 ${
+                        selectedDeptFilter === deptKey
+                          ? `bg-gradient-to-r ${cfg.gradient} text-white shadow-lg`
+                          : "bg-white/5 text-gray-400 hover:text-white border border-white/10"
+                      }`}
+                    >
+                      <cfg.icon className="w-3.5 h-3.5" />
+                      {cfg.label} ({count})
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
@@ -387,6 +439,12 @@ export function RecruitmentResults() {
           <div className="flex flex-col items-center justify-center py-24 gap-4 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-xl">
             <Loader2 className="w-12 h-12 text-purple-400 animate-spin" />
             <p className="text-gray-400 font-medium">Fetching recruitment results...</p>
+          </div>
+        ) : loadError ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-4 rounded-3xl bg-white/5 border border-white/10 text-center p-8 backdrop-blur-xl">
+            <Trophy className="w-16 h-16 text-gray-600" />
+            <h3 className="text-2xl font-bold text-gray-200">Unable to load results</h3>
+            <p className="text-gray-400 max-w-md text-sm">{loadError}</p>
           </div>
         ) : filteredCandidates.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4 rounded-3xl bg-white/5 border border-white/10 text-center p-8 backdrop-blur-xl">

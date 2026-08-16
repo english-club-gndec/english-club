@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from "motion/react";
 import { useState, useEffect } from "react";
-import { Search, Filter, Eye, Trash2, Loader2 } from "lucide-react";
+import { Search, Filter, Loader2, Download } from "lucide-react";
+import * as XLSX from "xlsx";
 import { toast } from "sonner";
 import { Toaster } from "sonner";
 import { registrationService } from "../../../services/registrationService";
@@ -10,15 +11,20 @@ interface Registration {
   participant_name: string;
   participant_email: string;
   participant_class: string;
+  participant_crn?: number | null;
+  participant_urn?: number | null;
+  registered_event: number;
   event_name: string;
   created_at: string;
+  updated_at?: string;
 }
 
 export function AdminRegistrations() {
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterEvent, setFilterEvent] = useState("all");
+  const [filterEventId, setFilterEventId] = useState("all");
+  const [isDownloadingExcel, setIsDownloadingExcel] = useState(false);
 
   useEffect(() => {
     const fetchRegistrations = async () => {
@@ -35,12 +41,22 @@ export function AdminRegistrations() {
     fetchRegistrations();
   }, []);
 
-  const events = ["all", ...Array.from(new Set(registrations.map(r => r.event_name)))];
+  const events = [
+    { id: "all", name: "All Events" },
+    ...Array.from(
+      new Map(
+        registrations.map((registration) => [
+          String(registration.registered_event),
+          { id: String(registration.registered_event), name: registration.event_name }
+        ])
+      ).values()
+    )
+  ];
 
   const filteredRegistrations = registrations.filter(reg => {
     const matchesSearch = reg.participant_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          reg.participant_email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesEvent = filterEvent === "all" || reg.event_name === filterEvent;
+    const matchesEvent = filterEventId === "all" || String(reg.registered_event) === filterEventId;
     return matchesSearch && matchesEvent;
   });
 
@@ -55,6 +71,66 @@ export function AdminRegistrations() {
     { label: "Total Participants", value: totalParticipants },
     { label: "Avg. Participants", value: avgParticipants },
   ];
+
+  const toFilenamePart = (value: string) =>
+    value
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+
+  const downloadRegistrationsExcel = async () => {
+    if (isDownloadingExcel) return;
+
+    try {
+      setIsDownloadingExcel(true);
+      const latestRegistrations: Registration[] = await registrationService.getAllParticipants();
+      const registrationsToExport = filterEventId === "all"
+        ? latestRegistrations
+        : latestRegistrations.filter((registration) => String(registration.registered_event) === filterEventId);
+
+      if (registrationsToExport.length === 0) {
+        toast.info("There are no registrations to download.");
+        return;
+      }
+
+      const worksheet = XLSX.utils.json_to_sheet(
+        registrationsToExport.map((registration) => ({
+          "Participant Name": registration.participant_name,
+          "Email": registration.participant_email,
+          "Class": registration.participant_class,
+          "CRN": registration.participant_crn ?? "",
+          "URN": registration.participant_urn ?? "",
+          "Event": registration.event_name || "",
+          "Registration Date": registration.created_at
+            ? new Date(registration.created_at).toLocaleString()
+            : "",
+          "Last Updated": registration.updated_at
+            ? new Date(registration.updated_at).toLocaleString()
+            : ""
+        }))
+      );
+      worksheet["!cols"] = [
+        { wch: 28 }, { wch: 32 }, { wch: 18 }, { wch: 14 },
+        { wch: 14 }, { wch: 28 }, { wch: 22 }, { wch: 22 }
+      ];
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Registrations");
+      const selectedEvent = events.find((event) => event.id === filterEventId);
+      const filename = filterEventId === "all"
+        ? "event-registrations.xlsx"
+        : `${toFilenamePart(selectedEvent?.name || "event") || "event"}-registrations.xlsx`;
+
+      XLSX.writeFile(workbook, filename);
+      toast.success("Registration Excel file downloaded.");
+    } catch (error) {
+      console.error("Failed to download registrations Excel:", error);
+      toast.error("Failed to download registrations Excel.");
+    } finally {
+      setIsDownloadingExcel(false);
+    }
+  };
 
   return (
     <>
@@ -104,18 +180,26 @@ export function AdminRegistrations() {
             <div className="relative">
               <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <select
-                value={filterEvent}
-                onChange={(e) => setFilterEvent(e.target.value)}
+                value={filterEventId}
+                onChange={(e) => setFilterEventId(e.target.value)}
                 className="pl-12 pr-8 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all appearance-none"
                 style={{ fontFamily: 'Open Sans, sans-serif' }}
               >
-                {events.map(event => (
-                  <option key={event} value={event}>
-                    {event === "all" ? "All Events" : event}
+                {events.map((event) => (
+                  <option key={event.id} value={event.id}>
+                    {event.name}
                   </option>
                 ))}
               </select>
             </div>
+            <button
+              onClick={downloadRegistrationsExcel}
+              disabled={isDownloadingExcel}
+              className="px-5 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isDownloadingExcel ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
+              {isDownloadingExcel ? "Preparing Excel..." : "Download Excel"}
+            </button>
           </div>
 
           <div className="overflow-x-auto min-h-[400px]">

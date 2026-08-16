@@ -1,5 +1,29 @@
 const supabase = require('../config/supabase');
 
+async function isResultsEnabled() {
+  // Public results fail closed: only a successful database read of `true`
+  // enables this endpoint. Local filesystem state must never override it.
+  if (!supabase) return false;
+
+  try {
+    const { data, error } = await supabase
+      .from('settings')
+      .select('results_active')
+      .eq('id', 1)
+      .single();
+
+    if (error) {
+      console.error('Supabase results setting read error:', error);
+      return false;
+    }
+
+    return data?.results_active === true;
+  } catch (error) {
+    console.error('Results availability check failed:', error.message);
+    return false;
+  }
+}
+
 const recruitmentController = {
   // POST /createCandidate
   // Payload: candidate_name, candidate_class, candidate_crn, candidate_urn, candidate_email, interested_department, candidate_description, candidate_why_eligible, custom_answers
@@ -366,6 +390,11 @@ const recruitmentController = {
   // GET /results (Public - selected candidates sorted by interested_department and candidate_name)
   getPublicResults: async (req, res) => {
     try {
+      const resultsEnabled = await isResultsEnabled();
+      if (!resultsEnabled) {
+        return res.status(403).json({ error: 'Results are currently unavailable' });
+      }
+
       const { data, error } = await supabase
         .from('candidates')
         .select('candidate_id, candidate_name, candidate_class, candidate_crn, candidate_urn, candidate_email, interested_department, candidate_status, candidate_description, custom_answers, created_at')

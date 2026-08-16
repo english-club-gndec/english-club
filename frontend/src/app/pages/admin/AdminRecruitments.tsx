@@ -1,13 +1,16 @@
 import { motion, AnimatePresence } from "motion/react";
 import { useState, useEffect } from "react";
+import { Link } from "react-router";
 import { 
   Loader2, Edit2, X, Trash2, Archive, CheckSquare, Square, AlertTriangle, 
-  Plus, ArrowUp, ArrowDown, Layers, FileText, ToggleLeft, ToggleRight, CheckCircle2, Trophy, ExternalLink
+  Plus, ArrowUp, ArrowDown, Layers, FileText, ToggleLeft, ToggleRight, CheckCircle2, Trophy, ExternalLink, Download
 } from "lucide-react";
+import * as XLSX from "xlsx";
 import { toast, Toaster } from "sonner";
 import { useAuth } from "../../context/AuthContext";
 import { recruitmentServices } from "../../../services/recruitmentServices";
 import { settingsServices } from "../../../services/settingsServices";
+import { Switch } from "../../components/ui/switch";
 
 interface RecruitmentQuestion {
   question_id: string;
@@ -35,6 +38,8 @@ interface Candidate {
   candidate_status: string;
   custom_answers?: Record<string, any>;
   created_at: string;
+  updated_at?: string;
+  status_updated_by?: number | null;
 }
 
 export function AdminRecruitments() {
@@ -48,7 +53,9 @@ export function AdminRecruitments() {
   const [viewingCandidate, setViewingCandidate] = useState<Candidate | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const [recruitmentsActive, setRecruitmentsActive] = useState(false);
+  const [resultsActive, setResultsActive] = useState(false);
   const [isTogglingStatus, setIsTogglingStatus] = useState(false);
+  const [isTogglingResultsStatus, setIsTogglingResultsStatus] = useState(false);
   const [isRecruitmentStarted, setIsRecruitmentStarted] = useState(false);
   const [filterDepartment, setFilterDepartment] = useState("ALL");
   const [filterStatus, setFilterStatus] = useState("ALL");
@@ -71,6 +78,7 @@ export function AdminRecruitments() {
     return `Recruitment ${month} ${now.getFullYear()}`;
   });
   const [isArchiving, setIsArchiving] = useState(false);
+  const [isDownloadingExcel, setIsDownloadingExcel] = useState(false);
 
   // Question / Form Builder States
   const [questions, setQuestions] = useState<RecruitmentQuestion[]>([]);
@@ -124,6 +132,7 @@ export function AdminRecruitments() {
       ]);
       setCandidates(candidatesData);
       setRecruitmentsActive(settingsData.recruitmentsActive || false);
+      setResultsActive(settingsData.resultsActive || false);
     } catch (error: any) {
       toast.error(error.message || "Failed to fetch candidates");
       if (error.message && error.message.includes("404")) {
@@ -147,6 +156,84 @@ export function AdminRecruitments() {
     }
   };
 
+  const formatExcelValue = (value: unknown) => {
+    if (Array.isArray(value)) return value.join(", ");
+    if (typeof value === "boolean") return value ? "Yes" : "No";
+    if (value === null || value === undefined) return "";
+    if (typeof value === "object") return JSON.stringify(value);
+    return String(value);
+  };
+
+  const downloadRecruitmentExcel = async () => {
+    if (!userId || isDownloadingExcel) return;
+
+    try {
+      setIsDownloadingExcel(true);
+      const [latestCandidates, latestQuestions] = await Promise.all([
+        recruitmentServices.getAllCandidates(userId),
+        recruitmentServices.getAdminQuestions(userId)
+      ]);
+
+      if (latestCandidates.length === 0) {
+        toast.info("There are no recruitment applications to download.");
+        return;
+      }
+
+      const questionLabels = new Map(
+        latestQuestions.map((question: RecruitmentQuestion) => [question.question_id, question.question_label])
+      );
+      const answerKeys = Array.from(
+        new Set(latestCandidates.flatMap((candidate: Candidate) => Object.keys(candidate.custom_answers || {})))
+      );
+      const answerColumns = answerKeys.map((questionId) => ({
+        questionId,
+        label: questionLabels.get(questionId) || `Question (${questionId.slice(0, 8)})`
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(
+        latestCandidates.map((candidate: Candidate) => {
+          const row: Record<string, string | number> = {
+            "Application ID": candidate.candidate_id,
+            "Name": candidate.candidate_name,
+            "Email": candidate.candidate_email,
+            "Class": candidate.candidate_class,
+            "CRN": candidate.candidate_crn ?? "",
+            "URN": candidate.candidate_urn ?? "",
+            "Department": formatDepartment(candidate.interested_department),
+            "Status": candidate.candidate_status || "PENDING",
+            "About the Candidate": candidate.candidate_description || "",
+            "Why Eligible": candidate.candidate_why_eligible || "",
+            "Reviewer Comment": candidate.candidate_comment || "",
+            "Status Updated By": candidate.status_updated_by ?? "",
+            "Application Date": candidate.created_at ? new Date(candidate.created_at).toLocaleString() : "",
+            "Last Updated": candidate.updated_at ? new Date(candidate.updated_at).toLocaleString() : ""
+          };
+
+          answerColumns.forEach(({ questionId, label }) => {
+            row[label] = formatExcelValue(candidate.custom_answers?.[questionId]);
+          });
+
+          return row;
+        })
+      );
+      worksheet["!cols"] = [
+        { wch: 38 }, { wch: 26 }, { wch: 32 }, { wch: 18 }, { wch: 14 }, { wch: 14 },
+        { wch: 24 }, { wch: 14 }, { wch: 42 }, { wch: 42 }, { wch: 32 }, { wch: 18 },
+        { wch: 22 }, { wch: 22 }, ...answerColumns.map(() => ({ wch: 32 }))
+      ];
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Recruitment");
+      XLSX.writeFile(workbook, "recruitment-data.xlsx");
+      toast.success("Recruitment Excel file downloaded.");
+    } catch (error) {
+      console.error("Failed to download recruitment Excel:", error);
+      toast.error("Failed to download recruitment Excel.");
+    } finally {
+      setIsDownloadingExcel(false);
+    }
+  };
+
   useEffect(() => {
     if (userId) {
       fetchCandidates();
@@ -165,6 +252,19 @@ export function AdminRecruitments() {
       toast.error(error.message || "Failed to update registration status");
     } finally {
       setIsTogglingStatus(false);
+    }
+  };
+
+  const toggleResultsStatus = async (checked: boolean) => {
+    try {
+      setIsTogglingResultsStatus(true);
+      const updated = await settingsServices.updateSettings({ resultsActive: checked });
+      setResultsActive(updated.resultsActive);
+      toast.success(checked ? "Results enabled successfully" : "Results disabled successfully");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update results visibility");
+    } finally {
+      setIsTogglingResultsStatus(false);
     }
   };
 
@@ -496,6 +596,17 @@ export function AdminRecruitments() {
 
             {activeTab === 'applications' && (
               <button
+                onClick={downloadRecruitmentExcel}
+                disabled={isDownloadingExcel || !userId}
+                className="px-5 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isDownloadingExcel ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
+                {isDownloadingExcel ? "Preparing Excel..." : "Download Excel"}
+              </button>
+            )}
+
+            {activeTab === 'applications' && (
+              <button
                 onClick={() => setIsArchiveModalOpen(true)}
                 disabled={candidates.length === 0}
                 className="px-5 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 transition-all shadow-lg shadow-amber-500/20 flex items-center gap-2 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -516,15 +627,31 @@ export function AdminRecruitments() {
               </button>
             )}
 
-            <button
-              onClick={() => window.open('/recruitment-results', '_blank')}
+            <Link
+              to="/results"
               className="px-5 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-700 hover:to-cyan-700 transition-all shadow-lg shadow-emerald-500/30 flex items-center gap-2 hover:-translate-y-0.5"
               title="View public selected candidates results page"
             >
               <Trophy className="w-5 h-5 text-amber-300 animate-pulse" />
               Show Results
               <ExternalLink className="w-4 h-4 text-emerald-200" />
-            </button>
+            </Link>
+
+            <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
+              <div className="flex flex-col">
+                <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400" style={{ fontFamily: 'Open Sans, sans-serif' }}>
+                  Results
+                </span>
+                <span className="text-sm font-semibold text-gray-900 dark:text-white" style={{ fontFamily: 'Open Sans, sans-serif' }}>
+                  {resultsActive ? "ON" : "OFF"}
+                </span>
+              </div>
+              <Switch
+                checked={resultsActive}
+                onCheckedChange={toggleResultsStatus}
+                disabled={isTogglingResultsStatus}
+              />
+            </div>
 
             <button
               onClick={toggleRecruitmentStatus}

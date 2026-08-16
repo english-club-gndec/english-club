@@ -3,18 +3,20 @@ import { Link, useLocation } from "react-router";
 import { Menu, X, Moon, Sun } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useTheme } from "./ThemeProvider";
+import { usePublicSettings } from "../hooks/usePublicSettings";
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
   const { theme, toggleTheme } = useTheme();
+  const { loading: settingsLoading, resultsActive } = usePublicSettings();
 
   const links = [
     { path: "/", label: "Home" },
     { path: "/events", label: "Events" },
-    { path: "/recruitment-results", label: "Results" },
     { path: "/team", label: "Team" },
     { path: "/submit", label: "Articles" },
+    ...(settingsLoading || !resultsActive ? [] : [{ path: "/results", label: "Results" }]),
   ];
 
   const isActive = (path: string) => location.pathname === path;

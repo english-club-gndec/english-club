@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { recruitmentServices } from "../../services/recruitmentServices";
 import { settingsServices } from "../../services/settingsServices";
+import { usePublicSettings } from "../hooks/usePublicSettings";
 
 interface RecruitmentQuestion {
   question_id: string;
@@ -63,6 +64,7 @@ export function JoinUs() {
   const [customAnswers, setCustomAnswers] = useState<Record<string, any>>({});
   const [recruitmentsActive, setRecruitmentsActive] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const { loading: settingsLoading, resultsActive } = usePublicSettings();
 
   const WHATSAPP_GROUP_LINK = "https://chat.whatsapp.com/DVYzuZhA0mJKE8db3YLH8a";
   const POSTER_IMAGE = "/images/recruitment-poster.jpg";
@@ -220,14 +222,16 @@ export function JoinUs() {
             </p>
 
             <div className="pt-2 flex justify-center">
-              <Link
-                to="/recruitment-results"
-                className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-purple-600 to-indigo-600 hover:from-amber-400 hover:to-indigo-500 text-white font-bold text-sm sm:text-base shadow-xl shadow-purple-500/25 hover:shadow-purple-500/40 hover:-translate-y-0.5 transition-all"
-              >
-                <Trophy className="w-5 h-5 text-amber-300 animate-bounce" />
-                View Recruitment Results
-                <ArrowRight className="w-4 h-4" />
-              </Link>
+              {!settingsLoading && resultsActive && (
+                <Link
+                  to="/results"
+                  className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-purple-600 to-indigo-600 hover:from-amber-400 hover:to-indigo-500 text-white font-bold text-sm sm:text-base shadow-xl shadow-purple-500/25 hover:shadow-purple-500/40 hover:-translate-y-0.5 transition-all"
+                >
+                  <Trophy className="w-5 h-5 text-amber-300 animate-bounce" />
+                  View Recruitment Results
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              )}
             </div>
           </motion.div>
 
@@ -422,13 +426,15 @@ export function JoinUs() {
                 <Maximize2 className="w-4 h-4" /> View Official Poster
               </button>
 
-              <Link
-                to="/recruitment-results"
-                className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-sm shadow-lg shadow-purple-500/30 transition-all"
-              >
-                <Trophy className="w-4 h-4 text-amber-300" />
-                Show Results
-              </Link>
+              {!settingsLoading && resultsActive && (
+                <Link
+                  to="/results"
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-sm shadow-lg shadow-purple-500/30 transition-all"
+                >
+                  <Trophy className="w-4 h-4 text-amber-300" />
+                  Show Results
+                </Link>
+              )}
             </div>
           </div>
 

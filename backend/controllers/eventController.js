@@ -63,7 +63,9 @@ const eventController = {
             )
           )
         `)
-        .order('event_date', { ascending: true });
+        .order('event_date', { ascending: false })
+        .order('event_time', { ascending: false })
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
 
