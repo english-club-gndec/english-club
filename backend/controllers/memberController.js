@@ -50,8 +50,24 @@ const memberController = {
     }
   },
 
-  // GET /:user_id/getAllMembers
+  // GET /getAllMembers (Public team-card data only)
   getAllMembers: async (req, res) => {
+    try {
+      const { data, error } = await supabase
+        .from('members')
+        .select('member_id, member_name, member_postion, member_profile_picture_key, member_email, member_club_department, socials')
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      res.json(data);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+
+  // GET /:user_id/getAllMembers (Admin-only full member records)
+  getAdminMembers: async (req, res) => {
     try {
       const { data, error } = await supabase
         .from('members')

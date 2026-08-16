@@ -9,6 +9,9 @@ router.post('/:user_id/createMember', verifyToken, memberController.createMember
 // GET /api/members/getAllMembers (Public)
 router.get('/getAllMembers', memberController.getAllMembers);
 
+// GET /api/members/:user_id/getAllMembers (Admin protected)
+router.get('/:user_id/getAllMembers', verifyToken, memberController.getAdminMembers);
+
 // GET /api/members/:user_id/:member_id/getMemberById (Admin protected)
 router.get('/:user_id/:member_id/getMemberById', verifyToken, memberController.getMemberById);
 

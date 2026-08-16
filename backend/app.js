@@ -32,9 +32,17 @@ app.use((req, res, next) => {
     ].map(normalizeUrl);
 
     const allowedOrigins = [...configuredOrigins, ...defaultOrigins];
-    const isAllowed = allowedOrigins.includes(reqOrigin) || reqOrigin.endsWith('.vercel.app');
+    // Vite may choose a port other than 5173 when that port is occupied.
+    // Treat all localhost ports as local development origins while retaining
+    // the explicit allowlist for deployed sites.
+    const isLocalDevelopmentOrigin = /^https?:\/\/(localhost|127\.0\.0\.1)(?::\d+)?$/.test(reqOrigin);
+    const isAllowed =
+      allowedOrigins.includes(reqOrigin) ||
+      isLocalDevelopmentOrigin ||
+      reqOrigin.endsWith('.vercel.app');
 
     if (isAllowed) {
+      res.setHeader('Vary', 'Origin');
       res.setHeader('Access-Control-Allow-Origin', origin);
       res.setHeader('Access-Control-Allow-Credentials', 'true');
       res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');

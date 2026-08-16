@@ -13,6 +13,18 @@ export const memberService = {
     return response.json();
   },
 
+  // GET /api/members/:user_id/getAllMembers (Admin-only fields)
+  getAdminMembers: async (userId: string) => {
+    const response = await fetch(`${API_BASE_URL}/members/${userId}/getAllMembers`, {
+      credentials: 'include'
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(`Error ${response.status}: ${error.error || 'Failed to fetch members'}`);
+    }
+    return response.json();
+  },
+
   // POST /api/members/:user_id/createMember
   createMember: async (userId: string, memberData: any) => {
     const response = await fetch(`${API_BASE_URL}/members/${userId}/createMember`, {

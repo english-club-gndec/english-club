@@ -239,6 +239,16 @@ const POSITION_RANK: Record<string, number> = {
   'ACTIVE_MEMBER': 16,
 };
 
+const CLUB_DEPARTMENTS = [
+  'CONVENOR',
+  'CO-CONVENOR',
+  'TECHNICAL',
+  'CREATIVE & PHOTOGRAPHY',
+  'EVENT MANAGEMENT',
+  'PROMOTION',
+  'ANCHORING',
+] as const;
+
 const getPositionRank = (position: string): number => {
   if (!position) return 99;
   const upperPos = position.toUpperCase().trim();
@@ -271,7 +281,7 @@ export function AdminMembers() {
     if (!userId) return;
     try {
       setLoading(true);
-      const data = await memberService.getAllMembers();
+      const data = await memberService.getAdminMembers(userId);
       setMembers(sortMembersByHierarchy(data));
     } catch (error: any) {
       toast.error(error.message || "Failed to fetch members");
@@ -1424,8 +1434,11 @@ export function AdminMembers() {
                     </div>
 
                     <div>
-                       <label className="block text-sm font-semibold mb-2">Club Dept</label>
-                       <input type="text" value={formData.member_club_department} onChange={e => setFormData({...formData, member_club_department: e.target.value})} placeholder="e.g. Technical Department" className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800" />
+                       <label className="block text-sm font-semibold mb-2">Club Department</label>
+                       <select value={formData.member_club_department} onChange={e => setFormData({...formData, member_club_department: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800">
+                         <option value="">Select club department</option>
+                         {CLUB_DEPARTMENTS.map((department) => <option key={department} value={department}>{department}</option>)}
+                       </select>
                     </div>
 
                     <div className="space-y-4 pt-4 border-t border-gray-100">
