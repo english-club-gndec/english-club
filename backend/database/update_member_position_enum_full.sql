@@ -1,11 +1,12 @@
--- SQL Migration Script for 'member_position' ENUM in PostgreSQL / Supabase
+-- SQL Migration Script to safely update 'member_position' ENUM in PostgreSQL / Supabase
+-- This script:
+-- 1. Adds the new Head & Co-Head values for all 7 candidate departments
+-- 2. Migrates any existing rows using legacy values (TECH_HEAD, CREATIVE_HEAD, etc.) to the new values
+-- 3. Removes the legacy ENUM values (TECH_HEAD, CO-TECH_HEAD, CREATIVE_HEAD, CO-CREATIVE_HEAD)
 
--- ==============================================================================
--- OPTION 1: Complete Migration (Removes legacy TECH_HEAD & CREATIVE_HEAD values)
--- ==============================================================================
 BEGIN;
 
--- 1. Create temporary ENUM with clean values
+-- Step 1: Create a new temporary ENUM type with the exact required values
 CREATE TYPE member_position_new AS ENUM (
     'CONVENOR', 
     'CO-CONVENOR', 
@@ -25,7 +26,7 @@ CREATE TYPE member_position_new AS ENUM (
     'ACTIVE_MEMBER'
 );
 
--- 2. Alter members table column to use new type and remap existing records
+-- Step 2: Convert existing table column to use the new ENUM type, mapping legacy values
 ALTER TABLE members 
   ALTER COLUMN member_postion TYPE member_position_new 
   USING (
@@ -38,10 +39,10 @@ ALTER TABLE members
     END
   );
 
--- 3. Drop old ENUM type
+-- Step 3: Drop the old ENUM type
 DROP TYPE member_position;
 
--- 4. Rename new ENUM to member_position
+-- Step 4: Rename the new ENUM type back to 'member_position'
 ALTER TYPE member_position_new RENAME TO member_position;
 
 COMMIT;
