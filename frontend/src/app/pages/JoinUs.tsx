@@ -677,11 +677,10 @@ export function JoinUs() {
                     >
                       <option value="TECHNICAL">Technical</option>
                       <option value="CREATIVE">Creative</option>
-                      <option value="PROMOTION">Promotion</option>
                       <option value="EVENT_MANAGEMENT">Event Management</option>
-                      <option value="DISICIPLINE">Discipline</option>
-                      <option value="PHOTOGRAPHY">Photography/Videography</option>
-                      <option value="DATABASE">Database</option>
+                      <option value="FINANCE_&_MARKET_RELATIONS">Finance & Market Relations</option>
+                      <option value="CREATIVE_&_PHOTOGRAPHY">Creative & Photography</option>
+                      <option value="PROMOTION">Promotion</option>
                       <option value="ANCHORING">Anchoring</option>
                     </select>
                   </div>

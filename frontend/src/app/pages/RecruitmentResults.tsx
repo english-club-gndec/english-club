@@ -64,14 +64,6 @@ const DEPARTMENT_CONFIG: Record<
     badgeBg: "bg-purple-500/10 text-pink-400 border-pink-500/30",
     border: "border-pink-500/20"
   },
-  PROMOTION: {
-    label: "Promotion",
-    icon: Megaphone,
-    gradient: "from-amber-500 to-orange-500",
-    textGlow: "text-amber-400",
-    badgeBg: "bg-amber-500/10 text-amber-400 border-amber-500/30",
-    border: "border-amber-500/20"
-  },
   EVENT_MANAGEMENT: {
     label: "Event Management",
     icon: Sparkles,
@@ -80,29 +72,29 @@ const DEPARTMENT_CONFIG: Record<
     badgeBg: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
     border: "border-emerald-500/20"
   },
-  DISICIPLINE: {
-    label: "Discipline",
+  "FINANCE_&_MARKET_RELATIONS": {
+    label: "Finance & Market Relations",
     icon: Shield,
-    gradient: "from-rose-600 to-red-500",
-    textGlow: "text-rose-400",
-    badgeBg: "bg-rose-500/10 text-rose-400 border-rose-500/30",
-    border: "border-rose-500/20"
+    gradient: "from-amber-600 to-yellow-500",
+    textGlow: "text-amber-400",
+    badgeBg: "bg-amber-500/10 text-amber-400 border-amber-500/30",
+    border: "border-amber-500/20"
   },
-  PHOTOGRAPHY_VIDEOGRAPHY: {
-    label: "Photography & Videography",
+  "CREATIVE_&_PHOTOGRAPHY": {
+    label: "Creative & Photography",
     icon: Camera,
     gradient: "from-sky-600 to-indigo-500",
     textGlow: "text-sky-400",
     badgeBg: "bg-sky-500/10 text-sky-400 border-sky-500/30",
     border: "border-sky-500/20"
   },
-  DATABASE: {
-    label: "Database",
-    icon: Database,
-    gradient: "from-violet-600 to-purple-500",
-    textGlow: "text-violet-400",
-    badgeBg: "bg-violet-500/10 text-violet-400 border-violet-500/30",
-    border: "border-violet-500/20"
+  PROMOTION: {
+    label: "Promotion",
+    icon: Megaphone,
+    gradient: "from-orange-500 to-amber-500",
+    textGlow: "text-orange-400",
+    badgeBg: "bg-orange-500/10 text-orange-400 border-orange-500/30",
+    border: "border-orange-500/20"
   },
   ANCHORING: {
     label: "Anchoring",
@@ -172,32 +164,20 @@ export function RecruitmentResults() {
         (c.candidate_crn && c.candidate_crn.toString().includes(searchQuery)) ||
         (c.candidate_urn && c.candidate_urn.toString().includes(searchQuery));
 
-      const candidateDept =
-        c.interested_department === "PHOTOGRAPHY"
-          ? "PHOTOGRAPHY_VIDEOGRAPHY"
-          : c.interested_department;
-
-      const targetFilter =
-        selectedDeptFilter === "PHOTOGRAPHY" || selectedDeptFilter === "PHOTOGRAPHY_VIDEOGRAPHY"
-          ? "PHOTOGRAPHY_VIDEOGRAPHY"
-          : selectedDeptFilter;
-
+      const candidateDept = c.interested_department;
       const matchesDept =
-        selectedDeptFilter === "ALL" || candidateDept === targetFilter;
+        selectedDeptFilter === "ALL" || candidateDept === selectedDeptFilter;
 
       return matchesSearch && matchesDept;
     });
   }, [candidates, searchQuery, selectedDeptFilter]);
 
-  // Group filtered candidates by department (normalizing PHOTOGRAPHY -> PHOTOGRAPHY_VIDEOGRAPHY)
+  // Group filtered candidates by department
   const groupedCandidates = useMemo(() => {
     const groups: Record<string, SelectedCandidate[]> = {};
 
     filteredCandidates.forEach((c) => {
-      let deptKey = c.interested_department || "OTHER";
-      if (deptKey === "PHOTOGRAPHY") {
-        deptKey = "PHOTOGRAPHY_VIDEOGRAPHY";
-      }
+      const deptKey = c.interested_department || "OTHER";
       if (!groups[deptKey]) {
         groups[deptKey] = [];
       }
@@ -211,11 +191,10 @@ export function RecruitmentResults() {
   const departmentOrder = [
     "TECHNICAL",
     "CREATIVE",
-    "PROMOTION",
     "EVENT_MANAGEMENT",
-    "DISICIPLINE",
-    "PHOTOGRAPHY_VIDEOGRAPHY",
-    "DATABASE",
+    "FINANCE_&_MARKET_RELATIONS",
+    "CREATIVE_&_PHOTOGRAPHY",
+    "PROMOTION",
     "ANCHORING"
   ];
 
@@ -403,13 +382,7 @@ export function RecruitmentResults() {
                 </button>
 
                 {Object.keys(DEPARTMENT_CONFIG).map((deptKey) => {
-                  const count = candidates.filter((c) => {
-                    const candidateDept =
-                      c.interested_department === "PHOTOGRAPHY"
-                        ? "PHOTOGRAPHY_VIDEOGRAPHY"
-                        : c.interested_department;
-                    return candidateDept === deptKey;
-                  }).length;
+                  const count = candidates.filter((c) => c.interested_department === deptKey).length;
 
                   if (count === 0 && selectedDeptFilter !== deptKey) return null;
 

@@ -100,19 +100,18 @@ export function AdminRecruitments() {
 
   const formatDepartment = (dept: string) => {
     if (!dept) return '';
-    if (dept === "PHOTOGRAPHY" || dept === "PHOTOGRAPHY_VIDEOGRAPHY") {
-      return "Photography/Videography";
-    }
-    if (dept === "ANCHORING") {
-      return "Anchoring";
-    }
+    if (dept === "FINANCE_&_MARKET_RELATIONS") return "Finance & Market Relations";
+    if (dept === "CREATIVE_&_PHOTOGRAPHY") return "Creative & Photography";
+    if (dept === "EVENT_MANAGEMENT") return "Event Management";
+    if (dept === "TECHNICAL") return "Technical";
+    if (dept === "CREATIVE") return "Creative";
+    if (dept === "PROMOTION") return "Promotion";
+    if (dept === "ANCHORING") return "Anchoring";
     return dept;
   };
 
   const filteredCandidates = candidates.filter(candidate => {
-    const matchesDepartment = filterDepartment === "ALL" || 
-      candidate.interested_department === filterDepartment ||
-      (filterDepartment === "PHOTOGRAPHY" && (candidate.interested_department === "PHOTOGRAPHY" || candidate.interested_department === "PHOTOGRAPHY_VIDEOGRAPHY"));
+    const matchesDepartment = filterDepartment === "ALL" || candidate.interested_department === filterDepartment;
     const matchesStatus = filterStatus === "ALL" || candidate.candidate_status === filterStatus;
     
     if (filterStatus === "PENDING" && !candidate.candidate_status) {
@@ -179,20 +178,24 @@ export function AdminRecruitments() {
         return;
       }
 
-      const questionLabels = new Map(
+      const questionLabels = new Map<string, string>(
         latestQuestions.map((question: RecruitmentQuestion) => [question.question_id, question.question_label])
       );
       const answerKeys = Array.from(
-        new Set(latestCandidates.flatMap((candidate: Candidate) => Object.keys(candidate.custom_answers || {})))
+        new Set<string>(
+          latestCandidates.flatMap((candidate: Candidate) =>
+            Object.keys((candidate.custom_answers || {}) as Record<string, any>)
+          )
+        )
       );
-      const answerColumns = answerKeys.map((questionId) => ({
+      const answerColumns: { questionId: string; label: string }[] = answerKeys.map((questionId: string) => ({
         questionId,
-        label: questionLabels.get(questionId) || `Question (${questionId.slice(0, 8)})`
+        label: (questionLabels.get(questionId) || `Question (${questionId.slice(0, 8)})`) as string
       }));
 
       const worksheet = XLSX.utils.json_to_sheet(
         latestCandidates.map((candidate: Candidate) => {
-          const row: Record<string, string | number> = {
+          const row: Record<string, any> = {
             "Application ID": candidate.candidate_id,
             "Name": candidate.candidate_name,
             "Email": candidate.candidate_email,
@@ -209,8 +212,9 @@ export function AdminRecruitments() {
             "Last Updated": candidate.updated_at ? new Date(candidate.updated_at).toLocaleString() : ""
           };
 
-          answerColumns.forEach(({ questionId, label }) => {
-            row[label] = formatExcelValue(candidate.custom_answers?.[questionId]);
+          const customAnswers = (candidate.custom_answers || {}) as Record<string, any>;
+          answerColumns.forEach(({ questionId, label }: { questionId: string; label: string }) => {
+            row[label] = formatExcelValue(customAnswers[questionId]);
           });
 
           return row;
@@ -717,11 +721,10 @@ export function AdminRecruitments() {
                 <option value="ALL">All Departments</option>
                 <option value="TECHNICAL">Technical</option>
                 <option value="CREATIVE">Creative</option>
-                <option value="PROMOTION">Promotion</option>
                 <option value="EVENT_MANAGEMENT">Event Management</option>
-                <option value="DISICIPLINE">Discipline</option>
-                <option value="PHOTOGRAPHY">Photography/Videography</option>
-                <option value="DATABASE">Database</option>
+                <option value="FINANCE_&_MARKET_RELATIONS">Finance & Market Relations</option>
+                <option value="CREATIVE_&_PHOTOGRAPHY">Creative & Photography</option>
+                <option value="PROMOTION">Promotion</option>
                 <option value="ANCHORING">Anchoring</option>
               </select>
 
@@ -1159,11 +1162,10 @@ export function AdminRecruitments() {
                   >
                     <option value="TECHNICAL">Technical</option>
                     <option value="CREATIVE">Creative</option>
-                    <option value="PROMOTION">Promotion</option>
                     <option value="EVENT_MANAGEMENT">Event Management</option>
-                    <option value="DISICIPLINE">Discipline</option>
-                    <option value="PHOTOGRAPHY">Photography/Videography</option>
-                    <option value="DATABASE">Database</option>
+                    <option value="FINANCE_&_MARKET_RELATIONS">Finance & Market Relations</option>
+                    <option value="CREATIVE_&_PHOTOGRAPHY">Creative & Photography</option>
+                    <option value="PROMOTION">Promotion</option>
                     <option value="ANCHORING">Anchoring</option>
                   </select>
                 </div>

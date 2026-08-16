@@ -131,8 +131,14 @@ const processCsvRows = (rows: any[], overridePos: string, userId: string) => {
   const unresolved: any[] = [];
 
   const validPositions = [
-    'CONVENOR', 'CO-CONVENOR', 'TECH_HEAD', 'CO-TECH_HEAD', 
-    'CREATIVE_HEAD', 'CO-CREATIVE_HEAD', 'EXECUTIVE_MEMBER', 'ACTIVE_MEMBER'
+    'CONVENOR', 'CO-CONVENOR', 
+    'TECHNICAL_HEAD', 'CO-TECHNICAL_HEAD',
+    'EVENT_MANAGEMENT_HEAD', 'CO-EVENT_MANAGEMENT_HEAD',
+    'FINANCE_&_MARKET_RELATIONS_HEAD', 'CO-FINANCE_&_MARKET_RELATIONS_HEAD',
+    'CREATIVE_&_PHOTOGRAPHY_HEAD', 'CO-CREATIVE_&_PHOTOGRAPHY_HEAD',
+    'PROMOTION_HEAD', 'CO-PROMOTION_HEAD',
+    'ANCHORING_HEAD', 'CO-ANCHORING_HEAD',
+    'EXECUTIVE_MEMBER', 'ACTIVE_MEMBER'
   ];
 
   rows.forEach((r, idx) => {
@@ -217,12 +223,20 @@ const processCsvRows = (rows: any[], overridePos: string, userId: string) => {
 const POSITION_RANK: Record<string, number> = {
   'CONVENOR': 1,
   'CO-CONVENOR': 2,
-  'TECH_HEAD': 3,
-  'CO-TECH_HEAD': 4,
-  'CREATIVE_HEAD': 5,
-  'CO-CREATIVE_HEAD': 6,
-  'EXECUTIVE_MEMBER': 7,
-  'ACTIVE_MEMBER': 8,
+  'TECHNICAL_HEAD': 3,
+  'CO-TECHNICAL_HEAD': 4,
+  'EVENT_MANAGEMENT_HEAD': 5,
+  'CO-EVENT_MANAGEMENT_HEAD': 6,
+  'FINANCE_&_MARKET_RELATIONS_HEAD': 7,
+  'CO-FINANCE_&_MARKET_RELATIONS_HEAD': 8,
+  'CREATIVE_&_PHOTOGRAPHY_HEAD': 9,
+  'CO-CREATIVE_&_PHOTOGRAPHY_HEAD': 10,
+  'PROMOTION_HEAD': 11,
+  'CO-PROMOTION_HEAD': 12,
+  'ANCHORING_HEAD': 13,
+  'CO-ANCHORING_HEAD': 14,
+  'EXECUTIVE_MEMBER': 15,
+  'ACTIVE_MEMBER': 16,
 };
 
 const getPositionRank = (position: string): number => {
@@ -1109,10 +1123,20 @@ export function AdminMembers() {
                             <option value="">Use positions from CSV</option>
                             <option value="CONVENOR">Convenor</option>
                             <option value="CO-CONVENOR">Co-Convenor</option>
-                            <option value="TECH_HEAD">Tech Head</option>
-                            <option value="CO-TECH_HEAD">Co-Tech Head</option>
+                            <option value="TECHNICAL_HEAD">Technical Head</option>
+                            <option value="CO-TECHNICAL_HEAD">Co-Technical Head</option>
                             <option value="CREATIVE_HEAD">Creative Head</option>
                             <option value="CO-CREATIVE_HEAD">Co-Creative Head</option>
+                            <option value="EVENT_MANAGEMENT_HEAD">Event Management Head</option>
+                            <option value="CO-EVENT_MANAGEMENT_HEAD">Co-Event Management Head</option>
+                            <option value="FINANCE_&_MARKET_RELATIONS_HEAD">Finance & Market Relations Head</option>
+                            <option value="CO-FINANCE_&_MARKET_RELATIONS_HEAD">Co-Finance & Market Relations Head</option>
+                            <option value="CREATIVE_&_PHOTOGRAPHY_HEAD">Creative & Photography Head</option>
+                            <option value="CO-CREATIVE_&_PHOTOGRAPHY_HEAD">Co-Creative & Photography Head</option>
+                            <option value="PROMOTION_HEAD">Promotion Head</option>
+                            <option value="CO-PROMOTION_HEAD">Co-Promotion Head</option>
+                            <option value="ANCHORING_HEAD">Anchoring Head</option>
+                            <option value="CO-ANCHORING_HEAD">Co-Anchoring Head</option>
                             <option value="EXECUTIVE_MEMBER">Executive Member</option>
                             <option value="ACTIVE_MEMBER">Active Member</option>
                           </select>
@@ -1351,10 +1375,20 @@ export function AdminMembers() {
                         <select value={formData.member_postion} onChange={e => setFormData({...formData, member_postion: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800">
                           <option value="CONVENOR">Convenor</option>
                           <option value="CO-CONVENOR">Co-Convenor</option>
-                          <option value="TECH_HEAD">Tech Head</option>
-                          <option value="CO-TECH_HEAD">Co-Tech Head</option>
+                          <option value="TECHNICAL_HEAD">Technical Head</option>
+                          <option value="CO-TECHNICAL_HEAD">Co-Technical Head</option>
                           <option value="CREATIVE_HEAD">Creative Head</option>
                           <option value="CO-CREATIVE_HEAD">Co-Creative Head</option>
+                          <option value="EVENT_MANAGEMENT_HEAD">Event Management Head</option>
+                          <option value="CO-EVENT_MANAGEMENT_HEAD">Co-Event Management Head</option>
+                          <option value="FINANCE_&_MARKET_RELATIONS_HEAD">Finance & Market Relations Head</option>
+                          <option value="CO-FINANCE_&_MARKET_RELATIONS_HEAD">Co-Finance & Market Relations Head</option>
+                          <option value="CREATIVE_&_PHOTOGRAPHY_HEAD">Creative & Photography Head</option>
+                          <option value="CO-CREATIVE_&_PHOTOGRAPHY_HEAD">Co-Creative & Photography Head</option>
+                          <option value="PROMOTION_HEAD">Promotion Head</option>
+                          <option value="CO-PROMOTION_HEAD">Co-Promotion Head</option>
+                          <option value="ANCHORING_HEAD">Anchoring Head</option>
+                          <option value="CO-ANCHORING_HEAD">Co-Anchoring Head</option>
                           <option value="EXECUTIVE_MEMBER">Executive Member</option>
                           <option value="ACTIVE_MEMBER">Active Member</option>
                         </select>

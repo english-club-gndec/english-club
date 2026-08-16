@@ -5,14 +5,35 @@ BEGIN
         CREATE TYPE member_position AS ENUM (
             'CONVENOR', 
             'CO-CONVENOR', 
-            'TECH_HEAD', 
-            'CO-TECH_HEAD', 
-            'CREATIVE_HEAD', 
-            'CO-CREATIVE_HEAD', 
+            'TECHNICAL_HEAD', 
+            'CO-TECHNICAL_HEAD', 
+            'EVENT_MANAGEMENT_HEAD',
+            'CO-EVENT_MANAGEMENT_HEAD',
+            'FINANCE_&_MARKET_RELATIONS_HEAD',
+            'CO-FINANCE_&_MARKET_RELATIONS_HEAD',
+            'CREATIVE_&_PHOTOGRAPHY_HEAD',
+            'CO-CREATIVE_&_PHOTOGRAPHY_HEAD',
+            'PROMOTION_HEAD',
+            'CO-PROMOTION_HEAD',
+            'ANCHORING_HEAD',
+            'CO-ANCHORING_HEAD',
             'EXECUTIVE_MEMBER', 
             'ACTIVE_MEMBER'
         );
     END IF;
+
+    ALTER TYPE member_position ADD VALUE IF NOT EXISTS 'TECHNICAL_HEAD';
+    ALTER TYPE member_position ADD VALUE IF NOT EXISTS 'CO-TECHNICAL_HEAD';
+    ALTER TYPE member_position ADD VALUE IF NOT EXISTS 'EVENT_MANAGEMENT_HEAD';
+    ALTER TYPE member_position ADD VALUE IF NOT EXISTS 'CO-EVENT_MANAGEMENT_HEAD';
+    ALTER TYPE member_position ADD VALUE IF NOT EXISTS 'FINANCE_&_MARKET_RELATIONS_HEAD';
+    ALTER TYPE member_position ADD VALUE IF NOT EXISTS 'CO-FINANCE_&_MARKET_RELATIONS_HEAD';
+    ALTER TYPE member_position ADD VALUE IF NOT EXISTS 'CREATIVE_&_PHOTOGRAPHY_HEAD';
+    ALTER TYPE member_position ADD VALUE IF NOT EXISTS 'CO-CREATIVE_&_PHOTOGRAPHY_HEAD';
+    ALTER TYPE member_position ADD VALUE IF NOT EXISTS 'PROMOTION_HEAD';
+    ALTER TYPE member_position ADD VALUE IF NOT EXISTS 'CO-PROMOTION_HEAD';
+    ALTER TYPE member_position ADD VALUE IF NOT EXISTS 'ANCHORING_HEAD';
+    ALTER TYPE member_position ADD VALUE IF NOT EXISTS 'CO-ANCHORING_HEAD';
 
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'department_type') THEN
         CREATE TYPE department_type AS ENUM (
@@ -42,7 +63,7 @@ CREATE TABLE IF NOT EXISTS members (
     member_semester INTEGER NOT NULL CHECK (member_semester >= 0 AND member_semester <= 8),
     member_club_department VARCHAR,
     socials JSONB DEFAULT '{}'::jsonb,
-    created_by BIGINT NOT NULL, 
+    created_by BIGINT REFERENCES users(user_id) ON DELETE SET NULL, 
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );
@@ -61,25 +82,8 @@ CREATE TRIGGER update_members_updated_at
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
--- Function to delete the profile picture from Supabase Storage when a member is deleted
-CREATE OR REPLACE FUNCTION delete_member_image_from_storage()
-RETURNS TRIGGER AS $$
-BEGIN
-    IF OLD.member_profile_picture_key IS NOT NULL AND OLD.member_profile_picture_key <> '' THEN
-        DELETE FROM storage.objects 
-        WHERE bucket_id = 'profile_pictures' 
-        AND name = OLD.member_profile_picture_key;
-    END IF;
-    RETURN OLD;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- Trigger to handle storage cleanup on member deletion
-DROP TRIGGER IF EXISTS trigger_delete_member_image ON members;
-CREATE TRIGGER trigger_delete_member_image
-    AFTER DELETE ON members
-    FOR EACH ROW
-    EXECUTE FUNCTION delete_member_image_from_storage();
+-- Storage cleanup is handled by the backend Node controller (memberController.js) using the Supabase Storage API,
+-- because Supabase forbids direct SQL DELETE statements on the storage.objects table.
 
 -- Function to increment semesters automatically
 -- This should be called by a cron job or scheduled task twice a year:

@@ -30,15 +30,15 @@ INSERT INTO candidates (
 ('Simran Kaur', 'D2CSE-A', 2205115, 2205215, 'simran.kaur@gndec.ac.in', 'EVENT_MANAGEMENT', 'Event coordinator with leadership and logistics management skills.', 'Organized major department fests and inter-college competitions.', 'SELECTED', 'Strong leadership and management record.', '{}'::jsonb),
 ('Kabir Mehta', 'D1RAI-A', 2309102, 2309202, 'kabir.mehta@gndec.ac.in', 'EVENT_MANAGEMENT', 'Detail-oriented event manager and team player.', 'Passionate about hosting smooth events.', 'SELECTED', 'Promising event team member.', '{}'::jsonb),
 
--- Discipline Department
-('Gurinder Singh', 'D3CE-B', 2103120, 2103220, 'gurinder.singh@gndec.ac.in', 'DISICIPLINE', 'Disciplined team leader focused on smooth crowd control.', 'Active member in college discipline committee.', 'SELECTED', 'Reliable and punctual.', '{}'::jsonb),
+-- Finance & Market Relations Department
+('Gurinder Singh', 'D3CE-B', 2103120, 2103220, 'gurinder.singh@gndec.ac.in', 'FINANCE_&_MARKET_RELATIONS', 'Disciplined team leader focused on smooth crowd control.', 'Active member in college discipline committee.', 'SELECTED', 'Reliable and punctual.', '{}'::jsonb),
 
--- Photography & Videography Department
-('Rahul Malhotra', 'D2IT-B', 2204130, 2204230, 'rahul.malhotra@gndec.ac.in', 'PHOTOGRAPHY_VIDEOGRAPHY', 'Videographer, reel editor, and photographer.', 'Equipped with DSLR camera and Premiere Pro skills.', 'SELECTED', 'Great photography showcase.', '{}'::jsonb),
-('Sneha Reddy', 'D1BCA-A', 2310105, 2310205, 'sneha.reddy@gndec.ac.in', 'PHOTOGRAPHY', 'Portrait photographer and photo retouching specialist.', 'High quality photography samples submitted.', 'SELECTED', 'Selected for Photography team.', '{}'::jsonb),
+-- Creative & Photography Department
+('Rahul Malhotra', 'D2IT-B', 2204130, 2204230, 'rahul.malhotra@gndec.ac.in', 'CREATIVE_&_PHOTOGRAPHY', 'Videographer, reel editor, and photographer.', 'Equipped with DSLR camera and Premiere Pro skills.', 'SELECTED', 'Great photography showcase.', '{}'::jsonb),
+('Sneha Reddy', 'D1BCA-A', 2310105, 2310205, 'sneha.reddy@gndec.ac.in', 'CREATIVE_&_PHOTOGRAPHY', 'Portrait photographer and photo retouching specialist.', 'High quality photography samples submitted.', 'SELECTED', 'Selected for Photography team.', '{}'::jsonb),
 
--- Database Department
-('Aditya Joshi', 'D3CSE-A', 2105150, 2105250, 'aditya.joshi@gndec.ac.in', 'DATABASE', 'SQL and database administrator.', 'Maintains records cleanly and handles registration data.', 'SELECTED', 'Excellent data entry and management skills.', '{}'::jsonb),
+-- Technical Department (Database administrator)
+('Aditya Joshi', 'D3CSE-A', 2105150, 2105250, 'aditya.joshi@gndec.ac.in', 'TECHNICAL', 'SQL and database administrator.', 'Maintains records cleanly and handles registration data.', 'SELECTED', 'Excellent data entry and management skills.', '{}'::jsonb),
 
 -- Anchoring Department
 ('Mehak Kapoor', 'D2EE-A', 2202108, 2202208, 'mehak.kapoor@gndec.ac.in', 'ANCHORING', 'Stage anchor, public speaker, and debate champion.', 'Hosted stage shows and national level debates.', 'SELECTED', 'Outstanding vocal clarity and stage presence.', '{}'::jsonb),

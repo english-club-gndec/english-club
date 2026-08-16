@@ -90,16 +90,16 @@ export function Team() {
     });
 
   const techTeam = members
-    .filter(m => m.member_postion === 'TECH_HEAD' || m.member_postion === 'CO-TECH_HEAD')
+    .filter(m => m.member_postion === 'TECHNICAL_HEAD' || m.member_postion === 'CO-TECHNICAL_HEAD' || m.member_postion === 'TECH_HEAD' || m.member_postion === 'CO-TECH_HEAD')
     .sort((a, b) => {
-      const order = ['TECH_HEAD', 'CO-TECH_HEAD'];
+      const order = ['TECHNICAL_HEAD', 'CO-TECHNICAL_HEAD', 'TECH_HEAD', 'CO-TECH_HEAD'];
       return order.indexOf(a.member_postion) - order.indexOf(b.member_postion);
     });
 
   const creativeTeam = members
-    .filter(m => m.member_postion === 'CREATIVE_HEAD' || m.member_postion === 'CO-CREATIVE_HEAD')
+    .filter(m => m.member_postion === 'CREATIVE_&_PHOTOGRAPHY_HEAD' || m.member_postion === 'CO-CREATIVE_&_PHOTOGRAPHY_HEAD' || m.member_postion === 'CREATIVE_HEAD' || m.member_postion === 'CO-CREATIVE_HEAD')
     .sort((a, b) => {
-      const order = ['CREATIVE_HEAD', 'CO-CREATIVE_HEAD'];
+      const order = ['CREATIVE_&_PHOTOGRAPHY_HEAD', 'CO-CREATIVE_&_PHOTOGRAPHY_HEAD', 'CREATIVE_HEAD', 'CO-CREATIVE_HEAD'];
       return order.indexOf(a.member_postion) - order.indexOf(b.member_postion);
     });
 

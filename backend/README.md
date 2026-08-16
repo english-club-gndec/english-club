@@ -152,7 +152,7 @@ Handles the detailed records of English Club members.
 - **Description:** Adds a new member to the database.
 - **Request Body:**
     - `member_name` (Required)
-    - `member_postion` (Enum: CONVENOR, TECH_HEAD, etc., Required)
+    - `member_postion` (Enum: CONVENOR, CO-CONVENOR, TECHNICAL_HEAD, CO-TECHNICAL_HEAD, CREATIVE_HEAD, CO-CREATIVE_HEAD, EVENT_MANAGEMENT_HEAD, CO-EVENT_MANAGEMENT_HEAD, FINANCE_&_MARKET_RELATIONS_HEAD, CO-FINANCE_&_MARKET_RELATIONS_HEAD, CREATIVE_&_PHOTOGRAPHY_HEAD, CO-CREATIVE_&_PHOTOGRAPHY_HEAD, PROMOTION_HEAD, CO-PROMOTION_HEAD, ANCHORING_HEAD, CO-ANCHORING_HEAD, EXECUTIVE_MEMBER, ACTIVE_MEMBER, Required)
     - `member_urn` (Long, Required)
     - `member_email` (Required)
     - `member_department` (Enum: IT, CSE, etc., Required)
@@ -200,7 +200,7 @@ Handles the recruitment process for new club members.
     - `candidate_crn` (Number/Long, Required)
     - `candidate_urn` (Number/Long, Optional)
     - `candidate_email` (String, Required)
-    - `interested_department` (Enum: TECHNICAL, CREATIVE, PROMOTION, EVENT_MANAGEMENT, DISICIPLINE, PHOTOGRAPHY, DATABASE, Required)
+    - `interested_department` (Enum: TECHNICAL, CREATIVE, EVENT_MANAGEMENT, FINANCE_&_MARKET_RELATIONS, CREATIVE_&_PHOTOGRAPHY, PROMOTION, ANCHORING, Required)
 - **Response (201 Created):** Candidate object.
 
 #### **[GET] Fetch All Candidates**

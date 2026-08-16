@@ -180,10 +180,18 @@ const memberController = {
       const validPositions = [
         'CONVENOR',
         'CO-CONVENOR',
-        'TECH_HEAD',
-        'CO-TECH_HEAD',
-        'CREATIVE_HEAD',
-        'CO-CREATIVE_HEAD',
+        'TECHNICAL_HEAD',
+        'CO-TECHNICAL_HEAD',
+        'EVENT_MANAGEMENT_HEAD',
+        'CO-EVENT_MANAGEMENT_HEAD',
+        'FINANCE_&_MARKET_RELATIONS_HEAD',
+        'CO-FINANCE_&_MARKET_RELATIONS_HEAD',
+        'CREATIVE_&_PHOTOGRAPHY_HEAD',
+        'CO-CREATIVE_&_PHOTOGRAPHY_HEAD',
+        'PROMOTION_HEAD',
+        'CO-PROMOTION_HEAD',
+        'ANCHORING_HEAD',
+        'CO-ANCHORING_HEAD',
         'EXECUTIVE_MEMBER',
         'ACTIVE_MEMBER'
       ];

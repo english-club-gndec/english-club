@@ -30,10 +30,12 @@ const settingsController = {
         .from('settings')
         .select('*')
         .eq('id', 1)
-        .single();
+        .maybeSingle();
 
-      if (error || !data) {
-        throw error || new Error('Settings record is missing');
+      if (error) throw error;
+
+      if (!data) {
+        return res.json(defaultSettings);
       }
 
       return res.json(mergeSettings({
@@ -41,8 +43,8 @@ const settingsController = {
         resultsActive: data.results_active
       }));
     } catch (error) {
-      console.error('Settings read error:', error.message);
-      res.status(503).json({ error: 'Failed to read settings from database' });
+      console.error('Settings read error:', error.message || error);
+      res.status(500).json({ error: error.message || 'Failed to read settings from database' });
     }
   },
 
@@ -64,42 +66,45 @@ const settingsController = {
       const { data, error } = await supabase
         .from('settings')
         .upsert({ id: 1, recruitments_active, results_active }, { onConflict: 'id' })
-        .select()
-        .single();
+        .select();
 
-      if (error || !data) {
-        throw error || new Error('Settings database update did not return a record');
-      }
+      if (error) throw error;
+
+      const record = (data && data[0]) ? data[0] : { recruitments_active, results_active };
 
       return res.json(mergeSettings({
-        recruitmentsActive: data.recruitments_active,
-        resultsActive: data.results_active
+        recruitmentsActive: record.recruitments_active,
+        resultsActive: record.results_active
       }));
     } catch (error) {
-      console.error('Settings save error:', error);
-      res.status(503).json({ error: 'Failed to save settings to database' });
+      console.error('Settings save error:', error.message || error);
+      res.status(500).json({ error: error.message || 'Failed to save settings to database' });
     }
   },
 
   getSettingsSnapshot: async () => {
     if (!supabase) {
-      throw new Error('Settings database is unavailable');
+      return defaultSettings;
     }
 
-    const { data, error } = await supabase
-      .from('settings')
-      .select('*')
-      .eq('id', 1)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('settings')
+        .select('*')
+        .eq('id', 1)
+        .maybeSingle();
 
-    if (error || !data) {
-      throw error || new Error('Settings record is missing');
+      if (error || !data) {
+        return defaultSettings;
+      }
+
+      return mergeSettings({
+        recruitmentsActive: data.recruitments_active,
+        resultsActive: data.results_active
+      });
+    } catch (err) {
+      return defaultSettings;
     }
-
-    return mergeSettings({
-      recruitmentsActive: data.recruitments_active,
-      resultsActive: data.results_active
-    });
   }
 };
 
