@@ -20,10 +20,35 @@ interface Member {
   };
 }
 
+interface FacultyMember {
+  name: string;
+  image: string;
+  email?: string;
+  zoomScale?: number;
+  originX?: number;
+  originY?: number;
+}
+
 export function Team() {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const faculty: FacultyMember[] = [
+    {
+      name: "Prof. Nisha Masson",
+      image: "/faculty/nisha.jpg",
+      email: "nishamasson93@gmail.com",
+      zoomScale: 4,
+      originX: 0.45,
+      originY: 0.25,
+    },
+    {
+      name: "Prof. Jasmine Kaur",
+      image: "/faculty/jasmine.jpg",
+      email: "harjasbms19@gmail.com",
+    },
+  ];
 
   const fetchMembers = async () => {
     try {
@@ -55,8 +80,10 @@ export function Team() {
     'TECHNICAL',
     'CREATIVE & PHOTOGRAPHY',
     'EVENT MANAGEMENT',
+    'FINANCE & MARKET RELATIONS',
     'PROMOTION',
-    'ANCHORING'
+    'ANCHORING',
+    'EXECUTIVE'
   ] as const;
 
   const normalizeSectionValue = (value?: string | null) =>
@@ -71,19 +98,21 @@ export function Team() {
     const position = normalizeSectionValue(member.member_postion);
     const clubDepartment = normalizeSectionValue(member.member_club_department);
 
-    // Leadership sections are determined by the stored position, regardless
-    // of the club department selected for the member.
-    if (position === 'CO CONVENOR') return 'CO-CONVENOR';
+    if (position === 'CO CONVENOR' || position === 'CO CONVENOR') return 'CO-CONVENOR';
     if (position === 'CONVENOR') return 'CONVENOR';
+    if (position === 'EXECUTIVE MEMBER' || position === 'EXECUTIVE') return 'EXECUTIVE';
     if (clubDepartment === 'CO CONVENOR') return 'CO-CONVENOR';
     if (clubDepartment === 'CONVENOR') return 'CONVENOR';
+    if (clubDepartment === 'EXECUTIVE MEMBER' || clubDepartment === 'EXECUTIVE') return 'EXECUTIVE';
 
     const sectionAliases: Array<[string, string[]]> = [
       ['TECHNICAL', ['TECHNICAL', 'TECH']],
-      ['CREATIVE & PHOTOGRAPHY', ['CREATIVE AND PHOTOGRAPHY', 'CREATIVE', 'PHOTOGRAPHY', 'VIDEOGRAPHY', 'VIDEO']],
+      ['CREATIVE & PHOTOGRAPHY', ['CREATIVE AND PHOTOGRAPHY', 'CREATIVE & PHOTOGRAPHY', 'CREATIVE', 'PHOTOGRAPHY', 'VIDEOGRAPHY', 'VIDEO']],
       ['EVENT MANAGEMENT', ['EVENT MANAGEMENT', 'EVENT']],
+      ['FINANCE & MARKET RELATIONS', ['FINANCE AND MARKET RELATIONS', 'FINANCE & MARKET RELATIONS', 'FINANCE', 'MARKET RELATIONS', 'MARKET']],
       ['PROMOTION', ['PROMOTION', 'PUBLICITY', 'MARKETING', 'SOCIAL MEDIA']],
       ['ANCHORING', ['ANCHORING', 'ANCHOR', 'HOST', 'EMCEE', 'MC']],
+      ['EXECUTIVE', ['EXECUTIVE MEMBER', 'EXECUTIVE']],
     ];
 
     for (const [section, aliases] of sectionAliases) {
@@ -92,8 +121,7 @@ export function Team() {
       }
     }
 
-    // Backwards compatibility for existing members created before the admin
-    // form used canonical club-department values.
+    // Backwards compatibility by position string fallback
     const legacyValue = `${position} ${clubDepartment}`;
     for (const [section, aliases] of sectionAliases) {
       if (aliases.some((alias) => legacyValue.includes(alias))) return section;
@@ -248,6 +276,79 @@ export function Team() {
           </p>
         </motion.div>
 
+        {/* Faculty Mentors / Teachers Section */}
+        <section className="mb-16 sm:mb-24">
+          <div className="text-center mb-10 sm:mb-16">
+            <motion.h2
+              className="text-3xl sm:text-4xl lg:text-5xl text-center text-gray-900 dark:text-white mb-3 sm:mb-4 bg-clip-text text-transparent bg-gradient-to-r from-purple-600 via-pink-500 to-blue-600 dark:from-purple-400 dark:via-pink-400 dark:to-blue-400 font-extrabold"
+              style={{ fontFamily: 'Poppins, sans-serif' }}
+              initial={{ opacity: 0, y: -20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+            >
+              Faculty Mentors
+            </motion.h2>
+            <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto text-xs sm:text-base" style={{ fontFamily: 'Open Sans, sans-serif' }}>
+              The guiding pillars of our club, providing wisdom, academic guidance, and unwavering support.
+            </p>
+          </div>
+
+          <motion.div
+            className="grid md:grid-cols-2 gap-6 sm:gap-10 max-w-6xl mx-auto"
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true }}
+          >
+            {faculty.map((member, index) => (
+              <motion.div
+                key={index}
+                className="group relative rounded-[2rem] overflow-hidden bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-950/50 backdrop-blur-md border border-gray-200/80 dark:border-gray-800/80 hover:border-purple-500/50 hover:shadow-2xl hover:shadow-purple-500/10 transition-all duration-500 hover:-translate-y-2"
+              >
+                <div className="absolute -right-24 -top-24 w-56 h-56 bg-purple-500/10 dark:bg-purple-500/5 rounded-full blur-3xl group-hover:scale-150 transition-all duration-700 pointer-events-none" />
+                <div className="absolute -left-24 -bottom-24 w-56 h-56 bg-pink-500/10 dark:bg-pink-500/5 rounded-full blur-3xl group-hover:scale-150 transition-all duration-700 pointer-events-none" />
+                
+                <div className="p-6 sm:p-10 lg:p-12 flex flex-col sm:flex-row gap-6 sm:gap-8 items-center sm:items-start text-center sm:text-left relative z-10">
+                  <div className="relative flex-shrink-0 w-36 h-36 sm:w-44 sm:h-44 rounded-3xl overflow-hidden p-[4px] bg-gradient-to-tr from-purple-600 via-pink-500 to-blue-500 shadow-xl group-hover:rotate-3 transition-transform duration-500">
+                    <div className="w-full h-full rounded-[20px] overflow-hidden bg-white dark:bg-gray-900">
+                      <motion.img
+                        src={member.image}
+                        alt={member.name}
+                        className="w-full h-full object-cover"
+                        style={{
+                          originX: member.originX ?? 0.5,
+                          originY: member.originY ?? 0.5,
+                          scale: member.zoomScale ?? 1.0,
+                        }}
+                        whileHover={{ scale: (member.zoomScale ?? 1.0) * 1.1 }}
+                        transition={{ duration: 0.5 }}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex-1 flex flex-col items-center sm:items-start justify-center sm:min-h-[11rem]">
+                    <span className="inline-flex items-center px-4 py-1 rounded-full text-[10px] sm:text-xs font-black bg-gradient-to-r from-purple-500/10 to-pink-500/10 dark:from-purple-500/20 dark:to-pink-500/20 text-purple-700 dark:text-purple-300 border border-purple-500/20 mb-3 uppercase tracking-widest">
+                      Faculty Mentor
+                    </span>
+                    <h3 className="text-2xl sm:text-3xl lg:text-4xl text-gray-900 dark:text-white font-extrabold tracking-tight group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors duration-300 mb-6" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                      {member.name}
+                    </h3>
+                    {member.email && (
+                      <a
+                        href={`mailto:${member.email}`}
+                        className="inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-gray-900 hover:bg-purple-600 dark:bg-white dark:hover:bg-purple-600 text-white dark:text-gray-950 dark:hover:text-white text-xs sm:text-sm font-bold shadow-lg hover:shadow-purple-500/25 transition-all duration-300 hover:-translate-y-0.5 group/btn"
+                        style={{ fontFamily: 'Open Sans, sans-serif' }}
+                      >
+                        <Mail className="w-4 h-4 transition-transform group-hover/btn:scale-110" />
+                        <span>Contact Mentor</span>
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+        </section>
+
         {loading ? (
           <div className="flex justify-center items-center py-20 w-full col-span-full">
             <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
@@ -267,7 +368,7 @@ export function Team() {
           <div className="grid gap-8 md:gap-10 lg:grid-cols-2">
             {requiredSections.map((section) => {
               const sectionMembers = groupedMembers[section] || [];
-              const isFullWidthSection = ['CONVENOR', 'CO-CONVENOR', 'ANCHORING'].includes(section);
+              const isFullWidthSection = ['CONVENOR', 'CO-CONVENOR', 'ANCHORING', 'EXECUTIVE'].includes(section);
 
               return (
                 <section
