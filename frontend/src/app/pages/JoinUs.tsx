@@ -139,22 +139,19 @@ export function JoinUs() {
       await recruitmentServices.createCandidate(payload);
 
       setIsSubmitted(true);
-      setTimeout(() => {
-        setFormData({
-          candidate_name: "",
-          year: "",
-          stream: "",
-          section: "",
-          candidate_crn: "",
-          candidate_urn: "",
-          candidate_email: "",
-          interested_department: "TECHNICAL",
-          candidate_description: "",
-          candidate_why_eligible: "",
-        });
-        setCustomAnswers({});
-        setIsSubmitted(false);
-      }, 3000);
+      setFormData({
+        candidate_name: "",
+        year: "",
+        stream: "",
+        section: "",
+        candidate_crn: "",
+        candidate_urn: "",
+        candidate_email: "",
+        interested_department: "TECHNICAL",
+        candidate_description: "",
+        candidate_why_eligible: "",
+      });
+      setCustomAnswers({});
     } catch (error: any) {
       console.error("Error submitting application:", error);
       alert(error.message || "An error occurred while submitting. Please try again.");
@@ -427,10 +424,20 @@ export function JoinUs() {
                 </motion.div>
               </button>
 
+              <a
+                href="https://chat.whatsapp.com/KicH5iymVi8H2ZAG5qh8Do"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2.5 px-5 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-lg shadow-emerald-600/30 hover:shadow-emerald-500/50 transition-all hover:scale-105"
+              >
+                <WhatsAppIcon className="w-5 h-5 fill-current" />
+                <span>Join WhatsApp Group</span>
+              </a>
+
               {!settingsLoading && resultsActive && (
                 <Link
                   to="/results"
-                  className="inline-flex items-center gap-2 px-5 py-3.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold text-sm border border-white/20 shadow-lg transition-all"
+                  className="inline-flex items-center gap-2 px-5 py-3.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold text-sm border border-white/20 shadow-lg transition-all hover:scale-105"
                 >
                   <Trophy className="w-4 h-4 text-amber-300" />
                   Show Results
@@ -840,7 +847,7 @@ export function JoinUs() {
           exit={{ opacity: 0 }}
         >
           <motion.div
-            className="bg-white dark:bg-gray-900 rounded-3xl p-12 max-w-md text-center"
+            className="bg-white dark:bg-gray-900 rounded-3xl p-8 sm:p-12 max-w-md text-center shadow-2xl relative border border-slate-200 dark:border-slate-800"
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.8, opacity: 0 }}
@@ -850,14 +857,30 @@ export function JoinUs() {
               animate={{ scale: 1 }}
               transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
             >
-              <CheckCircle className="w-20 h-20 text-green-500 mx-auto mb-6" />
+              <CheckCircle className="w-16 h-16 sm:w-20 sm:h-20 text-emerald-500 mx-auto mb-4 sm:mb-6" />
             </motion.div>
-            <h3 className="text-3xl text-gray-900 dark:text-white mb-4" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700 }}>
+            <h3 className="text-2xl sm:text-3xl text-gray-900 dark:text-white mb-3" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700 }}>
               Application Submitted!
             </h3>
-            <p className="text-gray-600 dark:text-gray-300" style={{ fontFamily: 'Open Sans, sans-serif' }}>
+            <p className="text-gray-600 dark:text-gray-300 text-sm sm:text-base mb-6" style={{ fontFamily: 'Open Sans, sans-serif' }}>
               Thank you for your interest. We'll review your application and get back to you soon!
             </p>
+
+            <div className="pt-6 border-t border-gray-100 dark:border-gray-800 flex flex-col gap-3">
+              <p className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">
+                Join our official WhatsApp group for real-time recruitment updates:
+              </p>
+              <a
+                href="https://chat.whatsapp.com/KicH5iymVi8H2ZAG5qh8Do"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setIsSubmitted(false)}
+                className="inline-flex items-center justify-center gap-2.5 w-full px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition-all shadow-lg shadow-emerald-600/25 active:scale-[0.98]"
+              >
+                <WhatsAppIcon className="w-5 h-5 fill-current" />
+                <span>Join WhatsApp Group</span>
+              </a>
+            </div>
           </motion.div>
         </motion.div>
       )}
