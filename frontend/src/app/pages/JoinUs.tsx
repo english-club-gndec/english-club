@@ -47,6 +47,7 @@ const WhatsAppIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
 
 export function JoinUs() {
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPosterOpen, setIsPosterOpen] = useState(false);
   const [formData, setFormData] = useState({
     candidate_name: "",
@@ -123,6 +124,8 @@ export function JoinUs() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     try {
       const payload = {
         candidate_name: formData.candidate_name,
@@ -155,6 +158,8 @@ export function JoinUs() {
     } catch (error: any) {
       console.error("Error submitting application:", error);
       alert(error.message || "An error occurred while submitting. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -827,10 +832,18 @@ export function JoinUs() {
 
                 <button
                   type="submit"
-                  className="w-full px-8 py-4 rounded-xl bg-gradient-to-r from-blue-900 to-purple-700 text-white hover:shadow-2xl hover:shadow-purple-500/50 transition-all hover:scale-105"
+                  disabled={isSubmitting}
+                  className="w-full px-8 py-4 rounded-xl bg-gradient-to-r from-blue-900 to-purple-700 text-white hover:shadow-2xl hover:shadow-purple-500/50 transition-all hover:scale-105 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-3"
                   style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}
                 >
-                  Submit Application
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span>Submitting...</span>
+                    </>
+                  ) : (
+                    "Submit Application"
+                  )}
                 </button>
               </form>
             </motion.div>
