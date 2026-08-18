@@ -47,6 +47,9 @@ export function Team() {
       name: "Prof. Jasmine Kaur",
       image: "/faculty/jasmine.jpg",
       email: "harjasbms19@gmail.com",
+      zoomScale: 3.6,
+      originX: 0.50,
+      originY: 0.53,
     },
   ];
 
