@@ -21,10 +21,12 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'candidate_status') THEN
         CREATE TYPE candidate_status AS ENUM (
             'PENDING', 
+            'IN_REVIEW', 
             'SELECTED', 
             'REJECTED'
         );
     END IF;
+    ALTER TYPE candidate_status ADD VALUE IF NOT EXISTS 'IN_REVIEW';
 END $$;
 
 -- Create the candidates table
