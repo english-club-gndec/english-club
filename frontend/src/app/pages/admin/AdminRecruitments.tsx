@@ -278,9 +278,6 @@ export function AdminRecruitments() {
 
   const handleViewCandidate = async (candidate: Candidate) => {
     if (!userId) return;
-    if (!isRecruitmentStarted) {
-      return;
-    }
     
     try {
       const details = await recruitmentServices.getCandidateById(userId, candidate.candidate_id);
@@ -836,9 +833,7 @@ export function AdminRecruitments() {
                               }}
                               className={`transition-colors ${
                                 isSelected ? 'bg-blue-50/60 dark:bg-blue-950/30' : ''
-                              } ${
-                                isRecruitmentStarted || isSelectionMode ? 'hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer' : ''
-                              }`}
+                              } hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer`}
                             >
                               {isSelectionMode && (
                                 <td className="px-4 py-4 text-center">
@@ -1246,19 +1241,31 @@ export function AdminRecruitments() {
                   </div>
                   <div>
                     <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400">Status</h4>
-                    <select
-                      value={newStatus}
-                      onChange={(e) => setNewStatus(e.target.value)}
-                      className={`mt-1 px-3 py-1 rounded-full text-xs font-bold border-2 transition-colors focus:outline-none ${
-                        newStatus === 'SELECTED' ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/40 dark:text-green-300 dark:border-green-800' :
-                        newStatus === 'REJECTED' ? 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/40 dark:text-red-300 dark:border-red-800' :
-                        'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/40 dark:text-yellow-300 dark:border-yellow-800'
-                      }`}
-                    >
-                      <option value="PENDING" className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white font-semibold">PENDING</option>
-                      <option value="SELECTED" className="bg-white dark:bg-gray-900 text-green-700 dark:text-green-400 font-semibold">SELECTED</option>
-                      <option value="REJECTED" className="bg-white dark:bg-gray-900 text-red-700 dark:text-red-400 font-semibold">REJECTED</option>
-                    </select>
+                    {recruitmentsActive ? (
+                      <select
+                        value={newStatus}
+                        onChange={(e) => setNewStatus(e.target.value)}
+                        className={`mt-1 px-3 py-1 rounded-full text-xs font-bold border-2 transition-colors focus:outline-none ${
+                          newStatus === 'SELECTED' ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/40 dark:text-green-300 dark:border-green-800' :
+                          newStatus === 'REJECTED' ? 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/40 dark:text-red-300 dark:border-red-800' :
+                          'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/40 dark:text-yellow-300 dark:border-yellow-800'
+                        }`}
+                      >
+                        <option value="PENDING" className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white font-semibold">PENDING</option>
+                        <option value="SELECTED" className="bg-white dark:bg-gray-900 text-green-700 dark:text-green-400 font-semibold">SELECTED</option>
+                        <option value="REJECTED" className="bg-white dark:bg-gray-900 text-red-700 dark:text-red-400 font-semibold">REJECTED</option>
+                      </select>
+                    ) : (
+                      <div className="mt-1">
+                        <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold border-2 ${
+                          viewingCandidate.candidate_status === 'SELECTED' ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/40 dark:text-green-300 dark:border-green-800' :
+                          viewingCandidate.candidate_status === 'REJECTED' ? 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/40 dark:text-red-300 dark:border-red-800' :
+                          'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/40 dark:text-yellow-300 dark:border-yellow-800'
+                        }`}>
+                          {viewingCandidate.candidate_status || 'PENDING'}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -1314,16 +1321,18 @@ export function AdminRecruitments() {
                   </div>
                 )}
 
-                <div className="border-t border-gray-200 dark:border-gray-800 pt-6">
-                  <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-2">Admin Comments</h4>
-                  <textarea
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    placeholder="Add an internal comment about this candidate..."
-                    rows={3}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 transition-all resize-none"
-                  />
-                </div>
+                {recruitmentsActive && (
+                  <div className="border-t border-gray-200 dark:border-gray-800 pt-6">
+                    <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-2">Admin Comments</h4>
+                    <textarea
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      placeholder="Add an internal comment about this candidate..."
+                      rows={3}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 transition-all resize-none"
+                    />
+                  </div>
+                )}
 
                 <div className="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-800">
                   <button
@@ -1334,7 +1343,7 @@ export function AdminRecruitments() {
                     Delete Candidate
                   </button>
 
-                  {newStatus !== viewingCandidate.candidate_status || newComment !== (viewingCandidate.candidate_comment || '') ? (
+                  {recruitmentsActive && (newStatus !== viewingCandidate.candidate_status || newComment !== (viewingCandidate.candidate_comment || '')) ? (
                     <button
                       onClick={handleStatusUpdate}
                       disabled={isUpdatingStatus}
