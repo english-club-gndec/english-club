@@ -1,4 +1,5 @@
 const supabase = require('../config/supabase');
+const { logAuditEvent } = require('../utils/auditLogger');
 
 const memberController = {
   // POST /:user_id/createMember
@@ -112,6 +113,13 @@ const memberController = {
         return res.status(400).json({ error: 'No update data provided' });
       }
 
+      // Fetch existing record for audit logging
+      const { data: existingMember } = await supabase
+        .from('members')
+        .select('*')
+        .eq('member_id', member_id)
+        .maybeSingle();
+
       // Explicitly handle updated_at if trigger isn't enough or to be safe
       updateData.updated_at = new Date().toISOString();
 
@@ -125,6 +133,17 @@ const memberController = {
       if (!data || data.length === 0) {
         return res.status(404).json({ error: 'Member not found' });
       }
+
+      // Log audit event asynchronously
+      logAuditEvent({
+        serviceName: 'member_service',
+        tableName: 'members',
+        tablePrimaryKeyId: member_id,
+        eventName: 'MEMBER_UPDATED',
+        performedBy: req.user?.user_id || req.params.user_id,
+        oldValue: existingMember,
+        newValue: data[0]
+      });
 
       res.json({ message: 'Member updated successfully', member: data[0] });
     } catch (err) {
@@ -141,10 +160,10 @@ const memberController = {
         return res.status(400).json({ error: 'An array of member_ids is required' });
       }
 
-      // 1. Fetch the members to get their profile picture keys
+      // 1. Fetch the members to get their full records & profile picture keys for audit logging
       const { data: members, error: fetchError } = await supabase
         .from('members')
-        .select('member_profile_picture_key')
+        .select('*')
         .in('member_id', member_ids);
 
       if (fetchError) throw fetchError;
@@ -173,6 +192,21 @@ const memberController = {
         .select();
 
       if (error) throw error;
+
+      // Log audit events for deleted members asynchronously
+      if (members && Array.isArray(members)) {
+        for (const deletedMember of members) {
+          logAuditEvent({
+            serviceName: 'member_service',
+            tableName: 'members',
+            tablePrimaryKeyId: deletedMember.member_id,
+            eventName: 'MEMBER_DELETED',
+            performedBy: req.user?.user_id || req.params.user_id,
+            oldValue: deletedMember,
+            newValue: null
+          });
+        }
+      }
 
       res.json({ message: `${data.length} member(s) deleted successfully`, deletedCount: data.length });
     } catch (err) {

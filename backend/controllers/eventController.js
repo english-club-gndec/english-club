@@ -1,4 +1,5 @@
 const supabase = require('../config/supabase');
+const { logAuditEvent } = require('../utils/auditLogger');
 
 const eventController = {
   // POST /api/events
@@ -123,6 +124,13 @@ const eventController = {
       const { event_id } = req.params;
       const { event_name, event_short_description, event_long_description, event_venue, event_date, event_time, event_poster_key } = req.body;
 
+      // Fetch existing record for audit logging
+      const { data: existingEvent } = await supabase
+        .from('events')
+        .select('*')
+        .eq('event_id', event_id)
+        .maybeSingle();
+
       // Prepare update data (only include fields provided in the body)
       const updateData = {};
       if (event_name !== undefined) updateData.event_name = event_name;
@@ -166,6 +174,16 @@ const eventController = {
       };
       delete eventWithCreator.users;
 
+      logAuditEvent({
+        serviceName: 'event_service',
+        tableName: 'events',
+        tablePrimaryKeyId: event_id,
+        eventName: 'EVENT_UPDATED',
+        performedBy: req.user?.user_id || req.body.updated_by,
+        oldValue: existingEvent,
+        newValue: eventWithCreator
+      });
+
       res.json({ message: 'Event updated successfully', event: eventWithCreator });
     } catch (err) {
       res.status(500).json({ error: err.message });
@@ -177,10 +195,10 @@ const eventController = {
     try {
       const { event_id } = req.params;
 
-      // 1. Fetch the event to get the poster key
+      // 1. Fetch the event to get the poster key & details for audit logging
       const { data: event, error: fetchError } = await supabase
         .from('events')
-        .select('event_poster_key')
+        .select('*')
         .eq('event_id', event_id)
         .single();
 
@@ -219,6 +237,16 @@ const eventController = {
         .select();
 
       if (error) throw error;
+
+      logAuditEvent({
+        serviceName: 'event_service',
+        tableName: 'events',
+        tablePrimaryKeyId: event_id,
+        eventName: 'EVENT_DELETED',
+        performedBy: req.user?.user_id,
+        oldValue: event,
+        newValue: null
+      });
 
       res.json({ message: 'Event deleted successfully' });
     } catch (err) {

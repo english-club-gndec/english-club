@@ -1,6 +1,7 @@
 const supabase = require('../config/supabase');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { logAuditEvent } = require('../utils/auditLogger');
 
 const userController = {
   // GET /api/users/:user_id/getUsers
@@ -144,6 +145,23 @@ const userController = {
         .select();
 
       if (error) throw error;
+
+      const sanitizeUser = (u) => {
+        if (!u) return null;
+        const copy = { ...u };
+        delete copy.user_password;
+        return copy;
+      };
+
+      logAuditEvent({
+        serviceName: 'user_service',
+        tableName: 'users',
+        tablePrimaryKeyId: user_id,
+        eventName: 'USER_UPDATED',
+        performedBy: req.user?.user_id || req.params.user_id,
+        oldValue: sanitizeUser(existingUser),
+        newValue: sanitizeUser(data[0])
+      });
 
       res.json({ message: 'User details updated successfully', user: data[0] });
     } catch (err) {
@@ -340,6 +358,13 @@ const userController = {
   deleteUser: async (req, res) => {
     try {
       const { user_id } = req.params;
+
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('*')
+        .eq('user_id', user_id)
+        .maybeSingle();
+
       const { data, error } = await supabase
         .from('users')
         .delete()
@@ -350,6 +375,20 @@ const userController = {
       if (!data || data.length === 0) {
         return res.status(404).json({ error: 'User not found' });
       }
+
+      if (existingUser) {
+        delete existingUser.user_password;
+      }
+
+      logAuditEvent({
+        serviceName: 'user_service',
+        tableName: 'users',
+        tablePrimaryKeyId: user_id,
+        eventName: 'USER_DELETED',
+        performedBy: req.user?.user_id || req.params.user_id,
+        oldValue: existingUser,
+        newValue: null
+      });
 
       res.json({ message: 'User deleted successfully' });
     } catch (err) {

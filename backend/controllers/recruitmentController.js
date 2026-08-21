@@ -1,4 +1,5 @@
 const supabase = require('../config/supabase');
+const { logAuditEvent } = require('../utils/auditLogger');
 
 async function isResultsEnabled() {
   // Public results fail closed: only a successful database read of `true`
@@ -137,6 +138,13 @@ const recruitmentController = {
         return res.status(400).json({ error: 'No update data provided' });
       }
 
+      // Fetch existing record for audit logging
+      const { data: existingCandidate } = await supabase
+        .from('candidates')
+        .select('*')
+        .eq('candidate_id', candidate_id)
+        .maybeSingle();
+
       // Explicitly handle updated_at if trigger isn't enough or to be safe
       updateData.updated_at = new Date().toISOString();
 
@@ -150,6 +158,16 @@ const recruitmentController = {
       if (!data || data.length === 0) {
         return res.status(404).json({ error: 'Candidate not found' });
       }
+
+      logAuditEvent({
+        serviceName: 'candidate_service',
+        tableName: 'candidates',
+        tablePrimaryKeyId: candidate_id,
+        eventName: 'CANDIDATE_UPDATED',
+        performedBy: req.user?.user_id || req.params.user_id,
+        oldValue: existingCandidate,
+        newValue: data[0]
+      });
 
       res.json({ message: 'Candidate updated successfully', candidate: data[0] });
     } catch (err) {
@@ -179,6 +197,13 @@ const recruitmentController = {
         return res.status(403).json({ error: 'Recruitment is currently inactive. Status updates are disabled until recruitment is turned on.' });
       }
 
+      // Fetch existing record for audit logging
+      const { data: existingCandidate } = await supabase
+        .from('candidates')
+        .select('*')
+        .eq('candidate_id', candidate_id)
+        .maybeSingle();
+
       const updateData = {
         candidate_status,
         status_updated_by,
@@ -200,6 +225,16 @@ const recruitmentController = {
         return res.status(404).json({ error: 'Candidate not found' });
       }
 
+      logAuditEvent({
+        serviceName: 'candidate_service',
+        tableName: 'candidates',
+        tablePrimaryKeyId: candidate_id,
+        eventName: 'CANDIDATE_STATUS_UPDATED',
+        performedBy: req.user?.user_id || status_updated_by,
+        oldValue: existingCandidate,
+        newValue: data[0]
+      });
+
       res.json({ message: 'Candidate status updated successfully', candidate: data[0] });
     } catch (err) {
       res.status(500).json({ error: err.message });
@@ -211,6 +246,12 @@ const recruitmentController = {
     try {
       const { candidate_id } = req.params;
 
+      const { data: existingCandidate } = await supabase
+        .from('candidates')
+        .select('*')
+        .eq('candidate_id', candidate_id)
+        .maybeSingle();
+
       const { data, error } = await supabase
         .from('candidates')
         .delete()
@@ -221,6 +262,16 @@ const recruitmentController = {
       if (!data || data.length === 0) {
         return res.status(404).json({ error: 'Candidate not found' });
       }
+
+      logAuditEvent({
+        serviceName: 'candidate_service',
+        tableName: 'candidates',
+        tablePrimaryKeyId: candidate_id,
+        eventName: 'CANDIDATE_DELETED',
+        performedBy: req.user?.user_id || req.params.user_id,
+        oldValue: existingCandidate,
+        newValue: null
+      });
 
       res.json({ message: 'Candidate deleted successfully', candidate: data[0] });
     } catch (err) {
@@ -238,6 +289,11 @@ const recruitmentController = {
         return res.status(400).json({ error: 'candidate_ids array is required' });
       }
 
+      const { data: existingCandidates } = await supabase
+        .from('candidates')
+        .select('*')
+        .in('candidate_id', candidate_ids);
+
       const { data, error } = await supabase
         .from('candidates')
         .delete()
@@ -245,6 +301,20 @@ const recruitmentController = {
         .select();
 
       if (error) throw error;
+
+      if (existingCandidates && Array.isArray(existingCandidates)) {
+        for (const candidate of existingCandidates) {
+          logAuditEvent({
+            serviceName: 'candidate_service',
+            tableName: 'candidates',
+            tablePrimaryKeyId: candidate.candidate_id,
+            eventName: 'CANDIDATE_DELETED',
+            performedBy: req.user?.user_id || req.params.user_id,
+            oldValue: candidate,
+            newValue: null
+          });
+        }
+      }
 
       res.json({ message: `${data ? data.length : 0} candidates deleted successfully`, count: data ? data.length : 0 });
     } catch (err) {
@@ -286,13 +356,22 @@ const recruitmentController = {
       if (insertError) throw insertError;
 
       // 3. Delete all candidates
-      // Note: Supabase/PostgreSQL requires a filter for delete, so we use a filter that matches all rows (id is not null)
       const { error: deleteError } = await supabase
         .from('candidates')
         .delete()
-        .neq('candidate_id', '00000000-0000-0000-0000-000000000000'); // Delete all
+        .not('candidate_id', 'is', null);
 
       if (deleteError) throw deleteError;
+
+      logAuditEvent({
+        serviceName: 'candidate_service',
+        tableName: 'candidates',
+        tablePrimaryKeyId: 'ALL',
+        eventName: 'CANDIDATES_ARCHIVED',
+        performedBy: req.user?.user_id || req.params.user_id,
+        oldValue: { count: candidates.length, recruitment_date },
+        newValue: null
+      });
 
       res.json({ 
         message: 'All recruitment data archived and candidates table cleared successfully',

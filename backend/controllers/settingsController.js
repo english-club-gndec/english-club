@@ -1,4 +1,5 @@
 const supabase = require('../config/supabase');
+const { logAuditEvent } = require('../utils/auditLogger');
 
 const defaultSettings = {
   recruitmentsActive: false,
@@ -90,11 +91,23 @@ const settingsController = {
 
       const record = (data && data[0]) ? data[0] : { recruitments_active, results_active, recruitment_started };
 
-      return res.json(mergeSettings({
+      const newSettings = mergeSettings({
         recruitmentsActive: record.recruitments_active,
         resultsActive: record.results_active,
         isRecruitmentStarted: record.recruitment_started !== undefined ? record.recruitment_started : record.recruitments_active
-      }));
+      });
+
+      logAuditEvent({
+        serviceName: 'settings_service',
+        tableName: 'settings',
+        tablePrimaryKeyId: '1',
+        eventName: 'SETTINGS_UPDATED',
+        performedBy: req.user?.user_id,
+        oldValue: currentSettings,
+        newValue: newSettings
+      });
+
+      return res.json(newSettings);
     } catch (error) {
       console.error('Settings save error:', error.message || error);
       res.status(500).json({ error: error.message || 'Failed to save settings to database' });
