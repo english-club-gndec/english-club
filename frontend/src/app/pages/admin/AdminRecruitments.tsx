@@ -55,8 +55,10 @@ export function AdminRecruitments() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [recruitmentsActive, setRecruitmentsActive] = useState(false);
   const [resultsActive, setResultsActive] = useState(false);
+  const [isRecruitmentStarted, setIsRecruitmentStarted] = useState(false);
   const [isTogglingStatus, setIsTogglingStatus] = useState(false);
   const [isTogglingResultsStatus, setIsTogglingResultsStatus] = useState(false);
+  const [isTogglingRecruitmentStarted, setIsTogglingRecruitmentStarted] = useState(false);
   const [filterDepartment, setFilterDepartment] = useState("ALL");
   const [filterStatus, setFilterStatus] = useState("ALL");
   const [newStatus, setNewStatus] = useState<string>("");
@@ -154,6 +156,7 @@ export function AdminRecruitments() {
       setCandidates(candidatesData);
       setRecruitmentsActive(settingsData.recruitmentsActive || false);
       setResultsActive(settingsData.resultsActive || false);
+      setIsRecruitmentStarted(settingsData.isRecruitmentStarted || false);
     } catch (error: any) {
       toast.error(error.message || "Failed to fetch candidates");
       if (error.message && error.message.includes("404")) {
@@ -273,11 +276,25 @@ export function AdminRecruitments() {
       const newStatus = !recruitmentsActive;
       await settingsServices.updateSettings({ recruitmentsActive: newStatus });
       setRecruitmentsActive(newStatus);
-      toast.success(newStatus ? "Recruitment started successfully" : "Recruitment stopped successfully");
+      toast.success(newStatus ? "Registrations started successfully" : "Registrations stopped successfully");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update registration status");
+    } finally {
+      setIsTogglingStatus(false);
+    }
+  };
+
+  const toggleRecruitmentStartedStatus = async () => {
+    try {
+      setIsTogglingRecruitmentStarted(true);
+      const newStartedStatus = !isRecruitmentStarted;
+      await settingsServices.updateSettings({ isRecruitmentStarted: newStartedStatus });
+      setIsRecruitmentStarted(newStartedStatus);
+      toast.success(newStartedStatus ? "Recruitment started successfully" : "Recruitment stopped successfully");
     } catch (error: any) {
       toast.error(error.message || "Failed to update recruitment status");
     } finally {
-      setIsTogglingStatus(false);
+      setIsTogglingRecruitmentStarted(false);
     }
   };
 
@@ -308,6 +325,7 @@ export function AdminRecruitments() {
       ]);
       setViewingCandidate(details);
       setRecruitmentsActive(settingsData.recruitmentsActive || false);
+      setIsRecruitmentStarted(settingsData.isRecruitmentStarted || false);
       setNewStatus(details.candidate_status || 'PENDING');
       setNewComment(details.candidate_comment || '');
     } catch (error: any) {
@@ -695,7 +713,22 @@ export function AdminRecruitments() {
                 }`}
               >
                 {isTogglingStatus ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
-                {recruitmentsActive ? "Stop Recruitment" : "Start Recruitment"}
+                {recruitmentsActive ? "Stop Registrations" : "Start Registrations"}
+              </button>
+            )}
+
+            {!isInterviewee && (
+              <button
+                onClick={toggleRecruitmentStartedStatus}
+                disabled={isTogglingRecruitmentStarted}
+                className={`px-6 py-3 rounded-xl font-semibold text-white transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 flex items-center gap-2 ${
+                  isRecruitmentStarted 
+                    ? 'bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 shadow-orange-500/30'
+                    : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-blue-500/30'
+                }`}
+              >
+                {isTogglingRecruitmentStarted ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
+                {isRecruitmentStarted ? "Stop Recruitment" : "Start Recruitment"}
               </button>
             )}
           </div>
@@ -1276,7 +1309,7 @@ export function AdminRecruitments() {
                   </div>
                   <div>
                     <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400">Status</h4>
-                    {recruitmentsActive ? (
+                    {isRecruitmentStarted ? (
                       <select
                         value={newStatus}
                         onChange={(e) => setNewStatus(e.target.value)}
@@ -1359,7 +1392,7 @@ export function AdminRecruitments() {
                   </div>
                 )}
 
-                {recruitmentsActive && (
+                {isRecruitmentStarted && (
                   <div className="border-t border-gray-200 dark:border-gray-800 pt-6">
                     <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-2">Reviewer Comments</h4>
                     <textarea
@@ -1383,7 +1416,7 @@ export function AdminRecruitments() {
                     </button>
                   ) : <div />}
 
-                  {recruitmentsActive && (newStatus !== viewingCandidate.candidate_status || newComment !== (viewingCandidate.candidate_comment || '')) ? (
+                  {isRecruitmentStarted && (newStatus !== viewingCandidate.candidate_status || newComment !== (viewingCandidate.candidate_comment || '')) ? (
                     <button
                       onClick={handleStatusUpdate}
                       disabled={isUpdatingStatus}
