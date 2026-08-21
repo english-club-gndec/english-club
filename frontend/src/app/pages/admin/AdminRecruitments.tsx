@@ -303,8 +303,12 @@ export function AdminRecruitments() {
     if (!userId) return;
     
     try {
-      const details = await recruitmentServices.getCandidateById(userId, candidate.candidate_id);
+      const [details, settingsData] = await Promise.all([
+        recruitmentServices.getCandidateById(userId, candidate.candidate_id),
+        settingsServices.getSettings()
+      ]);
       setViewingCandidate(details);
+      setRecruitmentsActive(settingsData.recruitmentsActive || false);
       setNewStatus(details.candidate_status || 'PENDING');
       setNewComment(details.candidate_comment || '');
     } catch (error: any) {
