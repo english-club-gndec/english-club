@@ -1,11 +1,12 @@
 import { Link } from "react-router";
-import { Instagram, Youtube, Linkedin, Mail, MapPin, Phone } from "lucide-react";
+import { Instagram, Youtube, Linkedin, Mail, MapPin, Phone, Heart } from "lucide-react";
 
 export function Footer() {
   const quickLinks = [
     { path: "/", label: "Home" },
     { path: "/events", label: "Events" },
     { path: "/team", label: "Team" },
+    { path: "/developers", label: "Developers" },
     { path: "/submit", label: "Articles" },
   ];
 
@@ -49,6 +50,7 @@ export function Footer() {
                 <li key={link.path}>
                   <Link
                     to={link.path}
+                    onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                     className="text-sm hover:text-purple-400 transition-colors"
                     style={{ fontFamily: 'Open Sans, sans-serif' }}
                   >
@@ -83,6 +85,7 @@ export function Footer() {
             </p>
             <Link
               to="/join"
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
               className="inline-block px-6 py-3 rounded-xl bg-gradient-to-r from-blue-900 to-purple-700 text-white hover:shadow-lg hover:shadow-purple-500/50 transition-all text-sm"
               style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}
             >
@@ -91,9 +94,21 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="border-t border-gray-800 mt-12 pt-8 text-center">
+        <div className="border-t border-gray-800 mt-12 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
           <p className="text-sm" style={{ fontFamily: 'Open Sans, sans-serif' }}>
             © 2026 English Club. All rights reserved.
+          </p>
+          <p className="text-sm flex items-center justify-center gap-1.5 text-gray-400" style={{ fontFamily: 'Open Sans, sans-serif' }}>
+            <span>Made with</span>
+            <Heart className="w-4 h-4 text-red-500 fill-red-500 inline transition-transform hover:scale-125" />
+            <span>by</span>
+            <Link
+              to="/developers"
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              className="text-purple-400 hover:text-purple-300 font-semibold underline underline-offset-4 decoration-purple-500/40 hover:decoration-purple-400 transition-colors"
+            >
+              Genconians
+            </Link>
           </p>
         </div>
       </div>

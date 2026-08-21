@@ -5,6 +5,7 @@ import { Events } from "./pages/Events";
 import { EventRegistration } from "./pages/EventRegistration";
 import { JoinUs } from "./pages/JoinUs";
 import { Team } from "./pages/Team";
+import { Developers } from "./pages/Developers";
 import { Articles } from "./pages/Articles";
 import { SubmitArticle } from "./pages/SubmitArticle";
 import { VotingPage } from "./pages/VotingPage"; // Added
@@ -34,6 +35,7 @@ export const router = createBrowserRouter([
       { path: "register", Component: EventRegistration },
       { path: "join", Component: JoinUs },
       { path: "team", Component: Team },
+      { path: "developers", Component: Developers },
       { path: "submit", Component: Articles },
       { path: "submit-article", Component: SubmitArticle },
       { path: "edit-submission/:submissionId/:editToken", Component: SubmitArticle },
