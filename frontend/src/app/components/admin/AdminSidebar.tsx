@@ -15,6 +15,7 @@ import {
   UserCircle
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import { useAuth } from "../../context/AuthContext";
 
 interface AdminSidebarProps {
   isMobileOpen?: boolean;
@@ -22,12 +23,15 @@ interface AdminSidebarProps {
 }
 
 export function AdminSidebar({ isMobileOpen: propMobileOpen, setIsMobileOpen: propSetMobileOpen }: AdminSidebarProps) {
+  const { user } = useAuth();
   const [internalMobileOpen, setInternalMobileOpen] = useState(false);
   const isMobileOpen = propMobileOpen !== undefined ? propMobileOpen : internalMobileOpen;
   const setIsMobileOpen = propSetMobileOpen || setInternalMobileOpen;
   const location = useLocation();
 
-  const menuItems = [
+  const isInterviewee = user?.user_role === "INTERVIEWEE";
+
+  const allMenuItems = [
     { path: "/admin", label: "Dashboard", icon: LayoutDashboard },
     { path: "/admin/members", label: "Members", icon: Users },
     { path: "/admin/users", label: "User Accounts", icon: ShieldCheck },
@@ -38,6 +42,10 @@ export function AdminSidebar({ isMobileOpen: propMobileOpen, setIsMobileOpen: pr
     { path: "/admin/submissions", label: "Submissions", icon: FileText },
     { path: "/admin/settings", label: "Settings", icon: Settings },
   ];
+
+  const menuItems = isInterviewee
+    ? allMenuItems.filter(item => item.path === "/admin/recruitments" || item.path === "/admin/settings")
+    : allMenuItems;
 
   const isActive = (path: string) => {
     if (path === "/admin") {

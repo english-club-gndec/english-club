@@ -56,14 +56,6 @@ const DEPARTMENT_CONFIG: Record<
     badgeBg: "bg-blue-500/10 text-cyan-400 border-cyan-500/30",
     border: "border-cyan-500/20"
   },
-  CREATIVE: {
-    label: "Creative",
-    icon: Palette,
-    gradient: "from-purple-600 to-pink-500",
-    textGlow: "text-pink-400",
-    badgeBg: "bg-purple-500/10 text-pink-400 border-pink-500/30",
-    border: "border-pink-500/20"
-  },
   EVENT_MANAGEMENT: {
     label: "Event Management",
     icon: Sparkles,
@@ -190,7 +182,6 @@ export function RecruitmentResults() {
   // Department order sequence
   const departmentOrder = [
     "TECHNICAL",
-    "CREATIVE",
     "EVENT_MANAGEMENT",
     "FINANCE_&_MARKET_RELATIONS",
     "CREATIVE_&_PHOTOGRAPHY",

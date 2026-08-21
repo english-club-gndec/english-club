@@ -43,7 +43,8 @@ interface Candidate {
 }
 
 export function AdminRecruitments() {
-  const { userId, logout } = useAuth();
+  const { userId, logout, user } = useAuth();
+  const isInterviewee = user?.user_role === 'INTERVIEWEE';
   const [activeTab, setActiveTab] = useState<'applications' | 'form_builder'>('applications');
   
   // Candidate States
@@ -104,14 +105,36 @@ export function AdminRecruitments() {
     if (dept === "CREATIVE_&_PHOTOGRAPHY") return "Creative & Photography";
     if (dept === "EVENT_MANAGEMENT") return "Event Management";
     if (dept === "TECHNICAL") return "Technical";
-    if (dept === "CREATIVE") return "Creative";
     if (dept === "PROMOTION") return "Promotion";
     if (dept === "ANCHORING") return "Anchoring";
     return dept;
   };
 
+  const normalizeDepartment = (dept: string) => {
+    if (!dept) return '';
+    const upper = dept.toUpperCase().trim();
+    if (upper === 'CREATIVE & PHOTOGRAPHY' || upper === 'CREATIVE_&_PHOTOGRAPHY' || upper === 'CREATIVE AND PHOTOGRAPHY') {
+      return 'CREATIVE_&_PHOTOGRAPHY';
+    }
+    if (upper === 'EVENT MANAGEMENT' || upper === 'EVENT_MANAGEMENT') {
+      return 'EVENT_MANAGEMENT';
+    }
+    if (upper === 'FINANCE & MARKET RELATIONS' || upper === 'FINANCE_&_MARKET_RELATIONS') {
+      return 'FINANCE_&_MARKET_RELATIONS';
+    }
+    return upper;
+  };
+
+  const intervieweeDept = user?.members?.member_club_department || '';
+  const normalizedIntervieweeDept = normalizeDepartment(intervieweeDept);
+
   const filteredCandidates = candidates.filter(candidate => {
-    const matchesDepartment = filterDepartment === "ALL" || candidate.interested_department === filterDepartment;
+    let matchesDepartment = filterDepartment === "ALL" || candidate.interested_department === filterDepartment;
+
+    if (isInterviewee && normalizedIntervieweeDept) {
+      matchesDepartment = normalizeDepartment(candidate.interested_department) === normalizedIntervieweeDept;
+    }
+
     const matchesStatus = filterStatus === "ALL" || candidate.candidate_status === filterStatus;
     
     if (filterStatus === "PENDING" && !candidate.candidate_status) {
@@ -585,7 +608,7 @@ export function AdminRecruitments() {
             </p>
           </div>
           <div className="flex gap-3 items-center flex-wrap">
-            {activeTab === 'applications' && selectedIds.length > 0 && (
+            {!isInterviewee && activeTab === 'applications' && selectedIds.length > 0 && (
               <button
                 onClick={promptDeleteSelected}
                 className="px-5 py-3 rounded-xl font-semibold text-white bg-red-600 hover:bg-red-700 transition-all shadow-lg shadow-red-500/30 flex items-center gap-2 hover:-translate-y-0.5"
@@ -595,7 +618,7 @@ export function AdminRecruitments() {
               </button>
             )}
 
-            {activeTab === 'applications' && (
+            {!isInterviewee && activeTab === 'applications' && (
               <button
                 onClick={downloadRecruitmentExcel}
                 disabled={isDownloadingExcel || !userId}
@@ -606,7 +629,7 @@ export function AdminRecruitments() {
               </button>
             )}
 
-            {activeTab === 'applications' && (
+            {!isInterviewee && activeTab === 'applications' && (
               <button
                 onClick={() => setIsArchiveModalOpen(true)}
                 disabled={candidates.length === 0}
@@ -618,7 +641,7 @@ export function AdminRecruitments() {
               </button>
             )}
 
-            {activeTab === 'form_builder' && (
+            {!isInterviewee && activeTab === 'form_builder' && (
               <button
                 onClick={openAddQuestionModal}
                 className="px-5 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg shadow-blue-500/30 flex items-center gap-2 hover:-translate-y-0.5"
@@ -628,55 +651,63 @@ export function AdminRecruitments() {
               </button>
             )}
 
-            <Link
-              to="/results"
-              className="px-5 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-700 hover:to-cyan-700 transition-all shadow-lg shadow-emerald-500/30 flex items-center gap-2 hover:-translate-y-0.5"
-              title="View public selected candidates results page"
-            >
-              <Trophy className="w-5 h-5 text-amber-300 animate-pulse" />
-              Show Results
-              <ExternalLink className="w-4 h-4 text-emerald-200" />
-            </Link>
+            {!isInterviewee && (
+              <Link
+                to="/results"
+                className="px-5 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-700 hover:to-cyan-700 transition-all shadow-lg shadow-emerald-500/30 flex items-center gap-2 hover:-translate-y-0.5"
+                title="View public selected candidates results page"
+              >
+                <Trophy className="w-5 h-5 text-amber-300 animate-pulse" />
+                Show Results
+                <ExternalLink className="w-4 h-4 text-emerald-200" />
+              </Link>
+            )}
 
-            <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
-              <div className="flex flex-col">
-                <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400" style={{ fontFamily: 'Open Sans, sans-serif' }}>
-                  Results
-                </span>
-                <span className="text-sm font-semibold text-gray-900 dark:text-white" style={{ fontFamily: 'Open Sans, sans-serif' }}>
-                  {resultsActive ? "ON" : "OFF"}
-                </span>
+            {!isInterviewee && (
+              <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
+                <div className="flex flex-col">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400" style={{ fontFamily: 'Open Sans, sans-serif' }}>
+                    Results
+                  </span>
+                  <span className="text-sm font-semibold text-gray-900 dark:text-white" style={{ fontFamily: 'Open Sans, sans-serif' }}>
+                    {resultsActive ? "ON" : "OFF"}
+                  </span>
+                </div>
+                <Switch
+                  checked={resultsActive}
+                  onCheckedChange={toggleResultsStatus}
+                  disabled={isTogglingResultsStatus}
+                />
               </div>
-              <Switch
-                checked={resultsActive}
-                onCheckedChange={toggleResultsStatus}
-                disabled={isTogglingResultsStatus}
-              />
-            </div>
+            )}
 
-            <button
-              onClick={toggleRecruitmentStatus}
-              disabled={isTogglingStatus}
-              className={`px-6 py-3 rounded-xl font-semibold text-white transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 flex items-center gap-2 ${
-                recruitmentsActive 
-                  ? 'bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 shadow-red-500/30' 
-                  : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-green-500/30'
-              }`}
-            >
-              {isTogglingStatus ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
-              {recruitmentsActive ? "Stop Registrations" : "Start Registrations"}
-            </button>
+            {!isInterviewee && (
+              <button
+                onClick={toggleRecruitmentStatus}
+                disabled={isTogglingStatus}
+                className={`px-6 py-3 rounded-xl font-semibold text-white transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 flex items-center gap-2 ${
+                  recruitmentsActive 
+                    ? 'bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 shadow-red-500/30' 
+                    : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-green-500/30'
+                }`}
+              >
+                {isTogglingStatus ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
+                {recruitmentsActive ? "Stop Registrations" : "Start Registrations"}
+              </button>
+            )}
             
-            <button
-              className={`px-6 py-3 rounded-xl font-semibold text-white transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 flex items-center gap-2 ${
-                isRecruitmentStarted 
-                  ? 'bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 shadow-orange-500/30'
-                  : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-blue-500/30'
-              }`}
-              onClick={() => setIsRecruitmentStarted(!isRecruitmentStarted)}
-            >
-              {isRecruitmentStarted ? "Stop Recruitment" : "Start Recruitment"}
-            </button>
+            {!isInterviewee && (
+              <button
+                className={`px-6 py-3 rounded-xl font-semibold text-white transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 flex items-center gap-2 ${
+                  isRecruitmentStarted 
+                    ? 'bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 shadow-orange-500/30'
+                    : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-blue-500/30'
+                }`}
+                onClick={() => setIsRecruitmentStarted(!isRecruitmentStarted)}
+              >
+                {isRecruitmentStarted ? "Stop Recruitment" : "Start Recruitment"}
+              </button>
+            )}
           </div>
         </div>
 
@@ -695,35 +726,42 @@ export function AdminRecruitments() {
               Applications ({candidates.length})
             </button>
 
-            <button
-              onClick={() => setActiveTab('form_builder')}
-              className={`px-4 sm:px-6 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center gap-2 whitespace-nowrap ${
-                activeTab === 'form_builder'
-                  ? 'bg-white dark:bg-gray-900 text-purple-600 dark:text-purple-400 shadow-md'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-              }`}
-            >
-              <Layers className="w-4 h-4" />
-              Form Builder ({questions.length})
-            </button>
+            {!isInterviewee && (
+              <button
+                onClick={() => setActiveTab('form_builder')}
+                className={`px-4 sm:px-6 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center gap-2 whitespace-nowrap ${
+                  activeTab === 'form_builder'
+                    ? 'bg-white dark:bg-gray-900 text-purple-600 dark:text-purple-400 shadow-md'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                <Layers className="w-4 h-4" />
+                Form Builder ({questions.length})
+              </button>
+            )}
           </div>
 
           {activeTab === 'applications' && (
             <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-              <select
-                value={filterDepartment}
-                onChange={(e) => setFilterDepartment(e.target.value)}
-                className="px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 font-semibold text-sm"
-              >
-                <option value="ALL">All Departments</option>
-                <option value="TECHNICAL">Technical</option>
-                <option value="CREATIVE">Creative</option>
-                <option value="EVENT_MANAGEMENT">Event Management</option>
-                <option value="FINANCE_&_MARKET_RELATIONS">Finance & Market Relations</option>
-                <option value="CREATIVE_&_PHOTOGRAPHY">Creative & Photography</option>
-                <option value="PROMOTION">Promotion</option>
-                <option value="ANCHORING">Anchoring</option>
-              </select>
+              {!isInterviewee ? (
+                <select
+                  value={filterDepartment}
+                  onChange={(e) => setFilterDepartment(e.target.value)}
+                  className="px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 font-semibold text-sm"
+                >
+                  <option value="ALL">All Departments</option>
+                  <option value="TECHNICAL">Technical</option>
+                  <option value="EVENT_MANAGEMENT">Event Management</option>
+                  <option value="FINANCE_&_MARKET_RELATIONS">Finance & Market Relations</option>
+                  <option value="CREATIVE_&_PHOTOGRAPHY">Creative & Photography</option>
+                  <option value="PROMOTION">Promotion</option>
+                  <option value="ANCHORING">Anchoring</option>
+                </select>
+              ) : (
+                <div className="px-4 py-2 rounded-xl bg-purple-100 dark:bg-purple-950/60 border border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 font-bold text-sm">
+                  Department: {formatDepartment(normalizedIntervieweeDept) || 'Assigned Department'}
+                </div>
+              )}
 
               <select
                 value={filterStatus}
@@ -742,127 +780,132 @@ export function AdminRecruitments() {
         {/* --- TAB 1: APPLICATIONS LIST --- */}
         {activeTab === 'applications' && (
           <div className="space-y-4">
-            <div className="flex items-center gap-4">
-              {!isSelectionMode ? (
-                <button
-                  onClick={() => setIsSelectionMode(true)}
-                  className="text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 hover:underline flex items-center gap-1.5"
-                >
-                  <CheckSquare className="w-4 h-4" />
-                  Select Multiple
-                </button>
-              ) : (
-                <div className="flex items-center gap-4">
+            {!isInterviewee && (
+              <div className="flex items-center gap-4">
+                {!isSelectionMode ? (
                   <button
-                    onClick={selectAllCandidates}
-                    className="text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 hover:underline"
+                    onClick={() => setIsSelectionMode(true)}
+                    className="text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 hover:underline flex items-center gap-1.5"
                   >
-                    Select All ({filteredCandidates.length})
+                    <CheckSquare className="w-4 h-4" />
+                    Select Multiple
                   </button>
-                  <button
-                    onClick={unselectAllCandidates}
-                    className="text-sm font-semibold text-gray-500 hover:text-gray-700 dark:text-gray-400 hover:underline"
-                  >
-                    Unselect All
-                  </button>
-                  <button
-                    onClick={() => {
-                      setIsSelectionMode(false);
-                      unselectAllCandidates();
-                    }}
-                    className="text-sm font-semibold text-red-500 hover:text-red-600 hover:underline"
-                  >
-                    Exit Selection
-                  </button>
-                </div>
-              )}
-            </div>
+                ) : (
+                  <div className="flex items-center gap-4">
+                    <button
+                      onClick={selectAllCandidates}
+                      className="text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 hover:underline"
+                    >
+                      Select All ({filteredCandidates.length})
+                    </button>
+                    <button
+                      onClick={unselectAllCandidates}
+                      className="text-sm font-semibold text-gray-500 hover:text-gray-700 dark:text-gray-400 hover:underline"
+                    >
+                      Unselect All
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsSelectionMode(false);
+                        unselectAllCandidates();
+                      }}
+                      className="text-sm font-semibold text-red-500 hover:text-red-600 hover:underline"
+                    >
+                      Exit Selection
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 overflow-hidden min-h-[400px] flex flex-col shadow-sm">
-              <div className="overflow-x-auto flex-1">
-                <AnimatePresence mode="wait">
-                  {loading ? (
-                    <div className="flex flex-col items-center justify-center py-20 gap-4">
-                       <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
-                       <p className="text-gray-500">Loading candidates...</p>
-                    </div>
-                  ) : filteredCandidates.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-20 gap-4">
-                       <p className="text-gray-500">No candidates found.</p>
-                    </div>
-                  ) : (
-                    <table className="w-full">
-                      <thead className="bg-gray-50 dark:bg-gray-800/80 border-b border-gray-200 dark:border-gray-700">
-                        <tr>
-                          {isSelectionMode && (
-                            <th className="px-4 py-4 text-center w-12">
-                              <button
-                                onClick={selectedIds.length === filteredCandidates.length ? unselectAllCandidates : selectAllCandidates}
-                                className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-                              >
-                                {selectedIds.length > 0 && selectedIds.length === filteredCandidates.length ? (
-                                  <CheckSquare className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                                ) : (
-                                  <Square className="w-5 h-5" />
-                                )}
-                              </button>
-                            </th>
-                          )}
-                          <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Name</th>
-                          <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Email</th>
-                          <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Class</th>
-                          <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">CRN</th>
-                          <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">URN</th>
-                          <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Department</th>
-                          <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Status</th>
-                          <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
-                        {filteredCandidates.map((candidate) => {
-                          const isSelected = selectedIds.includes(candidate.candidate_id);
-                          return (
-                            <tr 
-                              key={candidate.candidate_id} 
-                              onClick={() => {
-                                if (isSelectionMode) {
-                                  toggleSelectCandidate(candidate.candidate_id);
-                                } else {
-                                  handleViewCandidate(candidate);
-                                }
-                              }}
-                              className={`transition-colors ${
-                                isSelected ? 'bg-blue-50/60 dark:bg-blue-950/30' : ''
-                              } hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer`}
+            <div className="overflow-x-auto flex-1">
+              <AnimatePresence mode="wait">
+                {loading ? (
+                  <div className="flex flex-col items-center justify-center py-20 gap-4">
+                     <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
+                     <p className="text-gray-500">Loading candidates...</p>
+                  </div>
+                ) : filteredCandidates.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-20 gap-4">
+                     <p className="text-gray-500">No candidates found.</p>
+                  </div>
+                ) : (
+                  <table className="w-full">
+                    <thead className="bg-gray-50 dark:bg-gray-800/80 border-b border-gray-200 dark:border-gray-700">
+                      <tr>
+                        {isSelectionMode && (
+                          <th className="px-4 py-4 text-center w-12">
+                            <button
+                              onClick={selectedIds.length === filteredCandidates.length ? unselectAllCandidates : selectAllCandidates}
+                              className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
                             >
-                              {isSelectionMode && (
-                                <td className="px-4 py-4 text-center">
-                                  <input
-                                    type="checkbox"
-                                    checked={isSelected}
-                                    onChange={(e) => {
-                                      e.stopPropagation();
-                                      toggleSelectCandidate(candidate.candidate_id);
-                                    }}
-                                    className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800"
-                                  />
-                                </td>
+                              {selectedIds.length > 0 && selectedIds.length === filteredCandidates.length ? (
+                                <CheckSquare className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                              ) : (
+                                <Square className="w-5 h-5" />
                               )}
-                              <td className="px-6 py-4 font-semibold text-gray-900 dark:text-white">{candidate.candidate_name}</td>
-                              <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{candidate.candidate_email}</td>
-                              <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{candidate.candidate_class}</td>
-                              <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{candidate.candidate_crn || 'N/A'}</td>
-                              <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{candidate.candidate_urn || 'N/A'}</td>
-                              <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{formatDepartment(candidate.interested_department)}</td>
-                              <td className="px-6 py-4 text-sm">
-                                <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                                  candidate.candidate_status === 'SELECTED' ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' :
-                                  candidate.candidate_status === 'REJECTED' ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' :
-                                  'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300'
-                                }`}>
-                                  {candidate.candidate_status || 'PENDING'}
-                                </span>
+                            </button>
+                          </th>
+                        )}
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Name</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Email</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Class</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">CRN</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">URN</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Department</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                        {!isInterviewee && (
+                          <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                        )}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+                      {filteredCandidates.map((candidate) => {
+                        const isSelected = selectedIds.includes(candidate.candidate_id);
+                        return (
+                          <tr 
+                            key={candidate.candidate_id} 
+                            onClick={() => {
+                              if (isSelectionMode) {
+                                toggleSelectCandidate(candidate.candidate_id);
+                              } else {
+                                handleViewCandidate(candidate);
+                              }
+                            }}
+                            className={`transition-colors ${
+                              isSelected ? 'bg-blue-50/60 dark:bg-blue-950/30' : ''
+                            } hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer`}
+                          >
+                            {isSelectionMode && (
+                              <td className="px-4 py-4 text-center">
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={(e) => {
+                                    e.stopPropagation();
+                                    toggleSelectCandidate(candidate.candidate_id);
+                                  }}
+                                  className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800"
+                                />
                               </td>
+                            )}
+                            <td className="px-6 py-4 font-semibold text-gray-900 dark:text-white">{candidate.candidate_name}</td>
+                            <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{candidate.candidate_email}</td>
+                            <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{candidate.candidate_class}</td>
+                            <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{candidate.candidate_crn || 'N/A'}</td>
+                            <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{candidate.candidate_urn || 'N/A'}</td>
+                            <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{formatDepartment(candidate.interested_department)}</td>
+                            <td className="px-6 py-4 text-sm">
+                              <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                                candidate.candidate_status === 'SELECTED' ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' :
+                                candidate.candidate_status === 'REJECTED' ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' :
+                                'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300'
+                              }`}>
+                                {candidate.candidate_status || 'PENDING'}
+                              </span>
+                            </td>
+                            {!isInterviewee && (
                               <td className="px-6 py-4 text-sm text-center">
                                 <div className="flex items-center justify-center gap-1">
                                   {!isRecruitmentStarted && (
@@ -889,9 +932,10 @@ export function AdminRecruitments() {
                                   </button>
                                 </div>
                               </td>
-                            </tr>
-                          );
-                        })}
+                            )}
+                          </tr>
+                        );
+                      })}
                       </tbody>
                     </table>
                   )}
@@ -1156,7 +1200,6 @@ export function AdminRecruitments() {
                     className="w-full px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="TECHNICAL">Technical</option>
-                    <option value="CREATIVE">Creative</option>
                     <option value="EVENT_MANAGEMENT">Event Management</option>
                     <option value="FINANCE_&_MARKET_RELATIONS">Finance & Market Relations</option>
                     <option value="CREATIVE_&_PHOTOGRAPHY">Creative & Photography</option>
@@ -1241,7 +1284,7 @@ export function AdminRecruitments() {
                   </div>
                   <div>
                     <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400">Status</h4>
-                    {recruitmentsActive ? (
+                    {recruitmentsActive || isInterviewee ? (
                       <select
                         value={newStatus}
                         onChange={(e) => setNewStatus(e.target.value)}
@@ -1321,9 +1364,9 @@ export function AdminRecruitments() {
                   </div>
                 )}
 
-                {recruitmentsActive && (
+                {(recruitmentsActive || isInterviewee) && (
                   <div className="border-t border-gray-200 dark:border-gray-800 pt-6">
-                    <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-2">Admin Comments</h4>
+                    <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-2">Reviewer Comments</h4>
                     <textarea
                       value={newComment}
                       onChange={(e) => setNewComment(e.target.value)}
@@ -1335,15 +1378,17 @@ export function AdminRecruitments() {
                 )}
 
                 <div className="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-800">
-                  <button
-                    onClick={() => promptDeleteSingle(viewingCandidate)}
-                    className="px-4 py-2 rounded-xl text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 font-semibold transition-colors flex items-center gap-2 border border-red-200 dark:border-red-900/50"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    Delete Candidate
-                  </button>
+                  {!isInterviewee ? (
+                    <button
+                      onClick={() => promptDeleteSingle(viewingCandidate)}
+                      className="px-4 py-2 rounded-xl text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 font-semibold transition-colors flex items-center gap-2 border border-red-200 dark:border-red-900/50"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Delete Candidate
+                    </button>
+                  ) : <div />}
 
-                  {recruitmentsActive && (newStatus !== viewingCandidate.candidate_status || newComment !== (viewingCandidate.candidate_comment || '')) ? (
+                  {(recruitmentsActive || isInterviewee) && (newStatus !== viewingCandidate.candidate_status || newComment !== (viewingCandidate.candidate_comment || '')) ? (
                     <button
                       onClick={handleStatusUpdate}
                       disabled={isUpdatingStatus}

@@ -689,7 +689,6 @@ export function JoinUs() {
                       style={{ fontFamily: 'Open Sans, sans-serif' }}
                     >
                       <option value="TECHNICAL">Technical</option>
-                      <option value="CREATIVE">Creative</option>
                       <option value="EVENT_MANAGEMENT">Event Management</option>
                       <option value="FINANCE_&_MARKET_RELATIONS">Finance & Market Relations</option>
                       <option value="CREATIVE_&_PHOTOGRAPHY">Creative & Photography</option>

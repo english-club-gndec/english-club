@@ -19,7 +19,8 @@ const userController = {
             member_name,
             member_email,
             member_profile_picture_key,
-            member_postion
+            member_postion,
+            member_club_department
           )
         `);
 
@@ -47,7 +48,8 @@ const userController = {
             member_name,
             member_email,
             member_profile_picture_key,
-            member_postion
+            member_postion,
+            member_club_department
           )
         `)
         .eq('user_id', req.params.user_id)
@@ -76,9 +78,9 @@ const userController = {
         return res.status(400).json({ error: 'Member ID is required' });
       }
 
-      const validRoles = ['MASTER', 'ADMIN', 'MANAGER'];
+      const validRoles = ['MASTER', 'ADMIN', 'MANAGER', 'INTERVIEWEE'];
       if (!user_role || !validRoles.includes(user_role.toUpperCase())) {
-        return res.status(400).json({ error: 'Invalid or missing user role. Must be MASTER, ADMIN, or MANAGER' });
+        return res.status(400).json({ error: 'Invalid or missing user role. Must be MASTER, ADMIN, MANAGER, or INTERVIEWEE' });
       }
 
       const role = user_role.toUpperCase();
@@ -242,7 +244,8 @@ const userController = {
             member_name,
             member_email,
             member_profile_picture_key,
-            member_postion
+            member_postion,
+            member_club_department
           )
         `)
         .eq('user_name', username)
@@ -316,7 +319,8 @@ const userController = {
             member_name,
             member_email,
             member_profile_picture_key,
-            member_postion
+            member_postion,
+            member_club_department
           )
         `)
         .eq('user_id', userId)

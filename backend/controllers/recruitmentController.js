@@ -74,10 +74,29 @@ const recruitmentController = {
   // GET /:user_id/getAllCandidates
   getAllCandidates: async (req, res) => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('candidates')
-        .select('*')
-        .order('created_at', { ascending: true });
+        .select('*');
+
+      if (req.user && req.user.user_role === 'INTERVIEWEE') {
+        const { data: userData } = await supabase
+          .from('users')
+          .select('members:members!users_member_id_fkey(member_club_department)')
+          .eq('user_id', req.user.user_id)
+          .single();
+
+        const rawDept = userData?.members?.member_club_department;
+        if (rawDept) {
+          let dept = rawDept.toUpperCase().trim();
+          if (dept === 'CREATIVE & PHOTOGRAPHY' || dept === 'CREATIVE AND PHOTOGRAPHY') dept = 'CREATIVE_&_PHOTOGRAPHY';
+          if (dept === 'EVENT MANAGEMENT') dept = 'EVENT_MANAGEMENT';
+          if (dept === 'FINANCE & MARKET RELATIONS') dept = 'FINANCE_&_MARKET_RELATIONS';
+          
+          query = query.eq('interested_department', dept);
+        }
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: true });
 
       if (error) throw error;
 

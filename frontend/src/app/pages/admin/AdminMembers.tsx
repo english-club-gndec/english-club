@@ -1433,14 +1433,6 @@ export function AdminMembers() {
                       </div>
                     </div>
 
-                    <div>
-                       <label className="block text-sm font-semibold mb-2">Club Department</label>
-                       <select value={formData.member_club_department} onChange={e => setFormData({...formData, member_club_department: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800">
-                         <option value="">Select club department</option>
-                         {CLUB_DEPARTMENTS.map((department) => <option key={department} value={department}>{department}</option>)}
-                       </select>
-                    </div>
-
                     <div className="space-y-4 pt-4 border-t border-gray-100">
                       <h3 className="font-bold flex items-center gap-2"><Instagram className="w-4 h-4" /> Socials</h3>
                       <div className="grid md:grid-cols-3 gap-4">

@@ -29,4 +29,23 @@ const verifyToken = (req, res, next) => {
   }
 };
 
-module.exports = { verifyToken };
+const restrictRoles = (...forbiddenRoles) => {
+  return (req, res, next) => {
+    if (!req.user || forbiddenRoles.includes(req.user.user_role)) {
+      return res.status(403).json({ error: 'Forbidden: Insufficient permissions for this role' });
+    }
+    next();
+  };
+};
+
+const allowRoles = (...allowedRoles) => {
+  return (req, res, next) => {
+    if (!req.user || !allowedRoles.includes(req.user.user_role)) {
+      return res.status(403).json({ error: 'Forbidden: Insufficient permissions for this role' });
+    }
+    next();
+  };
+};
+
+module.exports = { verifyToken, restrictRoles, allowRoles };
+

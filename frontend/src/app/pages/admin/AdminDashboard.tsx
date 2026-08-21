@@ -46,9 +46,9 @@ export function AdminDashboard() {
       const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000).toISOString();
 
       // 1. Total Members & Year-over-Year Growth
-      const { count: totalMembers } = await supabase.from("users").select("*", { count: "exact", head: true });
-      const { count: membersThisYear } = await supabase.from("users").select("*", { count: "exact", head: true }).gte("created_at", firstDayOfYear);
-      const { count: membersLastYear } = await supabase.from("users").select("*", { count: "exact", head: true }).gte("created_at", firstDayOfLastYear).lt("created_at", firstDayOfYear);
+      const { count: totalMembers } = await supabase.from("members").select("*", { count: "exact", head: true });
+      const { count: membersThisYear } = await supabase.from("members").select("*", { count: "exact", head: true }).gte("created_at", firstDayOfYear);
+      const { count: membersLastYear } = await supabase.from("members").select("*", { count: "exact", head: true }).gte("created_at", firstDayOfLastYear).lt("created_at", firstDayOfYear);
       
       const membersPct = membersLastYear && membersLastYear > 0 
         ? ((membersThisYear! / membersLastYear) * 100).toFixed(0) 

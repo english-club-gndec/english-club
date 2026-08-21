@@ -1,11 +1,22 @@
 import { useState } from "react";
-import { Outlet } from "react-router";
+import { Outlet, useLocation, Navigate } from "react-router";
 import { AdminSidebar } from "./AdminSidebar";
 import { AdminNavbar } from "./AdminNavbar";
 import { PageTitle } from "../PageTitle";
+import { useAuth } from "../../context/AuthContext";
 
 export function AdminLayout() {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const { user } = useAuth();
+  const location = useLocation();
+
+  if (user?.user_role === "INTERVIEWEE") {
+    const allowedPaths = ["/admin/recruitments", "/admin/settings"];
+    const isAllowed = allowedPaths.some(path => location.pathname === path || location.pathname.startsWith(`${path}/`));
+    if (!isAllowed) {
+      return <Navigate to="/admin/recruitments" replace />;
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors">

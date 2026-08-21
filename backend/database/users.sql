@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS users (
     member_id UUID UNIQUE REFERENCES members(member_id) ON DELETE CASCADE,
     user_name VARCHAR NOT NULL,
     user_password TEXT NOT NULL,
-    user_role VARCHAR NOT NULL CHECK (user_role IN ('MASTER', 'ADMIN', 'MANAGER')),
+    user_role VARCHAR NOT NULL CHECK (user_role IN ('MASTER', 'ADMIN', 'MANAGER', 'INTERVIEWEE')),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );

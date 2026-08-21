@@ -4,7 +4,6 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'interested_department') THEN
         CREATE TYPE interested_department AS ENUM (
             'TECHNICAL', 
-            'CREATIVE', 
             'EVENT_MANAGEMENT', 
             'FINANCE_&_MARKET_RELATIONS', 
             'CREATIVE_&_PHOTOGRAPHY', 
@@ -13,7 +12,6 @@ BEGIN
         );
     END IF;
     ALTER TYPE interested_department ADD VALUE IF NOT EXISTS 'TECHNICAL';
-    ALTER TYPE interested_department ADD VALUE IF NOT EXISTS 'CREATIVE';
     ALTER TYPE interested_department ADD VALUE IF NOT EXISTS 'EVENT_MANAGEMENT';
     ALTER TYPE interested_department ADD VALUE IF NOT EXISTS 'FINANCE_&_MARKET_RELATIONS';
     ALTER TYPE interested_department ADD VALUE IF NOT EXISTS 'CREATIVE_&_PHOTOGRAPHY';

@@ -7,7 +7,6 @@ BEGIN;
 -- 1. Create the new ENUM type with the updated department list
 CREATE TYPE interested_department_new AS ENUM (
     'TECHNICAL', 
-    'CREATIVE', 
     'EVENT_MANAGEMENT', 
     'FINANCE_&_MARKET_RELATIONS', 
     'CREATIVE_&_PHOTOGRAPHY', 
@@ -21,6 +20,7 @@ ALTER TABLE candidates
   ALTER COLUMN interested_department TYPE interested_department_new 
   USING (
     CASE interested_department::text
+      WHEN 'CREATIVE' THEN 'CREATIVE_&_PHOTOGRAPHY'::interested_department_new
       WHEN 'DISICIPLINE' THEN 'FINANCE_&_MARKET_RELATIONS'::interested_department_new
       WHEN 'PHOTOGRAPHY' THEN 'CREATIVE_&_PHOTOGRAPHY'::interested_department_new
       WHEN 'PHOTOGRAPHY_VIDEOGRAPHY' THEN 'CREATIVE_&_PHOTOGRAPHY'::interested_department_new

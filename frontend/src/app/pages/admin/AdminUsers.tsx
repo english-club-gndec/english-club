@@ -11,9 +11,10 @@ interface User {
   id: number;
   member_id: string;
   name: string;
-  role: "MASTER" | "ADMIN" | "MANAGER";
+  role: "MASTER" | "ADMIN" | "MANAGER" | "INTERVIEWEE";
   profilePicture?: string;
   memberName?: string;
+  memberClubDepartment?: string;
 }
 
 interface Member {
@@ -21,6 +22,7 @@ interface Member {
   member_name: string;
   member_email: string;
   member_profile_picture_key: string;
+  member_club_department?: string;
 }
 
 export function AdminUsers() {
@@ -38,7 +40,8 @@ export function AdminUsers() {
   const [formData, setFormData] = useState({
     username: "",
     password: "",
-    role: "MANAGER" as "MASTER" | "ADMIN" | "MANAGER"
+    role: "MANAGER" as "MASTER" | "ADMIN" | "MANAGER" | "INTERVIEWEE",
+    department: "TECHNICAL"
   });
 
   const fetchUsers = async () => {
@@ -53,7 +56,8 @@ export function AdminUsers() {
         role: u.user_role,
         profilePicture: u.members?.member_profile_picture_key,
         memberName: u.members?.member_name,
-        memberEmail: u.members?.member_email
+        memberEmail: u.members?.member_email,
+        memberClubDepartment: u.members?.member_club_department
       })));
     } catch (error: any) {
       toast.error("Failed to fetch users");
@@ -78,7 +82,7 @@ export function AdminUsers() {
       setStep(1);
       setSelectedMember(null);
       setEditingUser(null);
-      setFormData({ username: "", password: "", role: "MANAGER" });
+      setFormData({ username: "", password: "", role: "MANAGER", department: "TECHNICAL" });
       setIsModalOpen(true);
     } catch (error) {
       toast.error("Failed to fetch members list");
@@ -91,12 +95,14 @@ export function AdminUsers() {
       member_id: user.member_id,
       member_name: user.name,
       member_email: "",
-      member_profile_picture_key: user.profilePicture || ""
+      member_profile_picture_key: user.profilePicture || "",
+      member_club_department: user.memberClubDepartment
     });
     setFormData({
       username: user.name,
       password: "",
-      role: user.role
+      role: user.role,
+      department: user.memberClubDepartment || "TECHNICAL"
     });
     setStep(2);
     setIsModalOpen(true);
@@ -109,7 +115,11 @@ export function AdminUsers() {
       return;
     }
     setSelectedMember(member);
-    setFormData({ ...formData, username: member.member_name.toLowerCase().replace(/\s+/g, '_') });
+    setFormData({
+      ...formData,
+      username: member.member_name.toLowerCase().replace(/\s+/g, '_'),
+      department: member.member_club_department || "TECHNICAL"
+    });
     setStep(2);
   };
 
@@ -127,6 +137,11 @@ export function AdminUsers() {
           payload.user_password = formData.password;
         }
         await userService.updateUser(String(editingUser.id), payload);
+        if (formData.role === "INTERVIEWEE" && formData.department) {
+          await memberService.updateMember(userId, selectedMember.member_id, {
+            member_club_department: formData.department
+          });
+        }
         toast.success("User account updated successfully!");
       } else {
         const payload = {
@@ -136,12 +151,17 @@ export function AdminUsers() {
           member_id: selectedMember.member_id
         };
         await userService.createUser(userId, payload);
+        if (formData.role === "INTERVIEWEE" && formData.department) {
+          await memberService.updateMember(userId, selectedMember.member_id, {
+            member_club_department: formData.department
+          });
+        }
         toast.success("User account created successfully!");
       }
       await fetchUsers();
       closeModal();
     } catch (error: any) {
-      toast.error(error.message || "Failed to create user");
+      toast.error(error.message || "Failed to save user account");
     }
   };
 
@@ -164,10 +184,11 @@ export function AdminUsers() {
 
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
-      case "MASTER": return "bg-purple-100 text-purple-700";
-      case "ADMIN": return "bg-blue-100 text-blue-700";
-      case "MANAGER": return "bg-green-100 text-green-700";
-      default: return "bg-gray-100 text-gray-700";
+      case "MASTER": return "bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300";
+      case "ADMIN": return "bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300";
+      case "MANAGER": return "bg-green-100 text-green-700 dark:bg-green-950/60 dark:text-green-300";
+      case "INTERVIEWEE": return "bg-orange-100 text-orange-700 dark:bg-orange-950/60 dark:text-orange-300";
+      default: return "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300";
     }
   };
 
@@ -222,9 +243,16 @@ export function AdminUsers() {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${getRoleBadgeColor(user.role)}`}>
-                      {user.role}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${getRoleBadgeColor(user.role)}`}>
+                        {user.role}
+                      </span>
+                      {user.role === "INTERVIEWEE" && user.memberClubDepartment && (
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                          {user.memberClubDepartment}
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2">
@@ -358,8 +386,29 @@ export function AdminUsers() {
                         <option value="MANAGER">Manager</option>
                         <option value="ADMIN">Admin</option>
                         <option value="MASTER">Master</option>
+                        <option value="INTERVIEWEE">Interviewee</option>
                       </select>
                     </div>
+
+                    {formData.role === "INTERVIEWEE" && (
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400 mb-1">
+                          Interviewee Department *
+                        </label>
+                        <select
+                          value={formData.department}
+                          onChange={e => setFormData({ ...formData, department: e.target.value })}
+                          className="w-full px-4 py-2 rounded-xl border border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-950/40 text-purple-900 dark:text-purple-200 font-semibold text-sm"
+                        >
+                          <option value="TECHNICAL">Technical</option>
+                          <option value="EVENT_MANAGEMENT">Event Management</option>
+                          <option value="FINANCE_&_MARKET_RELATIONS">Finance & Market Relations</option>
+                          <option value="CREATIVE_&_PHOTOGRAPHY">Creative & Photography</option>
+                          <option value="PROMOTION">Promotion</option>
+                          <option value="ANCHORING">Anchoring</option>
+                        </select>
+                      </div>
+                    )}
 
                     <div className="flex gap-3 pt-4">
                       {!editingUser && <button type="button" onClick={() => setStep(1)} className="flex-1 py-3 text-sm font-bold text-gray-500">Back</button>}
