@@ -11,8 +11,9 @@ CREATE TABLE IF NOT EXISTS settings (
 
 -- Add missing column 'results_active' if table was created previously without it
 ALTER TABLE settings ADD COLUMN IF NOT EXISTS results_active BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE settings ADD COLUMN IF NOT EXISTS recruitment_started BOOLEAN NOT NULL DEFAULT FALSE;
 
 -- Ensure default row exists
-INSERT INTO settings (id, recruitments_active, results_active)
-VALUES (1, FALSE, FALSE)
+INSERT INTO settings (id, recruitments_active, results_active, recruitment_started)
+VALUES (1, FALSE, FALSE, FALSE)
 ON CONFLICT (id) DO NOTHING;

@@ -44,7 +44,7 @@ const settingsController = {
       return res.json(mergeSettings({
         recruitmentsActive: data.recruitments_active,
         resultsActive: data.results_active,
-        isRecruitmentStarted: data.recruitment_started
+        isRecruitmentStarted: data.recruitment_started !== undefined ? data.recruitment_started : data.recruitments_active
       }));
     } catch (error) {
       console.error('Settings read error:', error.message || error);
@@ -69,10 +69,22 @@ const settingsController = {
       const results_active = mergedSettings.resultsActive;
       const recruitment_started = mergedSettings.isRecruitmentStarted;
 
-      const { data, error } = await supabase
+      let upsertData = { id: 1, recruitments_active, results_active, recruitment_started };
+      let { data, error } = await supabase
         .from('settings')
-        .upsert({ id: 1, recruitments_active, results_active, recruitment_started }, { onConflict: 'id' })
+        .upsert(upsertData, { onConflict: 'id' })
         .select();
+
+      if (error && error.message && (error.message.includes('recruitment_started') || error.code === 'PGRST204')) {
+        // Fallback gracefully if recruitment_started column does not exist in PostgreSQL settings table yet
+        const fallbackUpsert = { id: 1, recruitments_active, results_active };
+        const resFallback = await supabase
+          .from('settings')
+          .upsert(fallbackUpsert, { onConflict: 'id' })
+          .select();
+        data = resFallback.data;
+        error = resFallback.error;
+      }
 
       if (error) throw error;
 
@@ -81,7 +93,7 @@ const settingsController = {
       return res.json(mergeSettings({
         recruitmentsActive: record.recruitments_active,
         resultsActive: record.results_active,
-        isRecruitmentStarted: record.recruitment_started
+        isRecruitmentStarted: record.recruitment_started !== undefined ? record.recruitment_started : record.recruitments_active
       }));
     } catch (error) {
       console.error('Settings save error:', error.message || error);
