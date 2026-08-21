@@ -57,7 +57,6 @@ export function AdminRecruitments() {
   const [resultsActive, setResultsActive] = useState(false);
   const [isTogglingStatus, setIsTogglingStatus] = useState(false);
   const [isTogglingResultsStatus, setIsTogglingResultsStatus] = useState(false);
-  const [isRecruitmentStarted, setIsRecruitmentStarted] = useState(false);
   const [filterDepartment, setFilterDepartment] = useState("ALL");
   const [filterStatus, setFilterStatus] = useState("ALL");
   const [newStatus, setNewStatus] = useState<string>("");
@@ -274,9 +273,9 @@ export function AdminRecruitments() {
       const newStatus = !recruitmentsActive;
       await settingsServices.updateSettings({ recruitmentsActive: newStatus });
       setRecruitmentsActive(newStatus);
-      toast.success(newStatus ? "Registrations started successfully" : "Registrations stopped successfully");
+      toast.success(newStatus ? "Recruitment started successfully" : "Recruitment stopped successfully");
     } catch (error: any) {
-      toast.error(error.message || "Failed to update registration status");
+      toast.error(error.message || "Failed to update recruitment status");
     } finally {
       setIsTogglingStatus(false);
     }
@@ -692,24 +691,11 @@ export function AdminRecruitments() {
                 className={`px-6 py-3 rounded-xl font-semibold text-white transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 flex items-center gap-2 ${
                   recruitmentsActive 
                     ? 'bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 shadow-red-500/30' 
-                    : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-green-500/30'
+                    : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-emerald-500/30'
                 }`}
               >
                 {isTogglingStatus ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
-                {recruitmentsActive ? "Stop Registrations" : "Start Registrations"}
-              </button>
-            )}
-            
-            {!isInterviewee && (
-              <button
-                className={`px-6 py-3 rounded-xl font-semibold text-white transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 flex items-center gap-2 ${
-                  isRecruitmentStarted 
-                    ? 'bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 shadow-orange-500/30'
-                    : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-blue-500/30'
-                }`}
-                onClick={() => setIsRecruitmentStarted(!isRecruitmentStarted)}
-              >
-                {isRecruitmentStarted ? "Stop Recruitment" : "Start Recruitment"}
+                {recruitmentsActive ? "Stop Recruitment" : "Start Recruitment"}
               </button>
             )}
           </div>
@@ -914,7 +900,7 @@ export function AdminRecruitments() {
                             {!isInterviewee && (
                               <td className="px-6 py-4 text-sm text-center">
                                 <div className="flex items-center justify-center gap-1">
-                                  {!isRecruitmentStarted && (
+                                  {!recruitmentsActive && (
                                     <button
                                       onClick={(e) => {
                                         e.stopPropagation();
