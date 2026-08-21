@@ -1317,12 +1317,6 @@ export function AdminRecruitments() {
                   </div>
                 </div>
 
-                {!recruitmentsActive && (
-                  <div className="text-xs font-semibold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 p-3 rounded-xl border border-amber-200 dark:border-amber-800 mt-4">
-                    Recruitment is currently stopped/inactive. Candidate status and comments can only be updated when recruitment is active.
-                  </div>
-                )}
-
                 {/* Legacy / Direct Description */}
                 {viewingCandidate.candidate_description && (
                   <div className="border-t border-gray-200 dark:border-gray-800 pt-6">
@@ -1375,7 +1369,7 @@ export function AdminRecruitments() {
                   </div>
                 )}
 
-                {recruitmentsActive ? (
+                {recruitmentsActive && (
                   <div className="border-t border-gray-200 dark:border-gray-800 pt-6">
                     <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-2">Reviewer Comments</h4>
                     <textarea
@@ -1386,15 +1380,6 @@ export function AdminRecruitments() {
                       className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 transition-all resize-none"
                     />
                   </div>
-                ) : (
-                  viewingCandidate.candidate_comment && (
-                    <div className="border-t border-gray-200 dark:border-gray-800 pt-6">
-                      <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-2">Reviewer Comments</h4>
-                      <p className="text-gray-900 dark:text-gray-300 whitespace-pre-wrap bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
-                        {viewingCandidate.candidate_comment}
-                      </p>
-                    </div>
-                  )
                 )}
 
                 <div className="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-800">
