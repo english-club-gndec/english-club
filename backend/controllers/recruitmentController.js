@@ -168,6 +168,17 @@ const recruitmentController = {
         return res.status(400).json({ error: 'candidate_status and status_updated_by are required' });
       }
 
+      // Verify if recruitment is active before allowing status updates
+      const { data: settingsData, error: settingsError } = await supabase
+        .from('settings')
+        .select('recruitments_active')
+        .eq('id', 1)
+        .single();
+
+      if (settingsError || !settingsData?.recruitments_active) {
+        return res.status(403).json({ error: 'Recruitment is currently inactive. Status updates are disabled until recruitment is turned on.' });
+      }
+
       const updateData = {
         candidate_status,
         status_updated_by,
