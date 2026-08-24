@@ -11,6 +11,7 @@ import { useAuth } from "../../context/AuthContext";
 import { recruitmentServices } from "../../../services/recruitmentServices";
 import { settingsServices } from "../../../services/settingsServices";
 import { Switch } from "../../components/ui/switch";
+import { supabase } from "../../../lib/supabase";
 
 interface RecruitmentQuestion {
   question_id: string;
@@ -143,6 +144,12 @@ export function AdminRecruitments() {
 
     if (isInterviewee && normalizedIntervieweeDept && normalizedIntervieweeDept !== 'ALL') {
       matchesDepartment = normalizeDepartment(candidate.interested_department) === normalizedIntervieweeDept;
+
+      // Regular department interviewees do NOT see PENDING candidates
+      const currentStatus = candidate.candidate_status || 'PENDING';
+      if (currentStatus === 'PENDING') {
+        return false;
+      }
     }
 
     const matchesStatus = filterStatus === "ALL" || candidate.candidate_status === filterStatus;
@@ -285,6 +292,21 @@ export function AdminRecruitments() {
     if (userId) {
       fetchCandidates();
       fetchQuestions();
+
+      const channel = supabase
+        .channel('realtime_recruitments_candidates')
+        .on(
+          'postgres_changes' as any,
+          { event: '*', schema: 'public', table: 'candidates' },
+          () => {
+            fetchCandidates();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [userId]);
 
@@ -355,6 +377,10 @@ export function AdminRecruitments() {
     if (!userId || !viewingCandidate) return;
     if (isInterviewee && normalizedIntervieweeDept === 'ALL' && newStatus !== 'PENDING' && newStatus !== 'PRESENT') {
       toast.error("Interviewees with ALL department access can only set status to PENDING or PRESENT.");
+      return;
+    }
+    if (isInterviewee && normalizedIntervieweeDept !== 'ALL' && newStatus === 'PENDING') {
+      toast.error("You cannot set candidate status back to PENDING.");
       return;
     }
     try {
@@ -819,7 +845,9 @@ export function AdminRecruitments() {
                 className="px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 font-semibold text-sm"
               >
                 <option value="ALL">All Statuses</option>
-                <option value="PENDING">Pending</option>
+                {!(isInterviewee && normalizedIntervieweeDept !== 'ALL') && (
+                  <option value="PENDING">Pending</option>
+                )}
                 <option value="IN_REVIEW">In Review</option>
                 <option value="PRESENT">Present</option>
                 <option value="SELECTED">Selected</option>
@@ -1350,7 +1378,9 @@ export function AdminRecruitments() {
                           'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/40 dark:text-yellow-300 dark:border-yellow-800'
                         }`}
                       >
-                        <option value="PENDING" className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white font-semibold">PENDING</option>
+                        {!(isInterviewee && normalizedIntervieweeDept !== 'ALL') && (
+                          <option value="PENDING" className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white font-semibold">PENDING</option>
+                        )}
                         {!(isInterviewee && normalizedIntervieweeDept === 'ALL') && (
                           <option value="IN_REVIEW" className="bg-white dark:bg-gray-900 text-purple-700 dark:text-purple-400 font-semibold">IN REVIEW</option>
                         )}
