@@ -110,6 +110,7 @@ export function AdminRecruitments() {
 
   const formatDepartment = (dept: string) => {
     if (!dept) return '';
+    if (dept === "ALL") return "All Departments";
     if (dept === "FINANCE_&_MARKET_RELATIONS") return "Finance & Market Relations";
     if (dept === "CREATIVE_&_PHOTOGRAPHY") return "Creative & Photography";
     if (dept === "EVENT_MANAGEMENT") return "Event Management";
@@ -140,7 +141,7 @@ export function AdminRecruitments() {
   const filteredCandidates = candidates.filter(candidate => {
     let matchesDepartment = filterDepartment === "ALL" || candidate.interested_department === filterDepartment;
 
-    if (isInterviewee && normalizedIntervieweeDept) {
+    if (isInterviewee && normalizedIntervieweeDept && normalizedIntervieweeDept !== 'ALL') {
       matchesDepartment = normalizeDepartment(candidate.interested_department) === normalizedIntervieweeDept;
     }
 
@@ -352,6 +353,10 @@ export function AdminRecruitments() {
 
   const handleStatusUpdate = async () => {
     if (!userId || !viewingCandidate) return;
+    if (isInterviewee && normalizedIntervieweeDept === 'ALL' && newStatus !== 'PENDING' && newStatus !== 'PRESENT') {
+      toast.error("Interviewees with ALL department access can only set status to PENDING or PRESENT.");
+      return;
+    }
     try {
       setIsUpdatingStatus(true);
       await recruitmentServices.updateCandidateStatusById(userId, viewingCandidate.candidate_id, {
@@ -783,7 +788,7 @@ export function AdminRecruitments() {
 
           {activeTab === 'applications' && (
             <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-              {!isInterviewee ? (
+              {!isInterviewee || normalizedIntervieweeDept === 'ALL' ? (
                 <select
                   value={filterDepartment}
                   onChange={(e) => setFilterDepartment(e.target.value)}
@@ -1341,10 +1346,16 @@ export function AdminRecruitments() {
                         }`}
                       >
                         <option value="PENDING" className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white font-semibold">PENDING</option>
-                        <option value="IN_REVIEW" className="bg-white dark:bg-gray-900 text-purple-700 dark:text-purple-400 font-semibold">IN REVIEW</option>
+                        {!(isInterviewee && normalizedIntervieweeDept === 'ALL') && (
+                          <option value="IN_REVIEW" className="bg-white dark:bg-gray-900 text-purple-700 dark:text-purple-400 font-semibold">IN REVIEW</option>
+                        )}
                         <option value="PRESENT" className="bg-white dark:bg-gray-900 text-blue-700 dark:text-blue-400 font-semibold">PRESENT</option>
-                        <option value="SELECTED" className="bg-white dark:bg-gray-900 text-green-700 dark:text-green-400 font-semibold">SELECTED</option>
-                        <option value="REJECTED" className="bg-white dark:bg-gray-900 text-red-700 dark:text-red-400 font-semibold">REJECTED</option>
+                        {!(isInterviewee && normalizedIntervieweeDept === 'ALL') && (
+                          <>
+                            <option value="SELECTED" className="bg-white dark:bg-gray-900 text-green-700 dark:text-green-400 font-semibold">SELECTED</option>
+                            <option value="REJECTED" className="bg-white dark:bg-gray-900 text-red-700 dark:text-red-400 font-semibold">REJECTED</option>
+                          </>
+                        )}
                       </select>
                     ) : (
                       <div className="mt-1">

@@ -420,6 +420,7 @@ export function AdminUsers() {
                           onChange={e => setFormData({ ...formData, department: e.target.value })}
                           className="w-full px-4 py-2 rounded-xl border border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-950/40 text-purple-900 dark:text-purple-200 font-semibold text-sm"
                         >
+                          <option value="ALL">All Departments</option>
                           <option value="TECHNICAL">Technical</option>
                           <option value="EVENT_MANAGEMENT">Event Management</option>
                           <option value="FINANCE_&_MARKET_RELATIONS">Finance & Market Relations</option>

@@ -87,7 +87,7 @@ const recruitmentController = {
           .single();
 
         const rawDept = userData?.members?.member_club_department;
-        if (rawDept) {
+        if (rawDept && rawDept.toUpperCase().trim() !== 'ALL') {
           let dept = rawDept.toUpperCase().trim();
           if (dept === 'CREATIVE & PHOTOGRAPHY' || dept === 'CREATIVE AND PHOTOGRAPHY') dept = 'CREATIVE_&_PHOTOGRAPHY';
           if (dept === 'EVENT MANAGEMENT') dept = 'EVENT_MANAGEMENT';
