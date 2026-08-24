@@ -23,10 +23,12 @@ BEGIN
             'PENDING', 
             'IN_REVIEW', 
             'SELECTED', 
-            'REJECTED'
+            'REJECTED',
+            'PRESENT'
         );
     END IF;
     ALTER TYPE candidate_status ADD VALUE IF NOT EXISTS 'IN_REVIEW';
+    ALTER TYPE candidate_status ADD VALUE IF NOT EXISTS 'PRESENT';
 END $$;
 
 -- Create the candidates table

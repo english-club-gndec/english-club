@@ -222,7 +222,7 @@ Handles the recruitment process for new club members.
 - **Path:** `/:user_id/:candidate_key/updateCandidateStatusById`
 - **Description:** Updates the status of a candidate and tracks who made the change.
 - **Request Body:**
-    - `candidate_status` (Enum: PENDING, SELECTED, REJECTED)
+    - `candidate_status` (Enum: PENDING, IN_REVIEW, PRESENT, SELECTED, REJECTED)
     - `status_updated_by` (Number - user_id)
 - **Response (200 OK):** Updated candidate object.
 

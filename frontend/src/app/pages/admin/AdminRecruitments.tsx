@@ -794,6 +794,7 @@ export function AdminRecruitments() {
                 <option value="ALL">All Statuses</option>
                 <option value="PENDING">Pending</option>
                 <option value="IN_REVIEW">In Review</option>
+                <option value="PRESENT">Present</option>
                 <option value="SELECTED">Selected</option>
                 <option value="REJECTED">Rejected</option>
               </select>
@@ -925,6 +926,7 @@ export function AdminRecruitments() {
                                 candidate.candidate_status === 'SELECTED' ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' :
                                 candidate.candidate_status === 'REJECTED' ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' :
                                 candidate.candidate_status === 'IN_REVIEW' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' :
+                                candidate.candidate_status === 'PRESENT' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' :
                                 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300'
                               }`}>
                                 {candidate.candidate_status === 'IN_REVIEW' ? 'IN REVIEW' : (candidate.candidate_status || 'PENDING')}
@@ -1317,11 +1319,13 @@ export function AdminRecruitments() {
                           newStatus === 'SELECTED' ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/40 dark:text-green-300 dark:border-green-800' :
                           newStatus === 'REJECTED' ? 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/40 dark:text-red-300 dark:border-red-800' :
                           newStatus === 'IN_REVIEW' ? 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-800' :
+                          newStatus === 'PRESENT' ? 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800' :
                           'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/40 dark:text-yellow-300 dark:border-yellow-800'
                         }`}
                       >
                         <option value="PENDING" className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white font-semibold">PENDING</option>
                         <option value="IN_REVIEW" className="bg-white dark:bg-gray-900 text-purple-700 dark:text-purple-400 font-semibold">IN REVIEW</option>
+                        <option value="PRESENT" className="bg-white dark:bg-gray-900 text-blue-700 dark:text-blue-400 font-semibold">PRESENT</option>
                         <option value="SELECTED" className="bg-white dark:bg-gray-900 text-green-700 dark:text-green-400 font-semibold">SELECTED</option>
                         <option value="REJECTED" className="bg-white dark:bg-gray-900 text-red-700 dark:text-red-400 font-semibold">REJECTED</option>
                       </select>
@@ -1331,6 +1335,7 @@ export function AdminRecruitments() {
                           viewingCandidate.candidate_status === 'SELECTED' ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/40 dark:text-green-300 dark:border-green-800' :
                           viewingCandidate.candidate_status === 'REJECTED' ? 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/40 dark:text-red-300 dark:border-red-800' :
                           viewingCandidate.candidate_status === 'IN_REVIEW' ? 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-800' :
+                          viewingCandidate.candidate_status === 'PRESENT' ? 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800' :
                           'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/40 dark:text-yellow-300 dark:border-yellow-800'
                         }`}>
                           {viewingCandidate.candidate_status === 'IN_REVIEW' ? 'IN REVIEW' : (viewingCandidate.candidate_status || 'PENDING')}
