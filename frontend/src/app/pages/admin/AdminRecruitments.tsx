@@ -170,10 +170,10 @@ export function AdminRecruitments() {
     return matchesDepartment && matchesStatus && matchesSearch;
   });
 
-  const fetchCandidates = async () => {
+  const fetchCandidates = async (isSilent = false) => {
     if (!userId) return;
     try {
-      setLoading(true);
+      if (!isSilent) setLoading(true);
       const [candidatesData, settingsData] = await Promise.all([
         recruitmentServices.getAllCandidates(userId),
         settingsServices.getSettings()
@@ -188,7 +188,7 @@ export function AdminRecruitments() {
         logout();
       }
     } finally {
-      setLoading(false);
+      if (!isSilent) setLoading(false);
     }
   };
 
@@ -299,7 +299,7 @@ export function AdminRecruitments() {
           'postgres_changes' as any,
           { event: '*', schema: 'public', table: 'candidates' },
           () => {
-            fetchCandidates();
+            fetchCandidates(true);
           }
         )
         .subscribe();
@@ -401,7 +401,7 @@ export function AdminRecruitments() {
         candidate_status: newStatus,
         candidate_comment: !(isInterviewee && normalizedIntervieweeDept === 'ALL') ? newComment : viewingCandidate.candidate_comment
       });
-      fetchCandidates();
+      fetchCandidates(true);
     } catch (error: any) {
       toast.error(error.message || "Failed to update status");
     } finally {
