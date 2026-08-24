@@ -304,8 +304,13 @@ export function AdminRecruitments() {
         )
         .subscribe();
 
+      const pollInterval = setInterval(() => {
+        fetchCandidates(true);
+      }, 5000);
+
       return () => {
         supabase.removeChannel(channel);
+        clearInterval(pollInterval);
       };
     }
   }, [userId]);
