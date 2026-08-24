@@ -1,0 +1,11 @@
+-- Documentation / Migration Note for 'member_club_department' in 'members' table
+-- In PostgreSQL, 'member_club_department' is stored as VARCHAR.
+-- Valid club department values include:
+--   'TECHNICAL', 'EVENT_MANAGEMENT', 'FINANCE_&_MARKET_RELATIONS',
+--   'CREATIVE_&_PHOTOGRAPHY', 'PROMOTION', 'ANCHORING', 'ALL'
+--
+-- Setting 'member_club_department' = 'ALL' for an INTERVIEWEE user grants access
+-- to view candidate applications across ALL departments while restricting their status
+-- update capabilities to 'PENDING' or 'PRESENT' during active recruitment.
+
+-- No schema ALTER statement is required because member_club_department is defined as VARCHAR in PostgreSQL.

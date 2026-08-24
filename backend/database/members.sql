@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS members (
     member_email TEXT NOT NULL,
     member_department department_type NOT NULL,
     member_semester INTEGER NOT NULL CHECK (member_semester >= 0 AND member_semester <= 8),
-    member_club_department VARCHAR,
+    member_club_department VARCHAR, -- Options: TECHNICAL, EVENT_MANAGEMENT, FINANCE_&_MARKET_RELATIONS, CREATIVE_&_PHOTOGRAPHY, PROMOTION, ANCHORING, ALL
     socials JSONB DEFAULT '{}'::jsonb,
     created_by BIGINT REFERENCES users(user_id) ON DELETE SET NULL, 
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,

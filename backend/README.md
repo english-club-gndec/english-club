@@ -159,7 +159,7 @@ Handles the detailed records of English Club members.
     - `member_semester` (Integer 1-8, Required)
     - `member_profile_picture_key` (String)
     - `member_crn` (Long)
-    - `member_club_department` (String)
+    - `member_club_department` (String: TECHNICAL, EVENT_MANAGEMENT, FINANCE_&_MARKET_RELATIONS, CREATIVE_&_PHOTOGRAPHY, PROMOTION, ANCHORING, ALL)
     - `socials` (JSON Object: `{ "linkedin": "...", "github": "..." }`)
     - `created_by` (BIGINT - user_id, Required)
 - **Response (201 Created):** Member object.
