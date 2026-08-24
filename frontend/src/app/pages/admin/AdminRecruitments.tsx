@@ -763,7 +763,7 @@ export function AdminRecruitments() {
               }`}
             >
               <FileText className="w-4 h-4" />
-              Applications ({candidates.length})
+              Applications ({filteredCandidates.length})
             </button>
 
             {!isInterviewee && (
