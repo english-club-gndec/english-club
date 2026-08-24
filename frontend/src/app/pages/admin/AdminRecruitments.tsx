@@ -359,16 +359,21 @@ export function AdminRecruitments() {
     }
     try {
       setIsUpdatingStatus(true);
-      await recruitmentServices.updateCandidateStatusById(userId, viewingCandidate.candidate_id, {
+      const payload: any = {
         candidate_status: newStatus,
-        candidate_comment: newComment,
         status_updated_by: Number(userId)
-      });
+      };
+
+      if (!(isInterviewee && normalizedIntervieweeDept === 'ALL')) {
+        payload.candidate_comment = newComment;
+      }
+
+      await recruitmentServices.updateCandidateStatusById(userId, viewingCandidate.candidate_id, payload);
       toast.success("Candidate status updated successfully");
       setViewingCandidate({ 
         ...viewingCandidate, 
         candidate_status: newStatus,
-        candidate_comment: newComment 
+        candidate_comment: !(isInterviewee && normalizedIntervieweeDept === 'ALL') ? newComment : viewingCandidate.candidate_comment
       });
       fetchCandidates();
     } catch (error: any) {
@@ -1425,7 +1430,7 @@ export function AdminRecruitments() {
                   </div>
                 )}
 
-                {isRecruitmentStarted && (
+                {isRecruitmentStarted && !(isInterviewee && normalizedIntervieweeDept === 'ALL') && (
                   <div className="border-t border-gray-200 dark:border-gray-800 pt-6">
                     <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-2">Reviewer Comments</h4>
                     <textarea
@@ -1449,7 +1454,10 @@ export function AdminRecruitments() {
                     </button>
                   ) : <div />}
 
-                  {isRecruitmentStarted && (newStatus !== viewingCandidate.candidate_status || newComment !== (viewingCandidate.candidate_comment || '')) ? (
+                  {isRecruitmentStarted && (
+                    newStatus !== viewingCandidate.candidate_status ||
+                    (!(isInterviewee && normalizedIntervieweeDept === 'ALL') && newComment !== (viewingCandidate.candidate_comment || ''))
+                  ) ? (
                     <button
                       onClick={handleStatusUpdate}
                       disabled={isUpdatingStatus}
