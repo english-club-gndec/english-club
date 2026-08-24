@@ -270,12 +270,19 @@ const sortMembersByHierarchy = (memberList: Member[]): Member[] => {
   });
 };
 
+import { useAdminSearch } from "../../context/AdminSearchContext";
+
 export function AdminMembers() {
   const { userId, logout } = useAuth();
+  const { searchQuery, setSearchPlaceholder } = useAdminSearch();
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
+
+  useEffect(() => {
+    setSearchPlaceholder("Search members by name, position, email, URN, CRN...");
+  }, [setSearchPlaceholder]);
 
   const fetchMembers = async () => {
     if (!userId) return;
@@ -811,7 +818,21 @@ export function AdminMembers() {
     );
   };
 
-  const selectAll = () => setSelectedIds(members.map(m => m.member_id));
+  const filteredMembersList = members.filter(member => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return true;
+    return (
+      (member.member_name && member.member_name.toLowerCase().includes(q)) ||
+      (member.member_email && member.member_email.toLowerCase().includes(q)) ||
+      (member.member_postion && member.member_postion.toLowerCase().replace(/_/g, ' ').includes(q)) ||
+      (member.member_department && member.member_department.toLowerCase().includes(q)) ||
+      (member.member_club_department && member.member_club_department.toLowerCase().includes(q)) ||
+      (member.member_urn && String(member.member_urn).includes(q)) ||
+      (member.member_crn && String(member.member_crn).includes(q))
+    );
+  });
+
+  const selectAll = () => setSelectedIds(filteredMembersList.map(m => m.member_id));
   const unselectAll = () => setSelectedIds([]);
 
   const openModal = (member?: Member) => {
@@ -960,7 +981,7 @@ export function AdminMembers() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
-                    {members.map((member) => (
+                    {filteredMembersList.map((member) => (
                       <tr key={member.member_id} className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${selectedIds.includes(member.member_id) ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}`}>
                         {isSelectionMode && (
                           <td className="px-6 py-4">

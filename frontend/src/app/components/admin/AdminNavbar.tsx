@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router";
-import { Search, Bell, User, LogOut, Settings as SettingsIcon, Moon, Sun, Menu } from "lucide-react";
+import { Search, Bell, User, LogOut, Settings as SettingsIcon, Moon, Sun, Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useTheme } from "../ThemeProvider";
 import { useAuth } from "../../context/AuthContext";
 import { userService } from "../../../services/userService";
 import { supabase } from "../../../lib/supabase";
+import { useAdminSearch } from "../../context/AdminSearchContext";
 
 interface AdminNavbarProps {
   onOpenMobileMenu?: () => void;
@@ -18,6 +19,7 @@ export function AdminNavbar({ onOpenMobileMenu }: AdminNavbarProps) {
   const [adminProfilePic, setAdminProfilePic] = useState<string | null>(null);
   const { theme, toggleTheme } = useTheme();
   const { logout, userId, user } = useAuth();
+  const { searchQuery, setSearchQuery, searchPlaceholder, clearSearch } = useAdminSearch();
 
   useEffect(() => {
     async function fetchAdminDetails() {
@@ -80,10 +82,22 @@ export function AdminNavbar({ onOpenMobileMenu }: AdminNavbarProps) {
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search..."
-                className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm sm:text-base"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={searchPlaceholder}
+                className="w-full pl-12 pr-10 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-sm sm:text-base outline-none"
                 style={{ fontFamily: 'Open Sans, sans-serif' }}
               />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={clearSearch}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-1 rounded-lg transition-colors"
+                  aria-label="Clear search"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
             </div>
           </div>
 

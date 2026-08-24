@@ -22,9 +22,16 @@ interface Event {
   poster?: string;
 }
 
+import { useAdminSearch } from "../../context/AdminSearchContext";
+
 export function AdminEvents() {
   const { userId } = useAuth();
+  const { searchQuery, setSearchPlaceholder } = useAdminSearch();
   const [events, setEvents] = useState<Event[]>([]);
+
+  useEffect(() => {
+    setSearchPlaceholder("Search events by title, venue, creator...");
+  }, [setSearchPlaceholder]);
   const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [posterFile, setPosterFile] = useState<File | null>(null);
@@ -300,6 +307,18 @@ export function AdminEvents() {
     setIsSaving(false);
   };
 
+  const filteredEvents = events.filter(event => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return true;
+    return (
+      (event.name && event.name.toLowerCase().includes(q)) ||
+      (event.venue && event.venue.toLowerCase().includes(q)) ||
+      (event.shortDescription && event.shortDescription.toLowerCase().includes(q)) ||
+      (event.longDescription && event.longDescription.toLowerCase().includes(q)) ||
+      (event.createdBy && event.createdBy.toLowerCase().includes(q))
+    );
+  });
+
   return (
     <>
       <Toaster position="top-right" />
@@ -362,7 +381,7 @@ export function AdminEvents() {
                 Loading upcoming events...
               </p>
             </motion.div>
-          ) : events.length === 0 ? (
+          ) : filteredEvents.length === 0 ? (
             <motion.div 
               key="no-events"
               initial={{ opacity: 0 }}
@@ -371,7 +390,7 @@ export function AdminEvents() {
               className="py-20 text-center border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-2xl w-full"
             >
               <p className="text-gray-500 dark:text-gray-400" style={{ fontFamily: 'Open Sans, sans-serif' }}>
-                No events found. Create one to get started!
+                {searchQuery ? `No events matched "${searchQuery}".` : "No events found. Create one to get started!"}
               </p>
             </motion.div>
           ) : viewMode === 'grid' ? (
@@ -383,7 +402,7 @@ export function AdminEvents() {
               transition={{ duration: 0.5 }}
               className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 w-full"
             >
-              {events.map((event) => (
+              {filteredEvents.map((event) => (
                 <motion.div
                   key={event.id}
                   initial={{ opacity: 0, scale: 0.95 }}
@@ -497,7 +516,7 @@ export function AdminEvents() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
-                    {events.map((event) => (
+                    {filteredEvents.map((event) => (
                       <tr key={event.id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">

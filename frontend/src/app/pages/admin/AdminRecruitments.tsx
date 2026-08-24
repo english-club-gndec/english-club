@@ -42,9 +42,17 @@ interface Candidate {
   status_updated_by?: number | null;
 }
 
+import { useAdminSearch } from "../../context/AdminSearchContext";
+
 export function AdminRecruitments() {
   const { userId, logout, user } = useAuth();
+  const { searchQuery, setSearchPlaceholder } = useAdminSearch();
   const isInterviewee = user?.user_role === 'INTERVIEWEE';
+
+  useEffect(() => {
+    setSearchPlaceholder("Search candidates by name, email, class, CRN, URN...");
+  }, [setSearchPlaceholder]);
+
   const [activeTab, setActiveTab] = useState<'applications' | 'form_builder'>('applications');
   
   // Candidate States
@@ -137,12 +145,21 @@ export function AdminRecruitments() {
     }
 
     const matchesStatus = filterStatus === "ALL" || candidate.candidate_status === filterStatus;
+
+    const query = searchQuery.toLowerCase().trim();
+    const matchesSearch = !query ||
+      (candidate.candidate_name && candidate.candidate_name.toLowerCase().includes(query)) ||
+      (candidate.candidate_email && candidate.candidate_email.toLowerCase().includes(query)) ||
+      (candidate.candidate_class && candidate.candidate_class.toLowerCase().includes(query)) ||
+      (candidate.candidate_crn && String(candidate.candidate_crn).includes(query)) ||
+      (candidate.candidate_urn && String(candidate.candidate_urn).includes(query)) ||
+      (candidate.interested_department && candidate.interested_department.toLowerCase().includes(query));
     
     if (filterStatus === "PENDING" && !candidate.candidate_status) {
-      return matchesDepartment && true;
+      return matchesDepartment && matchesSearch;
     }
     
-    return matchesDepartment && matchesStatus;
+    return matchesDepartment && matchesStatus && matchesSearch;
   });
 
   const fetchCandidates = async () => {

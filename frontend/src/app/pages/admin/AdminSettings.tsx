@@ -9,8 +9,15 @@ import { userService } from "../../../services/userService";
 import { supabase } from "../../../lib/supabase";
 import { Camera, Loader2 } from "lucide-react";
 
+import { useAdminSearch } from "../../context/AdminSearchContext";
+
 export function AdminSettings() {
   const { userId } = useAuth();
+  const { setSearchPlaceholder } = useAdminSearch();
+
+  useEffect(() => {
+    setSearchPlaceholder("Search settings...");
+  }, [setSearchPlaceholder]);
   const [profileData, setProfileData] = useState({
     name: "",
     email: "",

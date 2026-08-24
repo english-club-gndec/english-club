@@ -36,8 +36,15 @@ import {
 import { votingService, AwardParticipant, AwardSettings } from "../../../services/votingService";
 import { supabase } from "../../../lib/supabase";
 
+import { useAdminSearch } from "../../context/AdminSearchContext";
+
 export function AdminPeoplesChoice() {
+  const { searchQuery, setSearchPlaceholder } = useAdminSearch();
   const [participants, setParticipants] = useState<AwardParticipant[]>([]);
+
+  useEffect(() => {
+    setSearchPlaceholder("Search People's Choice nominees...");
+  }, [setSearchPlaceholder]);
   const [settings, setSettings] = useState<AwardSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -355,7 +362,7 @@ export function AdminPeoplesChoice() {
              </div>
 
              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {participants.map(p => (
+                {participants.filter(p => !searchQuery || p.name.toLowerCase().includes(searchQuery.toLowerCase().trim())).map(p => (
                   <motion.div 
                     key={p.id}
                     layout

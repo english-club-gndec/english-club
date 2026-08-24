@@ -5,15 +5,21 @@ import { toast, Toaster } from "sonner";
 import { useAuth } from "../../context/AuthContext";
 import { submissionService, Submission } from "../../../services/submissionService";
 
+import { useAdminSearch } from "../../context/AdminSearchContext";
+
 export function AdminSubmissions() {
   const { userId } = useAuth();
+  const { searchQuery, setSearchQuery, setSearchPlaceholder } = useAdminSearch();
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
 
   const [filterStatus, setFilterStatus] = useState("all");
-  const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+
+  useEffect(() => {
+    setSearchPlaceholder("Search blog submissions by title, author, description...");
+  }, [setSearchPlaceholder]);
 
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [skipWarningCheckbox, setSkipWarningCheckbox] = useState(false);
@@ -114,10 +120,13 @@ export function AdminSubmissions() {
   };
 
   const filteredSubmissions = submissions.filter(sub => {
-    const matchesSearch = 
-      sub.student_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      sub.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      sub.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const q = searchQuery.toLowerCase().trim();
+    const matchesSearch = !q ||
+      sub.student_name.toLowerCase().includes(q) ||
+      sub.title.toLowerCase().includes(q) ||
+      sub.description.toLowerCase().includes(q) ||
+      (sub.student_class && sub.student_class.toLowerCase().includes(q)) ||
+      (sub.student_urn && String(sub.student_urn).includes(q));
     
     const matchesStatus = filterStatus === "all" || sub.status.toUpperCase() === filterStatus.toUpperCase();
     return matchesSearch && matchesStatus;
@@ -184,8 +193,8 @@ export function AdminSubmissions() {
               <input
                 type="text"
                 placeholder="Search submissions..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all outline-none"
                 style={{ fontFamily: 'Open Sans, sans-serif' }}
               />

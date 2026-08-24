@@ -9,8 +9,15 @@ import { useAuth } from "../../context/AuthContext";
 
 import { userService } from "../../../services/userService";
 
+import { useAdminSearch } from "../../context/AdminSearchContext";
+
 export function AdminDashboard() {
   const { userId } = useAuth();
+  const { setSearchPlaceholder } = useAdminSearch();
+
+  useEffect(() => {
+    setSearchPlaceholder("Search admin dashboard...");
+  }, [setSearchPlaceholder]);
   const [adminName, setAdminName] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [statsData, setStatsData] = useState({

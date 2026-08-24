@@ -4,6 +4,7 @@ import { AdminSidebar } from "./AdminSidebar";
 import { AdminNavbar } from "./AdminNavbar";
 import { PageTitle } from "../PageTitle";
 import { useAuth } from "../../context/AuthContext";
+import { AdminSearchProvider } from "../../context/AdminSearchContext";
 
 export function AdminLayout() {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -19,15 +20,17 @@ export function AdminLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors">
-      <PageTitle />
-      <AdminSidebar isMobileOpen={isMobileOpen} setIsMobileOpen={setIsMobileOpen} />
-      <div className="lg:pl-64">
-        <AdminNavbar onOpenMobileMenu={() => setIsMobileOpen(true)} />
-        <main className="p-4 sm:p-6">
-          <Outlet />
-        </main>
+    <AdminSearchProvider>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors">
+        <PageTitle />
+        <AdminSidebar isMobileOpen={isMobileOpen} setIsMobileOpen={setIsMobileOpen} />
+        <div className="lg:pl-64">
+          <AdminNavbar onOpenMobileMenu={() => setIsMobileOpen(true)} />
+          <main className="p-4 sm:p-6">
+            <Outlet />
+          </main>
+        </div>
       </div>
-    </div>
+    </AdminSearchProvider>
   );
 }

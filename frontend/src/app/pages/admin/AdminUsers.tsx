@@ -25,9 +25,16 @@ interface Member {
   member_club_department?: string;
 }
 
+import { useAdminSearch } from "../../context/AdminSearchContext";
+
 export function AdminUsers() {
   const { userId, logout } = useAuth();
+  const { searchQuery, setSearchPlaceholder } = useAdminSearch();
   const [users, setUsers] = useState<User[]>([]);
+
+  useEffect(() => {
+    setSearchPlaceholder("Search user accounts by username, member name, role...");
+  }, [setSearchPlaceholder]);
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -197,6 +204,17 @@ export function AdminUsers() {
     m.member_email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const filteredUsers = users.filter(u => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return true;
+    return (
+      (u.name && u.name.toLowerCase().includes(q)) ||
+      (u.memberName && u.memberName.toLowerCase().includes(q)) ||
+      (u.role && u.role.toLowerCase().includes(q)) ||
+      (u.memberClubDepartment && u.memberClubDepartment.toLowerCase().includes(q))
+    );
+  });
+
   return (
     <>
       <Toaster position="top-right" />
@@ -227,7 +245,9 @@ export function AdminUsers() {
             <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
               {loading ? (
                 <tr><td colSpan={3} className="py-20 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-500" /></td></tr>
-              ) : users.map((user) => (
+              ) : filteredUsers.length === 0 ? (
+                <tr><td colSpan={3} className="py-12 text-center text-gray-500 font-medium">{searchQuery ? `No user accounts matched "${searchQuery}"` : "No user accounts found."}</td></tr>
+              ) : filteredUsers.map((user) => (
                 <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                   <td className="px-6 py-4 flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden border border-gray-200">

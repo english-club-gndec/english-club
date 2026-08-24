@@ -19,12 +19,18 @@ interface Registration {
   updated_at?: string;
 }
 
+import { useAdminSearch } from "../../context/AdminSearchContext";
+
 export function AdminRegistrations() {
+  const { searchQuery, setSearchQuery, setSearchPlaceholder } = useAdminSearch();
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
   const [filterEventId, setFilterEventId] = useState("all");
   const [isDownloadingExcel, setIsDownloadingExcel] = useState(false);
+
+  useEffect(() => {
+    setSearchPlaceholder("Search registrations by participant, email, class, event...");
+  }, [setSearchPlaceholder]);
 
   useEffect(() => {
     const fetchRegistrations = async () => {
@@ -54,8 +60,15 @@ export function AdminRegistrations() {
   ];
 
   const filteredRegistrations = registrations.filter(reg => {
-    const matchesSearch = reg.participant_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         reg.participant_email.toLowerCase().includes(searchTerm.toLowerCase());
+    const q = searchQuery.toLowerCase().trim();
+    const matchesSearch = !q ||
+      (reg.participant_name && reg.participant_name.toLowerCase().includes(q)) ||
+      (reg.participant_email && reg.participant_email.toLowerCase().includes(q)) ||
+      (reg.participant_class && reg.participant_class.toLowerCase().includes(q)) ||
+      (reg.event_name && reg.event_name.toLowerCase().includes(q)) ||
+      (reg.participant_crn && String(reg.participant_crn).includes(q)) ||
+      (reg.participant_urn && String(reg.participant_urn).includes(q));
+
     const matchesEvent = filterEventId === "all" || String(reg.registered_event) === filterEventId;
     return matchesSearch && matchesEvent;
   });
@@ -170,9 +183,9 @@ export function AdminRegistrations() {
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search by name or email..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search registrations..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                 style={{ fontFamily: 'Open Sans, sans-serif' }}
               />
