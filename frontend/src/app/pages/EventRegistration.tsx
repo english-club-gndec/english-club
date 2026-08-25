@@ -1,13 +1,14 @@
 import { motion } from "motion/react";
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router";
-import { CheckCircle, AlertCircle } from "lucide-react";
+import { CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import { eventService } from "../../services/eventService";
 import { registrationService } from "../../services/EventRegistration";
 
 export function EventRegistration() {
   const location = useLocation();
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [eventsList, setEventsList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,6 +48,7 @@ export function EventRegistration() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setIsSubmitting(true);
     
     try {
       const payload = {
@@ -67,6 +69,8 @@ export function EventRegistration() {
       }, 3000);
     } catch (err: any) {
       setError(err.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -272,11 +276,18 @@ export function EventRegistration() {
 
               <button
                 type="submit"
-                disabled={loading}
-                className={`w-full px-8 py-4 rounded-xl bg-gradient-to-r from-blue-900 to-purple-700 text-white hover:shadow-2xl hover:shadow-purple-500/50 transition-all ${loading ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'}`}
+                disabled={loading || isSubmitting}
+                className={`w-full px-8 py-4 rounded-xl bg-gradient-to-r from-blue-900 to-purple-700 text-white hover:shadow-2xl hover:shadow-purple-500/50 transition-all flex items-center justify-center gap-2 ${loading || isSubmitting ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'}`}
                 style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}
               >
-                {loading ? 'Processing...' : 'Register Now'}
+                {loading || isSubmitting ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Processing...</span>
+                  </>
+                ) : (
+                  'Register Now'
+                )}
               </button>
             </form>
           </motion.div>

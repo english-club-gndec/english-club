@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
+import { Loader2 } from "lucide-react";
 
 import { cn } from "./utils";
 
@@ -34,25 +35,57 @@ const buttonVariants = cva(
   },
 );
 
+export interface ButtonProps
+  extends React.ComponentProps<"button">,
+    VariantProps<typeof buttonVariants> {
+  asChild?: boolean;
+  loading?: boolean;
+  isLoading?: boolean;
+  loadingText?: React.ReactNode;
+}
+
 function Button({
   className,
   variant,
   size,
   asChild = false,
+  loading = false,
+  isLoading = false,
+  loadingText,
+  disabled,
+  children,
   ...props
-}: React.ComponentProps<"button"> &
-  VariantProps<typeof buttonVariants> & {
-    asChild?: boolean;
-  }) {
-  const Comp = asChild ? Slot : "button";
+}: ButtonProps) {
+  const isButtonLoading = loading || isLoading;
+
+  if (asChild) {
+    const Comp = Slot;
+    return (
+      <Comp
+        data-slot="button"
+        className={cn(buttonVariants({ variant, size, className }))}
+        disabled={disabled || isButtonLoading}
+        {...props}
+      >
+        {children}
+      </Comp>
+    );
+  }
 
   return (
-    <Comp
+    <button
       data-slot="button"
       className={cn(buttonVariants({ variant, size, className }))}
+      disabled={disabled || isButtonLoading}
       {...props}
-    />
+    >
+      {isButtonLoading && (
+        <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+      )}
+      {isButtonLoading && loadingText !== undefined ? loadingText : children}
+    </button>
   );
 }
 
 export { Button, buttonVariants };
+

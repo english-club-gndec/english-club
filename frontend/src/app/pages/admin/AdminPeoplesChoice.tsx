@@ -131,9 +131,12 @@ export function AdminPeoplesChoice() {
     return () => clearInterval(interval);
   }, [settings]);
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleAddParticipant = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newParticipantName) return;
+    setIsSubmitting(true);
     try {
       const added = await votingService.addParticipant(newParticipantName);
       setParticipants([...participants, { ...added, vote_count: 0 }]);
@@ -142,6 +145,8 @@ export function AdminPeoplesChoice() {
       toast.success("Participant added successfully");
     } catch (error) {
       toast.error("Failed to add participant");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -557,9 +562,17 @@ export function AdminPeoplesChoice() {
                     </button>
                     <button 
                       type="submit"
-                      className="flex-1 py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 transition-all"
+                      disabled={isSubmitting}
+                      className="flex-1 py-4 rounded-2xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 transition-all flex items-center justify-center gap-2 disabled:opacity-70"
                     >
-                      Save
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                          <span>Saving...</span>
+                        </>
+                      ) : (
+                        "Save"
+                      )}
                     </button>
                  </div>
               </form>

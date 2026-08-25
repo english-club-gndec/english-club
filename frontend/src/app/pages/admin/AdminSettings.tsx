@@ -134,6 +134,8 @@ export function AdminSettings() {
     }
   };
 
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userId) return;
@@ -143,6 +145,7 @@ export function AdminSettings() {
       return;
     }
 
+    setIsChangingPassword(true);
     try {
       await userService.updatePassword(userId, {
         oldPassword: passwordData.currentPassword,
@@ -152,6 +155,8 @@ export function AdminSettings() {
       setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
     } catch (error: any) {
       toast.error(error.message || "Failed to change password");
+    } finally {
+      setIsChangingPassword(false);
     }
   };
 
@@ -346,10 +351,18 @@ export function AdminSettings() {
 
               <button
                 type="submit"
-                className="w-full px-6 py-3 rounded-xl bg-gradient-to-r from-blue-900 to-purple-700 text-white hover:shadow-lg hover:shadow-purple-500/50 transition-all"
+                disabled={isChangingPassword}
+                className="w-full px-6 py-3 rounded-xl bg-gradient-to-r from-blue-900 to-purple-700 text-white hover:shadow-lg hover:shadow-purple-500/50 transition-all flex items-center justify-center gap-2 disabled:opacity-70"
                 style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}
               >
-                Update Password
+                {isChangingPassword ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Updating Password...</span>
+                  </>
+                ) : (
+                  "Update Password"
+                )}
               </button>
             </form>
           </motion.div>

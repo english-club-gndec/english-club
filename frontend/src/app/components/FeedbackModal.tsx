@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { X, Star, Send, Sparkles, CheckCircle2, MessageSquareHeart } from "lucide-react";
+import { X, Star, Send, Sparkles, CheckCircle2, MessageSquareHeart, Loader2 } from "lucide-react";
+
 import { toast } from "sonner";
 import { feedbackService } from "../../services/feedbackService";
 
@@ -305,7 +306,10 @@ export function FeedbackModal({ eventId, eventName, onClose, onSuccess }: Feedba
                   className="flex-1 py-3.5 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold text-sm hover:shadow-xl hover:shadow-purple-500/30 transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
                 >
                   {isSubmitting ? (
-                    <span>Cooking feedback...</span>
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Cooking feedback...</span>
+                    </>
                   ) : (
                     <>
                       <Send className="w-4 h-4" />

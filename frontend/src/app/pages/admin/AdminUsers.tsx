@@ -42,8 +42,7 @@ export function AdminUsers() {
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
-  
+  const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
     username: "",
     password: "",
@@ -135,6 +134,7 @@ export function AdminUsers() {
     if (!userId || !selectedMember) return;
 
     try {
+      setIsSaving(true);
       if (editingUser) {
         const payload: any = {
           user_name: formData.username,
@@ -169,6 +169,8 @@ export function AdminUsers() {
       closeModal();
     } catch (error: any) {
       toast.error(error.message || "Failed to save user account");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -433,8 +435,15 @@ export function AdminUsers() {
 
                     <div className="flex gap-3 pt-4">
                       {!editingUser && <button type="button" onClick={() => setStep(1)} className="flex-1 py-3 text-sm font-bold text-gray-500">Back</button>}
-                      <button type="submit" className="flex-[2] py-3 bg-gradient-to-r from-blue-900 to-purple-700 text-white rounded-xl font-bold shadow-lg">
-                        {editingUser ? "Update Account" : "Create Account"}
+                      <button type="submit" disabled={isSaving} className="flex-[2] py-3 bg-gradient-to-r from-blue-900 to-purple-700 text-white rounded-xl font-bold shadow-lg flex items-center justify-center gap-2 disabled:opacity-70">
+                        {isSaving ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                            <span>{editingUser ? "Updating..." : "Creating..."}</span>
+                          </>
+                        ) : (
+                          editingUser ? "Update Account" : "Create Account"
+                        )}
                       </button>
                     </div>
                   </form>
