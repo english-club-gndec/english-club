@@ -57,33 +57,21 @@ function Button({
   ...props
 }: ButtonProps) {
   const isButtonLoading = loading || isLoading;
-
-  if (asChild) {
-    const Comp = Slot;
-    return (
-      <Comp
-        data-slot="button"
-        className={cn(buttonVariants({ variant, size, className }))}
-        disabled={disabled || isButtonLoading}
-        {...props}
-      >
-        {children}
-      </Comp>
-    );
-  }
+  const Comp = asChild ? Slot : "button";
 
   return (
-    <button
+    <Comp
       data-slot="button"
       className={cn(buttonVariants({ variant, size, className }))}
-      disabled={disabled || isButtonLoading}
+      disabled={asChild ? undefined : (disabled || isButtonLoading)}
+      aria-disabled={asChild && (disabled || isButtonLoading) ? true : undefined}
       {...props}
     >
-      {isButtonLoading && (
+      {isButtonLoading && !asChild && (
         <Loader2 className="h-4 w-4 animate-spin shrink-0" />
       )}
-      {isButtonLoading && loadingText !== undefined ? loadingText : children}
-    </button>
+      {isButtonLoading && !asChild && loadingText !== undefined ? loadingText : children}
+    </Comp>
   );
 }
 
