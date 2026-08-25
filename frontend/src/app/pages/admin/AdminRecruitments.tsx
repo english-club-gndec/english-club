@@ -945,6 +945,7 @@ export function AdminRecruitments() {
                         )}
                         <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Name</th>
                         <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Email</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Phone No</th>
                         <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Class</th>
                         <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">CRN</th>
                         <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">URN</th>
@@ -987,6 +988,7 @@ export function AdminRecruitments() {
                             )}
                             <td className="px-6 py-4 font-semibold text-gray-900 dark:text-white">{candidate.candidate_name}</td>
                             <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{candidate.candidate_email}</td>
+                            <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{candidate.candidate_mobile_no || 'N/A'}</td>
                             <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{candidate.candidate_class}</td>
                             <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{candidate.candidate_crn || 'N/A'}</td>
                             <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{candidate.candidate_urn || 'N/A'}</td>
@@ -1380,14 +1382,8 @@ export function AdminRecruitments() {
                     <p className="text-gray-900 dark:text-white mt-1 font-medium">{viewingCandidate.candidate_urn || 'N/A'}</p>
                   </div>
 
-                  {!(isInterviewee && normalizedIntervieweeDept === 'ALL') && (
-                    <div>
-                      <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400">Phone Number</h4>
-                      <p className="text-gray-900 dark:text-white mt-1 font-medium">{viewingCandidate.candidate_mobile_no || 'N/A'}</p>
-                    </div>
-                  )}
-
-                  {!(isInterviewee && normalizedIntervieweeDept === 'ALL') && (
+                  {/* Status dropdown for specified department interviewees */}
+                  {isInterviewee && normalizedIntervieweeDept !== 'ALL' && (
                     <div>
                       <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400">Status</h4>
                       {isRecruitmentStarted ? (
@@ -1402,7 +1398,6 @@ export function AdminRecruitments() {
                             'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/40 dark:text-yellow-300 dark:border-yellow-800'
                           }`}
                         >
-                          <option value="PENDING" className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white font-semibold">PENDING</option>
                           <option value="IN_REVIEW" className="bg-white dark:bg-gray-900 text-purple-700 dark:text-purple-400 font-semibold">IN REVIEW</option>
                           <option value="PRESENT" className="bg-white dark:bg-gray-900 text-blue-700 dark:text-blue-400 font-semibold">PRESENT</option>
                           <option value="SELECTED" className="bg-white dark:bg-gray-900 text-green-700 dark:text-green-400 font-semibold">SELECTED</option>
@@ -1425,44 +1420,56 @@ export function AdminRecruitments() {
                   )}
                 </div>
 
-                {/* Desk Interviewer (ALL Dept) Phone & Status Control Box */}
-                {isInterviewee && normalizedIntervieweeDept === 'ALL' && (
+                {/* Candidate Phone & Status Control Box (For MASTER, ADMIN, MANAGER, and ALL-dept INTERVIEWEE) */}
+                {(!isInterviewee || (isInterviewee && normalizedIntervieweeDept === 'ALL')) && (
                   <div className="bg-purple-50/70 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800/60 p-5 rounded-2xl space-y-4 my-2">
                     <h4 className="text-xs font-bold uppercase tracking-wider text-purple-700 dark:text-purple-300 flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 text-purple-600" />
-                      Attendance Desk Input & Status
+                      Verification & Status Control
                     </h4>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
                       <div>
                         <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">
-                          Phone Number <span className="text-red-500">*</span>
+                          Phone Number {isInterviewee && normalizedIntervieweeDept === 'ALL' && <span className="text-red-500">*</span>}
                         </label>
                         <input
                           type="tel"
                           value={newMobileNo}
                           onChange={(e) => setNewMobileNo(e.target.value)}
                           placeholder="Enter phone number..."
-                          required
+                          required={isInterviewee && normalizedIntervieweeDept === 'ALL'}
                           className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all"
                         />
                       </div>
 
                       <div>
                         <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">
-                          Attendance Status <span className="text-red-500">*</span>
+                          Status <span className="text-red-500">*</span>
                         </label>
                         {isRecruitmentStarted ? (
                           <select
                             value={newStatus}
                             onChange={(e) => setNewStatus(e.target.value)}
                             className={`w-full px-4 py-2.5 rounded-xl text-xs font-bold border-2 transition-colors focus:outline-none ${
+                              newStatus === 'SELECTED' ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/40 dark:text-green-300 dark:border-green-800' :
+                              newStatus === 'REJECTED' ? 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/40 dark:text-red-300 dark:border-red-800' :
+                              newStatus === 'IN_REVIEW' ? 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-800' :
                               newStatus === 'PRESENT' ? 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800' :
                               'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/40 dark:text-yellow-300 dark:border-yellow-800'
                             }`}
                           >
                             <option value="PENDING" className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white font-semibold">PENDING</option>
+                            {!(isInterviewee && normalizedIntervieweeDept === 'ALL') && (
+                              <option value="IN_REVIEW" className="bg-white dark:bg-gray-900 text-purple-700 dark:text-purple-400 font-semibold">IN REVIEW</option>
+                            )}
                             <option value="PRESENT" className="bg-white dark:bg-gray-900 text-blue-700 dark:text-blue-400 font-semibold">PRESENT</option>
+                            {!(isInterviewee && normalizedIntervieweeDept === 'ALL') && (
+                              <>
+                                <option value="SELECTED" className="bg-white dark:bg-gray-900 text-green-700 dark:text-green-400 font-semibold">SELECTED</option>
+                                <option value="REJECTED" className="bg-white dark:bg-gray-900 text-red-700 dark:text-red-400 font-semibold">REJECTED</option>
+                              </>
+                            )}
                           </select>
                         ) : (
                           <div className="px-3 py-2 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 text-xs font-bold">
