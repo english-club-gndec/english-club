@@ -208,20 +208,22 @@ export function JoinUs() {
             transition={{ duration: 0.6 }}
             className="text-center space-y-4 max-w-3xl mx-auto"
           >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm font-semibold tracking-wide backdrop-blur-md">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-400 text-sm font-semibold tracking-wide backdrop-blur-md">
               <span className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
               </span>
-              RECRUITMENT STARTING SOON!
+              REGISTRATIONS CLOSED (LAST DAY: 25 AUG 2026)
             </div>
 
             <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight" style={{ fontFamily: 'Poppins, sans-serif' }}>
-              English Club <span className="bg-gradient-to-r from-blue-400 via-purple-300 to-emerald-400 bg-clip-text text-transparent">Recruitments</span>
+              English Club <span className="bg-gradient-to-r from-blue-400 via-purple-300 to-amber-400 bg-clip-text text-transparent">Recruitment</span>
             </h1>
 
-            <p className="text-lg sm:text-xl text-blue-100/80 font-medium" style={{ fontFamily: 'Open Sans, sans-serif' }}>
-              "New voices. New ideas. New you. Be heard. Be you. Belong here."
+            <p className="text-lg sm:text-xl text-blue-100/90 font-semibold" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              "New Session, New Voice, New You!"
+            </p>
+            <p className="text-sm sm:text-base text-gray-300 max-w-2xl mx-auto" style={{ fontFamily: 'Open Sans, sans-serif' }}>
+              Step in. Speak up. Stand out. Join a community where words create impact, ideas spark change and confidence grows.
             </p>
 
             <div className="pt-2 flex justify-center">
@@ -238,6 +240,58 @@ export function JoinUs() {
             </div>
           </motion.div>
 
+          {/* Featured Major Announcement Interview Banner */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="relative rounded-3xl p-6 sm:p-8 bg-gradient-to-r from-blue-950 via-slate-900 to-indigo-950 border-2 border-blue-500/40 shadow-2xl backdrop-blur-xl overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="flex flex-col lg:flex-row items-center justify-between gap-6 relative z-10">
+              <div className="space-y-3 text-center lg:text-left">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 text-xs font-bold uppercase tracking-widest border border-blue-400/30">
+                  <Megaphone className="w-4 h-4 text-blue-400 animate-pulse" /> MAJOR ANNOUNCEMENT
+                </div>
+                <h2 className="text-3xl sm:text-5xl font-extrabold text-white tracking-wide" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  RECRUITMENT <span className="bg-gradient-to-r from-blue-400 via-cyan-300 to-indigo-300 bg-clip-text text-transparent">INTERVIEWS</span>
+                </h2>
+                <p className="text-xs sm:text-sm text-blue-200/90 font-medium max-w-xl">
+                  "Words have power. You have a voice. Let's create impact together."
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 w-full lg:w-auto text-center">
+                <div className="bg-white/10 border border-blue-400/30 rounded-2xl p-4 backdrop-blur-md hover:border-blue-400 transition-colors">
+                  <Calendar className="w-6 h-6 text-blue-400 mx-auto mb-1" />
+                  <div className="text-xs text-blue-200/70 uppercase font-semibold">Date</div>
+                  <div className="text-base sm:text-lg font-extrabold text-white">26 AUG 2026</div>
+                </div>
+
+                <div className="bg-white/10 border border-cyan-400/30 rounded-2xl p-4 backdrop-blur-md hover:border-cyan-400 transition-colors">
+                  <Calendar className="w-6 h-6 text-cyan-400 mx-auto mb-1" />
+                  <div className="text-xs text-blue-200/70 uppercase font-semibold">Time</div>
+                  <div className="text-xs sm:text-sm font-extrabold text-white leading-tight mt-0.5">11:45 AM - 2:15 PM</div>
+                </div>
+
+                <div className="bg-white/10 border border-amber-400/30 rounded-2xl p-4 backdrop-blur-md hover:border-amber-400 transition-colors">
+                  <Sparkle className="w-6 h-6 text-amber-400 mx-auto mb-1" />
+                  <div className="text-xs text-blue-200/70 uppercase font-semibold">Venue</div>
+                  <div className="text-xs sm:text-sm font-extrabold text-white leading-tight mt-0.5">College Auditorium</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 pt-4 border-t border-blue-500/20 flex flex-wrap items-center justify-between gap-3 text-xs text-blue-200/80">
+              <span className="flex items-center gap-1.5 font-medium">
+                <CheckCircle className="w-4 h-4 text-emerald-400" /> Registration Deadline: <span className="text-amber-300 font-bold">25 August 2026</span> (Closed)
+              </span>
+              <span className="font-semibold text-cyan-300">
+                GNDEC English Club • Guru Nanak Dev Engineering College, Ludhiana
+              </span>
+            </div>
+          </motion.div>
+
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             <motion.div
               initial={{ opacity: 0, x: -30 }}
@@ -249,7 +303,7 @@ export function JoinUs() {
                 <div className="relative rounded-2xl overflow-hidden">
                   <img
                     src={POSTER_IMAGE}
-                    alt="English Club Recruitment Starting Soon Poster"
+                    alt="English Club Recruitment Poster"
                     className="w-full h-auto object-cover transform group-hover:scale-105 transition-transform duration-500"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center p-6">
@@ -280,6 +334,27 @@ export function JoinUs() {
               transition={{ duration: 0.6, delay: 0.3 }}
               className="lg:col-span-7 space-y-6"
             >
+              {/* Who Can Join Card */}
+              <div className="rounded-3xl p-6 sm:p-8 bg-white/5 border border-white/10 backdrop-blur-xl space-y-4">
+                <h3 className="text-xl font-bold text-white flex items-center gap-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                  <Users className="w-5 h-5 text-blue-400" /> Who Can Join?
+                </h3>
+                <p className="text-xs sm:text-sm text-gray-300">
+                  Anyone with a passion for words, ideas, and expression!
+                </p>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-center">
+                    <div className="text-sm font-bold text-blue-300">Writers</div>
+                  </div>
+                  <div className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-center">
+                    <div className="text-sm font-bold text-purple-300">Speakers</div>
+                  </div>
+                  <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-center">
+                    <div className="text-sm font-bold text-amber-300">Thinkers & Dreamers</div>
+                  </div>
+                </div>
+              </div>
+
               <div className="relative rounded-3xl p-6 sm:p-8 bg-gradient-to-br from-emerald-950/80 via-slate-900 to-emerald-900/40 border border-emerald-500/30 shadow-2xl backdrop-blur-xl overflow-hidden group">
                 <div className="absolute -top-12 -right-12 w-40 h-40 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/20 transition-all pointer-events-none" />
                 
@@ -290,13 +365,13 @@ export function JoinUs() {
 
                   <div className="space-y-2">
                     <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold uppercase tracking-wider">
-                      Official Updates Group
+                      Official Candidate Updates
                     </div>
                     <h2 className="text-2xl sm:text-3xl font-bold text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>
                       Join Our WhatsApp Group
                     </h2>
                     <p className="text-sm sm:text-base text-gray-300" style={{ fontFamily: 'Open Sans, sans-serif' }}>
-                      Be the first to get recruitment form release alerts, interview schedules, orientation details, and live updates directly on WhatsApp!
+                      Stay updated on interview desk calls, venue allocations, shortlist announcements, and live club updates directly on WhatsApp!
                     </p>
                   </div>
                 </div>
@@ -319,19 +394,25 @@ export function JoinUs() {
 
               <div className="rounded-3xl p-6 sm:p-8 bg-white/5 border border-white/10 backdrop-blur-xl space-y-4">
                 <h3 className="text-xl font-bold text-white flex items-center gap-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                  <Megaphone className="w-5 h-5 text-purple-400" /> What You'll Experience in English Club
+                  <CheckCircle className="w-5 h-5 text-emerald-400" /> Next Steps for Applicants
                 </h3>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {posterHighlights.map((hl, idx) => (
-                    <div key={idx} className="p-3.5 rounded-xl bg-white/5 border border-white/5 hover:border-purple-500/30 transition-colors flex items-start gap-3">
-                      <div className="w-2 h-2 rounded-full bg-purple-400 mt-2 flex-shrink-0" />
-                      <div>
-                        <div className="text-sm font-semibold text-white">{hl.label}</div>
-                        <div className="text-xs text-gray-400">{hl.desc}</div>
-                      </div>
+                <div className="space-y-3">
+                  <div className="p-3.5 rounded-xl bg-white/5 border border-white/5 flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-purple-500/20 text-purple-300 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">1</div>
+                    <div className="text-xs sm:text-sm text-gray-300">
+                      <strong className="text-white block font-semibold mb-0.5">Interview Reporting</strong>
+                      Interview rounds take place on <span className="text-blue-300 font-semibold">26 August 2026</span> from <span className="text-blue-300 font-semibold">11:45 AM to 2:15 PM</span> at the <span className="text-amber-300 font-semibold">College Auditorium</span>.
                     </div>
-                  ))}
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-white/5 border border-white/5 flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-blue-500/20 text-blue-300 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">2</div>
+                    <div className="text-xs sm:text-sm text-gray-300">
+                      <strong className="text-white block font-semibold mb-0.5">Reporting at Desk</strong>
+                      Report at the designated interview venue with your CRN/URN confirmation when called.
+                    </div>
+                  </div>
                 </div>
               </div>
 
