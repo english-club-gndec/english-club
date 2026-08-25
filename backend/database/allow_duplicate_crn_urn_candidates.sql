@@ -1,10 +1,17 @@
--- Migration SQL: Enforce uniqueness for real CRNs and URNs while allowing 0 and 123 as fallback duplicates
+-- Migration SQL: Drop all existing unique constraints & indexes on candidate_crn and candidate_urn
 
--- Drop any existing unique constraints or indexes on candidate_crn / candidate_urn
+-- 1. Drop existing unique constraints (including unique_candidate_crn and unique_candidate_urn)
+ALTER TABLE candidates DROP CONSTRAINT IF EXISTS unique_candidate_crn;
+ALTER TABLE candidates DROP CONSTRAINT IF EXISTS unique_candidate_urn;
 ALTER TABLE candidates DROP CONSTRAINT IF EXISTS candidates_candidate_crn_key;
 ALTER TABLE candidates DROP CONSTRAINT IF EXISTS candidates_candidate_urn_key;
 ALTER TABLE candidates DROP CONSTRAINT IF EXISTS candidates_candidate_crn_candidate_urn_key;
 
+-- 2. Drop existing unique indexes
+DROP INDEX IF EXISTS unique_candidate_crn;
+DROP INDEX IF EXISTS unique_candidate_urn;
+DROP INDEX IF EXISTS idx_candidates_crn;
+DROP INDEX IF EXISTS idx_candidates_urn;
 DROP INDEX IF EXISTS idx_candidates_crn_unique;
 DROP INDEX IF EXISTS idx_candidates_urn_unique;
 DROP INDEX IF EXISTS candidates_candidate_crn_key;
@@ -14,7 +21,7 @@ DROP INDEX IF EXISTS candidates_unique_urn_except_123;
 DROP INDEX IF EXISTS candidates_unique_crn_except_placeholders;
 DROP INDEX IF EXISTS candidates_unique_urn_except_placeholders;
 
--- Create partial unique indexes excluding placeholder roll numbers (0 and 123)
+-- 3. Create partial unique indexes excluding fallback placeholders (0 and 123)
 CREATE UNIQUE INDEX candidates_unique_crn_except_placeholders 
 ON candidates (candidate_crn) 
 WHERE candidate_crn NOT IN (0, 123);
