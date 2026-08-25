@@ -154,7 +154,7 @@ export function EventRegistration() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div>
                   <label htmlFor="crn" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                    College Roll No. (CRN)
+                    College Roll No. (CRN) <span className="text-xs font-normal text-purple-600 dark:text-purple-400">(Enter 123 if not assigned yet)</span>
                   </label>
                   <input
                     type="number"
@@ -162,6 +162,7 @@ export function EventRegistration() {
                     name="crn"
                     value={formData.crn}
                     onChange={handleChange}
+                    placeholder="e.g. 2315001 or 123"
                     required
                     className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                     style={{ fontFamily: 'Open Sans, sans-serif' }}
@@ -170,7 +171,7 @@ export function EventRegistration() {
 
                 <div>
                   <label htmlFor="urn" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                    Univ. Roll No. (URN) - Optional
+                    Univ. Roll No. (URN) - Optional <span className="text-xs font-normal text-purple-600 dark:text-purple-400">(Enter 123 if not assigned yet)</span>
                   </label>
                   <input
                     type="number"
@@ -178,6 +179,7 @@ export function EventRegistration() {
                     name="urn"
                     value={formData.urn}
                     onChange={handleChange}
+                    placeholder="e.g. 2303001 or 123"
                     className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                     style={{ fontFamily: 'Open Sans, sans-serif' }}
                   />

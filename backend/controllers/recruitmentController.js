@@ -47,6 +47,32 @@ const recruitmentController = {
         return res.status(400).json({ error: 'Required fields (name, class, CRN, email, department) must be provided' });
       }
 
+      // Check for duplicate CRN (0 and 123 are allowed as fallback duplicates)
+      if (candidate_crn && Number(candidate_crn) !== 123 && Number(candidate_crn) !== 0) {
+        const { data: existingCrn } = await supabase
+          .from('candidates')
+          .select('candidate_id')
+          .eq('candidate_crn', candidate_crn)
+          .maybeSingle();
+
+        if (existingCrn) {
+          return res.status(400).json({ error: `CRN ${candidate_crn} is already registered. Enter 123 if you haven't received your official CRN yet.` });
+        }
+      }
+
+      // Check for duplicate URN (0 and 123 are allowed as fallback duplicates)
+      if (candidate_urn && Number(candidate_urn) !== 123 && Number(candidate_urn) !== 0) {
+        const { data: existingUrn } = await supabase
+          .from('candidates')
+          .select('candidate_id')
+          .eq('candidate_urn', candidate_urn)
+          .maybeSingle();
+
+        if (existingUrn) {
+          return res.status(400).json({ error: `URN ${candidate_urn} is already registered. Enter 123 if you haven't received your official URN yet.` });
+        }
+      }
+
       const insertData = {
         candidate_name, 
         candidate_class, 

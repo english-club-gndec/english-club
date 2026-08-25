@@ -642,7 +642,7 @@ export function JoinUs() {
 
                   <div>
                     <label htmlFor="candidate_crn" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                      CRN *
+                      CRN * <span className="text-xs font-normal text-purple-600 dark:text-purple-400">(Enter 123 if not assigned yet)</span>
                     </label>
                     <input
                       type="text"
@@ -652,6 +652,7 @@ export function JoinUs() {
                       name="candidate_crn"
                       value={formData.candidate_crn}
                       onChange={handleChange}
+                      placeholder="e.g. 2315001 or 123"
                       required
                       className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                       style={{ fontFamily: 'Open Sans, sans-serif' }}
@@ -660,7 +661,7 @@ export function JoinUs() {
 
                   <div>
                     <label htmlFor="candidate_urn" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                      URN (Optional)
+                      URN (Optional) <span className="text-xs font-normal text-purple-600 dark:text-purple-400">(Enter 123 if not assigned yet)</span>
                     </label>
                     <input
                       type="text"
@@ -670,6 +671,7 @@ export function JoinUs() {
                       name="candidate_urn"
                       value={formData.candidate_urn}
                       onChange={handleChange}
+                      placeholder="e.g. 2303001 or 123"
                       className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                       style={{ fontFamily: 'Open Sans, sans-serif' }}
                     />
