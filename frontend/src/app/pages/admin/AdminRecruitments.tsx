@@ -32,6 +32,7 @@ interface Candidate {
   candidate_crn: number | null;
   candidate_urn: number | null;
   candidate_email: string;
+  candidate_mobile_no?: string;
   interested_department: string;
   candidate_description?: string;
   candidate_why_eligible?: string;
@@ -72,6 +73,7 @@ export function AdminRecruitments() {
   const [filterStatus, setFilterStatus] = useState("ALL");
   const [newStatus, setNewStatus] = useState<string>("");
   const [newComment, setNewComment] = useState<string>("");
+  const [newMobileNo, setNewMobileNo] = useState<string>("");
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   // Candidate Selection & Delete States
@@ -373,6 +375,7 @@ export function AdminRecruitments() {
       setIsRecruitmentStarted(settingsData.isRecruitmentStarted || false);
       setNewStatus(details.candidate_status || 'PENDING');
       setNewComment(details.candidate_comment || '');
+      setNewMobileNo(details.candidate_mobile_no || '');
     } catch (error: any) {
       toast.error(error.message || "Failed to fetch candidate details");
     }
@@ -388,6 +391,10 @@ export function AdminRecruitments() {
       toast.error("You cannot set candidate status back to PENDING.");
       return;
     }
+    if (isInterviewee && normalizedIntervieweeDept === 'ALL' && !newMobileNo.trim()) {
+      toast.error("Phone number is required.");
+      return;
+    }
     try {
       setIsUpdatingStatus(true);
       const payload: any = {
@@ -395,17 +402,19 @@ export function AdminRecruitments() {
         status_updated_by: Number(userId)
       };
 
+      if (isInterviewee && normalizedIntervieweeDept === 'ALL') {
+        payload.candidate_mobile_no = newMobileNo.trim();
+      } else if (newMobileNo.trim()) {
+        payload.candidate_mobile_no = newMobileNo.trim();
+      }
+
       if (!(isInterviewee && normalizedIntervieweeDept === 'ALL')) {
         payload.candidate_comment = newComment;
       }
 
       await recruitmentServices.updateCandidateStatusById(userId, viewingCandidate.candidate_id, payload);
-      toast.success("Candidate status updated successfully");
-      setViewingCandidate({ 
-        ...viewingCandidate, 
-        candidate_status: newStatus,
-        candidate_comment: !(isInterviewee && normalizedIntervieweeDept === 'ALL') ? newComment : viewingCandidate.candidate_comment
-      });
+      toast.success("Candidate details updated successfully");
+      setViewingCandidate(null);
       fetchCandidates(true);
     } catch (error: any) {
       toast.error(error.message || "Failed to update status");
@@ -426,6 +435,7 @@ export function AdminRecruitments() {
         candidate_crn: Number(editingCandidate.candidate_crn),
         candidate_urn: editingCandidate.candidate_urn ? Number(editingCandidate.candidate_urn) : null,
         candidate_email: editingCandidate.candidate_email,
+        candidate_mobile_no: editingCandidate.candidate_mobile_no || '',
         interested_department: editingCandidate.interested_department,
       };
 
@@ -1369,49 +1379,117 @@ export function AdminRecruitments() {
                     <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400">URN</h4>
                     <p className="text-gray-900 dark:text-white mt-1 font-medium">{viewingCandidate.candidate_urn || 'N/A'}</p>
                   </div>
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400">Status</h4>
-                    {isRecruitmentStarted ? (
-                      <select
-                        value={newStatus}
-                        onChange={(e) => setNewStatus(e.target.value)}
-                        className={`mt-1 px-3 py-1 rounded-full text-xs font-bold border-2 transition-colors focus:outline-none ${
-                          newStatus === 'SELECTED' ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/40 dark:text-green-300 dark:border-green-800' :
-                          newStatus === 'REJECTED' ? 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/40 dark:text-red-300 dark:border-red-800' :
-                          newStatus === 'IN_REVIEW' ? 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-800' :
-                          newStatus === 'PRESENT' ? 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800' :
-                          'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/40 dark:text-yellow-300 dark:border-yellow-800'
-                        }`}
-                      >
-                        {!(isInterviewee && normalizedIntervieweeDept !== 'ALL') && (
+
+                  {!(isInterviewee && normalizedIntervieweeDept === 'ALL') && (
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400">Phone Number</h4>
+                      <p className="text-gray-900 dark:text-white mt-1 font-medium">{viewingCandidate.candidate_mobile_no || 'N/A'}</p>
+                    </div>
+                  )}
+
+                  {!(isInterviewee && normalizedIntervieweeDept === 'ALL') && (
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400">Status</h4>
+                      {isRecruitmentStarted ? (
+                        <select
+                          value={newStatus}
+                          onChange={(e) => setNewStatus(e.target.value)}
+                          className={`mt-1 px-3 py-1 rounded-full text-xs font-bold border-2 transition-colors focus:outline-none ${
+                            newStatus === 'SELECTED' ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/40 dark:text-green-300 dark:border-green-800' :
+                            newStatus === 'REJECTED' ? 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/40 dark:text-red-300 dark:border-red-800' :
+                            newStatus === 'IN_REVIEW' ? 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-800' :
+                            newStatus === 'PRESENT' ? 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800' :
+                            'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/40 dark:text-yellow-300 dark:border-yellow-800'
+                          }`}
+                        >
                           <option value="PENDING" className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white font-semibold">PENDING</option>
-                        )}
-                        {!(isInterviewee && normalizedIntervieweeDept === 'ALL') && (
                           <option value="IN_REVIEW" className="bg-white dark:bg-gray-900 text-purple-700 dark:text-purple-400 font-semibold">IN REVIEW</option>
+                          <option value="PRESENT" className="bg-white dark:bg-gray-900 text-blue-700 dark:text-blue-400 font-semibold">PRESENT</option>
+                          <option value="SELECTED" className="bg-white dark:bg-gray-900 text-green-700 dark:text-green-400 font-semibold">SELECTED</option>
+                          <option value="REJECTED" className="bg-white dark:bg-gray-900 text-red-700 dark:text-red-400 font-semibold">REJECTED</option>
+                        </select>
+                      ) : (
+                        <div className="mt-1">
+                          <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold border-2 ${
+                            viewingCandidate.candidate_status === 'SELECTED' ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/40 dark:text-green-300 dark:border-green-800' :
+                            viewingCandidate.candidate_status === 'REJECTED' ? 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/40 dark:text-red-300 dark:border-red-800' :
+                            viewingCandidate.candidate_status === 'IN_REVIEW' ? 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-800' :
+                            viewingCandidate.candidate_status === 'PRESENT' ? 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800' :
+                            'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/40 dark:text-yellow-300 dark:border-yellow-800'
+                          }`}>
+                            {viewingCandidate.candidate_status === 'IN_REVIEW' ? 'IN REVIEW' : (viewingCandidate.candidate_status || 'PENDING')}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Desk Interviewer (ALL Dept) Phone & Status Control Box */}
+                {isInterviewee && normalizedIntervieweeDept === 'ALL' && (
+                  <div className="bg-purple-50/70 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800/60 p-5 rounded-2xl space-y-4 my-2">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-purple-700 dark:text-purple-300 flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-purple-600" />
+                      Attendance Desk Input & Status
+                    </h4>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
+                      <div>
+                        <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">
+                          Phone Number <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="tel"
+                          value={newMobileNo}
+                          onChange={(e) => setNewMobileNo(e.target.value)}
+                          placeholder="Enter phone number..."
+                          required
+                          className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">
+                          Attendance Status <span className="text-red-500">*</span>
+                        </label>
+                        {isRecruitmentStarted ? (
+                          <select
+                            value={newStatus}
+                            onChange={(e) => setNewStatus(e.target.value)}
+                            className={`w-full px-4 py-2.5 rounded-xl text-xs font-bold border-2 transition-colors focus:outline-none ${
+                              newStatus === 'PRESENT' ? 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800' :
+                              'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/40 dark:text-yellow-300 dark:border-yellow-800'
+                            }`}
+                          >
+                            <option value="PENDING" className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white font-semibold">PENDING</option>
+                            <option value="PRESENT" className="bg-white dark:bg-gray-900 text-blue-700 dark:text-blue-400 font-semibold">PRESENT</option>
+                          </select>
+                        ) : (
+                          <div className="px-3 py-2 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 text-xs font-bold">
+                            {viewingCandidate.candidate_status || 'PENDING'}
+                          </div>
                         )}
-                        <option value="PRESENT" className="bg-white dark:bg-gray-900 text-blue-700 dark:text-blue-400 font-semibold">PRESENT</option>
-                        {!(isInterviewee && normalizedIntervieweeDept === 'ALL') && (
-                          <>
-                            <option value="SELECTED" className="bg-white dark:bg-gray-900 text-green-700 dark:text-green-400 font-semibold">SELECTED</option>
-                            <option value="REJECTED" className="bg-white dark:bg-gray-900 text-red-700 dark:text-red-400 font-semibold">REJECTED</option>
-                          </>
-                        )}
-                      </select>
-                    ) : (
-                      <div className="mt-1">
-                        <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold border-2 ${
-                          viewingCandidate.candidate_status === 'SELECTED' ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/40 dark:text-green-300 dark:border-green-800' :
-                          viewingCandidate.candidate_status === 'REJECTED' ? 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/40 dark:text-red-300 dark:border-red-800' :
-                          viewingCandidate.candidate_status === 'IN_REVIEW' ? 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-800' :
-                          viewingCandidate.candidate_status === 'PRESENT' ? 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800' :
-                          'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/40 dark:text-yellow-300 dark:border-yellow-800'
-                        }`}>
-                          {viewingCandidate.candidate_status === 'IN_REVIEW' ? 'IN REVIEW' : (viewingCandidate.candidate_status || 'PENDING')}
-                        </span>
+                      </div>
+                    </div>
+
+                    {isRecruitmentStarted && (
+                      newStatus !== viewingCandidate.candidate_status ||
+                      newMobileNo.trim() !== (viewingCandidate.candidate_mobile_no || '')
+                    ) && (
+                      <div className="flex justify-end pt-1">
+                        <button
+                          type="button"
+                          onClick={handleStatusUpdate}
+                          disabled={isUpdatingStatus}
+                          className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-sm transition-colors flex items-center gap-2 shadow-md shadow-purple-500/20"
+                        >
+                          {isUpdatingStatus && <Loader2 className="w-4 h-4 animate-spin" />}
+                          {isUpdatingStatus ? "Saving..." : "Save Status & Phone"}
+                        </button>
                       </div>
                     )}
                   </div>
-                </div>
+                )}
 
                 {/* Legacy / Direct Description */}
                 {viewingCandidate.candidate_description && (
@@ -1489,9 +1567,9 @@ export function AdminRecruitments() {
                     </button>
                   ) : <div />}
 
-                  {isRecruitmentStarted && (
+                  {isRecruitmentStarted && !(isInterviewee && normalizedIntervieweeDept === 'ALL') && (
                     newStatus !== viewingCandidate.candidate_status ||
-                    (!(isInterviewee && normalizedIntervieweeDept === 'ALL') && newComment !== (viewingCandidate.candidate_comment || ''))
+                    newComment !== (viewingCandidate.candidate_comment || '')
                   ) ? (
                     <button
                       onClick={handleStatusUpdate}

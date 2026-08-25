@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS candidates (
     candidate_crn BIGINT NOT NULL, -- Multiple candidates can submit 123 if CRN is not assigned yet
     candidate_urn BIGINT, -- Multiple candidates can submit 123 if URN is not assigned yet
     candidate_email TEXT NOT NULL,
+    candidate_mobile_no VARCHAR,
     interested_department interested_department NOT NULL,
     candidate_description TEXT,
     candidate_why_eligible TEXT,
@@ -51,6 +52,7 @@ CREATE TABLE IF NOT EXISTS candidates (
 );
 
 ALTER TABLE candidates ADD COLUMN IF NOT EXISTS custom_answers JSONB DEFAULT '{}'::jsonb;
+ALTER TABLE candidates ADD COLUMN IF NOT EXISTS candidate_mobile_no VARCHAR;
 
 -- Trigger to update updated_at on change
 CREATE OR REPLACE FUNCTION update_candidates_updated_at_column()

@@ -36,6 +36,7 @@ const recruitmentController = {
         candidate_crn, 
         candidate_urn, 
         candidate_email, 
+        candidate_mobile_no,
         interested_department,
         candidate_description,
         candidate_why_eligible,
@@ -79,6 +80,7 @@ const recruitmentController = {
         candidate_crn, 
         candidate_urn, 
         candidate_email, 
+        candidate_mobile_no: candidate_mobile_no || '',
         interested_department,
         candidate_description: candidate_description || '',
         candidate_why_eligible: candidate_why_eligible || '',
@@ -206,7 +208,7 @@ const recruitmentController = {
   updateCandidateStatusById: async (req, res) => {
     try {
       const { candidate_id } = req.params;
-      const { candidate_status, status_updated_by, candidate_comment } = req.body;
+      const { candidate_status, status_updated_by, candidate_comment, candidate_mobile_no } = req.body;
 
       if (!candidate_status || !status_updated_by) {
         return res.status(400).json({ error: 'candidate_status and status_updated_by are required' });
@@ -238,6 +240,10 @@ const recruitmentController = {
 
       if (candidate_comment !== undefined) {
         updateData.candidate_comment = candidate_comment;
+      }
+
+      if (candidate_mobile_no !== undefined) {
+        updateData.candidate_mobile_no = candidate_mobile_no;
       }
 
       const { data, error } = await supabase
