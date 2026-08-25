@@ -358,6 +358,7 @@ const userController = {
   deleteUser: async (req, res) => {
     try {
       const { user_id } = req.params;
+      const performerId = req.user?.user_id;
 
       const { data: existingUser } = await supabase
         .from('users')
@@ -365,6 +366,47 @@ const userController = {
         .eq('user_id', user_id)
         .maybeSingle();
 
+      if (!existingUser) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      // 1. Find fallback admin user ID to reassign events / candidates to if needed
+      let fallbackUserId = performerId && String(performerId) !== String(user_id) ? performerId : null;
+
+      if (!fallbackUserId) {
+        const { data: fallbackUsers } = await supabase
+          .from('users')
+          .select('user_id')
+          .neq('user_id', user_id)
+          .in('user_role', ['MASTER', 'ADMIN'])
+          .limit(1);
+
+        if (fallbackUsers && fallbackUsers.length > 0) {
+          fallbackUserId = fallbackUsers[0].user_id;
+        }
+      }
+
+      // 2. Reassign or set null for created events to satisfy foreign key constraint
+      try {
+        await supabase
+          .from('events')
+          .update({ created_by: fallbackUserId || null })
+          .eq('created_by', user_id);
+      } catch (eventsErr) {
+        console.warn('Non-fatal: failed to update events created_by:', eventsErr);
+      }
+
+      // 3. Update candidates status_updated_by
+      try {
+        await supabase
+          .from('candidates')
+          .update({ status_updated_by: fallbackUserId || null })
+          .eq('status_updated_by', user_id);
+      } catch (candErr) {
+        console.warn('Non-fatal: failed to update candidates status_updated_by:', candErr);
+      }
+
+      // 4. Delete the user
       const { data, error } = await supabase
         .from('users')
         .delete()
@@ -385,7 +427,7 @@ const userController = {
         tableName: 'users',
         tablePrimaryKeyId: user_id,
         eventName: 'USER_DELETED',
-        performedBy: req.user?.user_id || req.params.user_id,
+        performedBy: performerId || user_id,
         oldValue: existingUser,
         newValue: null
       });
