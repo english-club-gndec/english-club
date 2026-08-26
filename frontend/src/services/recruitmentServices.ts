@@ -1,6 +1,25 @@
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 const API_BASE_URL = `${BASE_URL}/recruitment`;
 
+const parseErrorResponse = async (response: Response, defaultPrefix: string): Promise<string> => {
+  try {
+    const errorText = await response.text();
+    try {
+      const parsed = JSON.parse(errorText);
+      if (parsed && parsed.error) {
+        return parsed.error;
+      }
+    } catch {
+      if (errorText && errorText.trim()) {
+        return `${defaultPrefix}: ${errorText}`;
+      }
+    }
+  } catch {
+    // Ignore error reading body
+  }
+  return defaultPrefix;
+};
+
 export const recruitmentServices = {
   createCandidate: async (candidateData: any) => {
     const response = await fetch(`${API_BASE_URL}/createCandidate`, {
@@ -13,8 +32,8 @@ export const recruitmentServices = {
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to submit application: ${errorText}`);
+      const errorMessage = await parseErrorResponse(response, "Failed to submit application");
+      throw new Error(errorMessage);
     }
 
     return response.json();
@@ -25,8 +44,8 @@ export const recruitmentServices = {
       credentials: "include",
     });
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to fetch candidates: ${errorText}`);
+      const errorMessage = await parseErrorResponse(response, "Failed to fetch candidates");
+      throw new Error(errorMessage);
     }
     return response.json();
   },
@@ -36,8 +55,8 @@ export const recruitmentServices = {
       credentials: "include",
     });
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to fetch candidate details: ${errorText}`);
+      const errorMessage = await parseErrorResponse(response, "Failed to fetch candidate details");
+      throw new Error(errorMessage);
     }
     return response.json();
   },
@@ -53,8 +72,8 @@ export const recruitmentServices = {
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to update candidate: ${errorText}`);
+      const errorMessage = await parseErrorResponse(response, "Failed to update candidate");
+      throw new Error(errorMessage);
     }
 
     return response.json();
@@ -71,8 +90,8 @@ export const recruitmentServices = {
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to update candidate status: ${errorText}`);
+      const errorMessage = await parseErrorResponse(response, "Failed to update candidate status");
+      throw new Error(errorMessage);
     }
 
     return response.json();
@@ -84,8 +103,8 @@ export const recruitmentServices = {
       credentials: "include",
     });
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to delete candidate: ${errorText}`);
+      const errorMessage = await parseErrorResponse(response, "Failed to delete candidate");
+      throw new Error(errorMessage);
     }
     return response.json();
   },
@@ -100,8 +119,8 @@ export const recruitmentServices = {
       body: JSON.stringify({ candidate_ids: candidateIds }),
     });
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to delete selected candidates: ${errorText}`);
+      const errorMessage = await parseErrorResponse(response, "Failed to delete selected candidates");
+      throw new Error(errorMessage);
     }
     return response.json();
   },
@@ -116,8 +135,8 @@ export const recruitmentServices = {
       body: JSON.stringify({ recruitment_date: recruitmentDate }),
     });
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to archive recruitment data: ${errorText}`);
+      const errorMessage = await parseErrorResponse(response, "Failed to archive recruitment data");
+      throw new Error(errorMessage);
     }
     return response.json();
   },
@@ -125,8 +144,8 @@ export const recruitmentServices = {
   getPublicQuestions: async () => {
     const response = await fetch(`${API_BASE_URL}/questions`);
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to fetch recruitment questions: ${errorText}`);
+      const errorMessage = await parseErrorResponse(response, "Failed to fetch recruitment questions");
+      throw new Error(errorMessage);
     }
     return response.json();
   },
@@ -136,8 +155,8 @@ export const recruitmentServices = {
       credentials: "include",
     });
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to fetch questions: ${errorText}`);
+      const errorMessage = await parseErrorResponse(response, "Failed to fetch questions");
+      throw new Error(errorMessage);
     }
     return response.json();
   },
@@ -152,8 +171,8 @@ export const recruitmentServices = {
       body: JSON.stringify(questionData),
     });
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to create question: ${errorText}`);
+      const errorMessage = await parseErrorResponse(response, "Failed to create question");
+      throw new Error(errorMessage);
     }
     return response.json();
   },
@@ -168,8 +187,8 @@ export const recruitmentServices = {
       body: JSON.stringify(questionData),
     });
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to update question: ${errorText}`);
+      const errorMessage = await parseErrorResponse(response, "Failed to update question");
+      throw new Error(errorMessage);
     }
     return response.json();
   },
@@ -180,8 +199,8 @@ export const recruitmentServices = {
       credentials: "include",
     });
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to delete question: ${errorText}`);
+      const errorMessage = await parseErrorResponse(response, "Failed to delete question");
+      throw new Error(errorMessage);
     }
     return response.json();
   },
@@ -189,8 +208,8 @@ export const recruitmentServices = {
   getPublicResults: async () => {
     const response = await fetch(`${API_BASE_URL}/results`);
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to fetch public recruitment results: ${errorText}`);
+      const errorMessage = await parseErrorResponse(response, "Failed to fetch public recruitment results");
+      throw new Error(errorMessage);
     }
     return response.json();
   },
