@@ -4,12 +4,14 @@ import { Menu, X, Moon, Sun } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useTheme } from "./ThemeProvider";
 import { usePublicSettings } from "../hooks/usePublicSettings";
+import { useAuth } from "../context/AuthContext";
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
   const { theme, toggleTheme } = useTheme();
   const { loading: settingsLoading, resultsActive } = usePublicSettings();
+  const { isAuthenticated } = useAuth();
 
   const links = [
     { path: "/", label: "Home" },

@@ -1,10 +1,20 @@
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
+const getAuthHeaders = (): Record<string, string> => {
+  const headers: Record<string, string> = {};
+  const token = localStorage.getItem('auth_token');
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+};
+
 export const userService = {
   getMe: async () => {
     try {
       const response = await fetch(`${BASE_URL}/user/me`, {
         method: 'GET',
+        headers: getAuthHeaders(),
         credentials: 'include',
       });
       if (!response.ok) {
@@ -21,6 +31,7 @@ export const userService = {
     try {
       const response = await fetch(`${BASE_URL}/user/${userId}`, {
         method: 'GET',
+        headers: getAuthHeaders(),
         credentials: 'include',
       });
       if (!response.ok) {
@@ -37,6 +48,7 @@ export const userService = {
     try {
       const response = await fetch(`${BASE_URL}/user/${adminId}/getUsers`, {
         method: 'GET',
+        headers: getAuthHeaders(),
         credentials: 'include',
       });
       if (!response.ok) {
@@ -55,6 +67,7 @@ export const userService = {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...getAuthHeaders(),
         },
         credentials: 'include',
         body: JSON.stringify(userData),
@@ -76,6 +89,7 @@ export const userService = {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          ...getAuthHeaders(),
         },
         credentials: 'include',
         body: JSON.stringify(userData),
@@ -97,6 +111,7 @@ export const userService = {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          ...getAuthHeaders(),
         },
         credentials: 'include',
         body: JSON.stringify(passwordData),
@@ -137,6 +152,7 @@ export const userService = {
     try {
       const response = await fetch(`${BASE_URL}/user/logout`, {
         method: 'POST',
+        headers: getAuthHeaders(),
         credentials: 'include',
       });
       if (!response.ok) {
@@ -154,6 +170,7 @@ export const userService = {
     try {
       const response = await fetch(`${BASE_URL}/user/${userId}`, {
         method: 'DELETE',
+        headers: getAuthHeaders(),
         credentials: 'include',
       });
       if (!response.ok) {

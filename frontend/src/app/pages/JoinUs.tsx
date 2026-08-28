@@ -21,6 +21,7 @@ import {
 import { recruitmentServices } from "../../services/recruitmentServices";
 import { settingsServices } from "../../services/settingsServices";
 import { usePublicSettings } from "../hooks/usePublicSettings";
+import { useAuth } from "../context/AuthContext";
 
 interface RecruitmentQuestion {
   question_id: string;
@@ -67,6 +68,7 @@ export function JoinUs() {
   const [recruitmentsActive, setRecruitmentsActive] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const { loading: settingsLoading, resultsActive } = usePublicSettings();
+  const { isAuthenticated } = useAuth();
 
   const WHATSAPP_GROUP_LINK = "https://chat.whatsapp.com/DVYzuZhA0mJKE8db3YLH8a";
   const POSTER_IMAGE = "/images/recruitment-poster.jpg";
@@ -227,7 +229,7 @@ export function JoinUs() {
             </p>
 
             <div className="pt-2 flex justify-center">
-              {!settingsLoading && resultsActive && (
+              {!settingsLoading && (resultsActive || isAuthenticated) && (
                 <Link
                   to="/results"
                   className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-purple-600 to-indigo-600 hover:from-amber-400 hover:to-indigo-500 text-white font-bold text-sm sm:text-base shadow-xl shadow-purple-500/25 hover:shadow-purple-500/40 hover:-translate-y-0.5 transition-all"
@@ -520,7 +522,7 @@ export function JoinUs() {
                 <span>Join WhatsApp Group</span>
               </a>
 
-              {!settingsLoading && resultsActive && (
+              {!settingsLoading && (resultsActive || isAuthenticated) && (
                 <Link
                   to="/results"
                   className="inline-flex items-center gap-2 px-5 py-3.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold text-sm border border-white/20 shadow-lg transition-all hover:scale-105"

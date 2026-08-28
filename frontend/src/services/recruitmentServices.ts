@@ -206,7 +206,16 @@ export const recruitmentServices = {
   },
 
   getPublicResults: async () => {
-    const response = await fetch(`${API_BASE_URL}/results`);
+    const headers: Record<string, string> = {};
+    const token = localStorage.getItem("auth_token");
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/results`, {
+      headers,
+      credentials: "include",
+    });
     if (!response.ok) {
       const errorMessage = await parseErrorResponse(response, "Failed to fetch public recruitment results");
       throw new Error(errorMessage);

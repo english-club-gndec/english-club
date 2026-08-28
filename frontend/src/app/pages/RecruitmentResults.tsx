@@ -29,6 +29,7 @@ import confetti from "canvas-confetti";
 import { Link } from "react-router";
 import { recruitmentServices } from "../../services/recruitmentServices";
 import { usePublicSettings } from "../hooks/usePublicSettings";
+import { useAuth } from "../context/AuthContext";
 
 interface SelectedCandidate {
   candidate_id: string;
@@ -115,9 +116,17 @@ export function RecruitmentResults() {
   const [selectedDeptFilter, setSelectedDeptFilter] = useState("ALL");
   const [expandedCandidateId, setExpandedCandidateId] = useState<string | null>(null);
   const { loading: settingsLoading, resultsActive } = usePublicSettings();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+
+  const canViewResults = resultsActive || isAuthenticated;
 
   useEffect(() => {
-    if (settingsLoading || !resultsActive) {
+    if (settingsLoading || authLoading) {
+      return;
+    }
+
+    if (!canViewResults) {
+      setLoading(false);
       return;
     }
 
@@ -135,16 +144,16 @@ export function RecruitmentResults() {
             origin: { y: 0.6 }
           });
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error("Failed to load recruitment results:", err);
-        setLoadError("Unable to load results right now.");
+        setLoadError(err.message || "Unable to load results right now.");
       } finally {
         setLoading(false);
       }
     };
 
     fetchResults();
-  }, [resultsActive, settingsLoading]);
+  }, [resultsActive, settingsLoading, isAuthenticated, authLoading, canViewResults]);
 
   // Filter candidates based on search & department selection
   const filteredCandidates = useMemo(() => {
@@ -222,7 +231,7 @@ export function RecruitmentResults() {
     return DEPARTMENT_CONFIG[deptKey]?.label || deptKey;
   };
 
-  if (settingsLoading) {
+  if (settingsLoading || authLoading) {
     return (
       <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center px-4">
         <div className="flex flex-col items-center gap-4">
@@ -235,7 +244,7 @@ export function RecruitmentResults() {
     );
   }
 
-  if (!resultsActive) {
+  if (!canViewResults) {
     return (
       <div className="min-h-screen bg-slate-950 text-white selection:bg-purple-500 selection:text-white relative overflow-hidden font-sans">
         <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[140px] pointer-events-none" />
@@ -307,6 +316,12 @@ export function RecruitmentResults() {
           transition={{ duration: 0.6 }}
           className="text-center space-y-5 max-w-4xl mx-auto"
         >
+          {!resultsActive && isAuthenticated && (
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-bold backdrop-blur-md mx-auto">
+              <Shield className="w-3.5 h-3.5" /> Admin Preview (Results Toggle is OFF - visible only to logged-in admins)
+            </div>
+          )}
+
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-amber-500/20 via-purple-500/20 to-emerald-500/20 border border-amber-500/30 text-amber-300 text-xs sm:text-sm font-bold tracking-widest uppercase backdrop-blur-xl shadow-lg shadow-amber-500/10">
             <Trophy className="w-4 h-4 text-amber-400 animate-bounce" />
             Official Recruitment Results
@@ -486,7 +501,6 @@ export function RecruitmentResults() {
                             <th className="px-6 py-4">Student Name</th>
                             <th className="px-6 py-4">Class & Stream</th>
                             <th className="px-6 py-4">CRN</th>
-                            <th className="px-6 py-4">URN</th>
                             <th className="px-6 py-4">Email</th>
                           </tr>
                         </thead>
@@ -524,16 +538,6 @@ export function RecruitmentResults() {
                                   {candidate.candidate_crn ? (
                                     <span className="px-2.5 py-1 rounded-lg bg-blue-500/10 border border-blue-500/20 text-cyan-300">
                                       {candidate.candidate_crn}
-                                    </span>
-                                  ) : (
-                                    <span className="text-gray-600">N/A</span>
-                                  )}
-                                </td>
-
-                                <td className="px-6 py-4 font-mono text-xs text-gray-300 font-semibold">
-                                  {candidate.candidate_urn ? (
-                                    <span className="px-2.5 py-1 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-300">
-                                      {candidate.candidate_urn}
                                     </span>
                                   ) : (
                                     <span className="text-gray-600">N/A</span>

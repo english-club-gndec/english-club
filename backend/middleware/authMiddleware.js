@@ -47,5 +47,29 @@ const allowRoles = (...allowedRoles) => {
   };
 };
 
-module.exports = { verifyToken, restrictRoles, allowRoles };
+const optionalVerifyToken = (req, res, next) => {
+  let token = req.cookies ? req.cookies.token : null;
+
+  if (!token && req.headers.authorization) {
+    const authHeader = req.headers.authorization;
+    if (authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    }
+  }
+
+  if (token) {
+    try {
+      const secret = process.env.JWT_SECRET;
+      if (secret) {
+        const decoded = jwt.verify(token, secret);
+        req.user = decoded;
+      }
+    } catch (err) {
+      // Ignore invalid or expired token for optional auth check
+    }
+  }
+  next();
+};
+
+module.exports = { verifyToken, restrictRoles, allowRoles, optionalVerifyToken };
 

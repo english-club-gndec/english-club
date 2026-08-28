@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS candidates (
     candidate_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     candidate_name VARCHAR NOT NULL,
     candidate_class VARCHAR NOT NULL,
-    candidate_crn BIGINT NOT NULL, -- Multiple candidates can submit 123 if CRN is not assigned yet
+    candidate_crn BIGINT, -- Multiple candidates can submit 123 if CRN is not assigned yet
     candidate_urn BIGINT, -- Multiple candidates can submit 123 if URN is not assigned yet
     candidate_email TEXT NOT NULL,
     candidate_mobile_no VARCHAR,

@@ -33,6 +33,10 @@ export function LoginPage() {
     try {
       const data = await userService.login({ username, password });
       
+      if (data.token) {
+        localStorage.setItem("auth_token", data.token);
+      }
+
       login(data.user);
       
       // Redirect to original destination or dashboard

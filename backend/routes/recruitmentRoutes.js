@@ -1,13 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const recruitmentController = require('../controllers/recruitmentController');
-const { verifyToken, restrictRoles } = require('../middleware/authMiddleware');
+const { verifyToken, restrictRoles, optionalVerifyToken } = require('../middleware/authMiddleware');
 
 // POST /api/recruitment/createCandidate (Public candidate application)
 router.post('/createCandidate', recruitmentController.createCandidate);
 
-// GET /api/recruitment/results (Public selected candidates list)
-router.get('/results', recruitmentController.getPublicResults);
+// GET /api/recruitment/results (Public or Admin preview when results are disabled)
+router.get('/results', optionalVerifyToken, recruitmentController.getPublicResults);
 
 // GET /api/recruitment/:user_id/getAllCandidates (Admin protected - allowed for INTERVIEWEE)
 router.get('/:user_id/getAllCandidates', verifyToken, recruitmentController.getAllCandidates);

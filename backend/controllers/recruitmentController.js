@@ -534,7 +534,11 @@ const recruitmentController = {
   getPublicResults: async (req, res) => {
     try {
       const resultsEnabled = await isResultsEnabled();
-      if (!resultsEnabled) {
+      const isAdminUser = Boolean(
+        req.user && ['MASTER', 'ADMIN', 'MANAGER', 'INTERVIEWEE'].includes(req.user.user_role)
+      );
+
+      if (!resultsEnabled && !isAdminUser) {
         return res.status(403).json({ error: 'Results are currently unavailable' });
       }
 
