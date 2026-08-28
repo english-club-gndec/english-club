@@ -39,13 +39,13 @@ export function Home() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <div className="relative w-full aspect-[16/9] sm:aspect-[21/9] md:aspect-[25/9] rounded-2xl sm:rounded-[2rem] md:rounded-[3rem] overflow-hidden shadow-2xl border-2 sm:border-4 border-white dark:border-gray-900">
+            <div className="relative w-full aspect-[21/9] sm:aspect-[21/9] md:aspect-[22/9] rounded-2xl sm:rounded-[2rem] md:rounded-[3rem] overflow-hidden shadow-2xl border-2 sm:border-4 border-white dark:border-gray-900">
               <img
                 src="/images/group-photo.jpg"
                 alt="English Club Group"
-                className="w-full h-full object-cover object-[center_60%]"
+                className="w-full h-full object-cover object-[center_20%]"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-blue-900/40 via-transparent to-transparent"></div>
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 via-transparent to-transparent pointer-events-none"></div>
             </div>
             
             {/* Decorative blurs */}
