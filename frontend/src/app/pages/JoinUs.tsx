@@ -1,23 +1,34 @@
 import { motion, AnimatePresence } from "motion/react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router";
 import {
-  MessageCircle,
-  Users,
-  TrendingUp,
-  CheckCircle,
-  Loader2,
+  Trophy,
   Sparkles,
+  Clock,
+  CheckCircle,
+  Calendar,
+  Users,
+  Megaphone,
+  ArrowRight,
   Maximize2,
   X,
-  Phone,
-  ArrowRight,
-  Megaphone,
-  Calendar,
+  Code,
+  Shield,
+  Camera,
+  Mic,
+  Award,
+  ChevronDown,
+  Loader2,
+  MessageCircle,
+  HeartHandshake,
   Sparkle,
-  Trophy,
-  ArrowDown
+  Zap,
+  Layers,
+  ArrowUpRight,
+  Radio,
+  Share2
 } from "lucide-react";
+import confetti from "canvas-confetti";
 import { recruitmentServices } from "../../services/recruitmentServices";
 import { settingsServices } from "../../services/settingsServices";
 import { usePublicSettings } from "../hooks/usePublicSettings";
@@ -46,10 +57,133 @@ const WhatsAppIcon = ({ className = "w-6 h-6" }: { className?: string }) => (
   </svg>
 );
 
+// Particle Canvas Background for High-Art Visual Aesthetic
+function ParticleBackground() {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    let animationFrameId: number;
+    let width = (canvas.width = window.innerWidth);
+    let height = (canvas.height = window.innerHeight);
+
+    const handleResize = () => {
+      if (!canvas) return;
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    };
+    window.addEventListener("resize", handleResize);
+
+    // Generate artistic floating particles
+    const particleCount = Math.min(Math.floor(width / 18), 65);
+    const particles = Array.from({ length: particleCount }, () => ({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      vx: (Math.random() - 0.5) * 0.4,
+      vy: (Math.random() - 0.5) * 0.4,
+      radius: Math.random() * 2 + 1,
+      color: [
+        "rgba(147, 197, 253, ", // blue-300
+        "rgba(216, 180, 254, ", // purple-300
+        "rgba(252, 211, 77, ",  // amber-300
+        "rgba(110, 231, 183, "  // emerald-300
+      ][Math.floor(Math.random() * 4)],
+      alpha: Math.random() * 0.6 + 0.2,
+      pulseSpeed: Math.random() * 0.02 + 0.005
+    }));
+
+    let mouseX = width / 2;
+    let mouseY = height / 2;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+    };
+    window.addEventListener("mousemove", handleMouseMove);
+
+    const render = () => {
+      ctx.clearRect(0, 0, width, height);
+
+      // Render glowing lines connecting nearby particles
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (dist < 140) {
+            ctx.beginPath();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            const lineAlpha = (1 - dist / 140) * 0.15;
+            ctx.strokeStyle = `rgba(167, 139, 250, ${lineAlpha})`;
+            ctx.lineWidth = 0.8;
+            ctx.stroke();
+          }
+        }
+      }
+
+      // Draw mouse aura glow
+      const grad = ctx.createRadialGradient(mouseX, mouseY, 0, mouseX, mouseY, 250);
+      grad.addColorStop(0, "rgba(139, 92, 246, 0.08)");
+      grad.addColorStop(1, "rgba(15, 23, 42, 0)");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, width, height);
+
+      // Update and draw particles
+      particles.forEach((p) => {
+        p.x += p.vx;
+        p.y += p.vy;
+
+        if (p.x < 0) p.x = width;
+        if (p.x > width) p.x = 0;
+        if (p.y < 0) p.y = height;
+        if (p.y > height) p.y = 0;
+
+        p.alpha += Math.sin(Date.now() * p.pulseSpeed) * 0.01;
+        const currentAlpha = Math.max(0.1, Math.min(0.8, p.alpha));
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fillStyle = p.color + currentAlpha + ")";
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = p.color + "0.6)";
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      });
+
+      animationFrameId = requestAnimationFrame(render);
+    };
+
+    render();
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("mousemove", handleMouseMove);
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="fixed inset-0 pointer-events-none z-0 opacity-80"
+    />
+  );
+}
+
 export function JoinUs() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPosterOpen, setIsPosterOpen] = useState(false);
+  const [showApplyForm, setShowApplyForm] = useState(false);
+  const [cheerCount, setCheerCount] = useState(128);
+  const [hasCheered, setHasCheered] = useState(false);
+
   const [formData, setFormData] = useState({
     candidate_name: "",
     year: "",
@@ -70,8 +204,32 @@ export function JoinUs() {
   const { loading: settingsLoading, resultsActive } = usePublicSettings();
   const { isAuthenticated } = useAuth();
 
+  // Dynamic ticker estimation
+  const [timeLeft, setTimeLeft] = useState({
+    hours: 18,
+    minutes: 42,
+    seconds: 15
+  });
+
   const WHATSAPP_GROUP_LINK = "https://chat.whatsapp.com/DVYzuZhA0mJKE8db3YLH8a";
   const POSTER_IMAGE = "/images/recruitment-poster.jpg";
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev.seconds > 0) {
+          return { ...prev, seconds: prev.seconds - 1 };
+        } else if (prev.minutes > 0) {
+          return { ...prev, minutes: prev.minutes - 1, seconds: 59 };
+        } else if (prev.hours > 0) {
+          return { hours: prev.hours - 1, minutes: 59, seconds: 59 };
+        }
+        return prev;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -91,34 +249,20 @@ export function JoinUs() {
     fetchData();
   }, []);
 
-  const benefits = [
-    {
-      icon: MessageCircle,
-      title: "Improve Communication",
-      description: "Develop exceptional verbal and written communication skills through regular practice and workshops.",
-    },
-    {
-      icon: Users,
-      title: "Build Confidence",
-      description: "Overcome stage fright and build self-assurance through public speaking and group activities.",
-    },
-    {
-      icon: TrendingUp,
-      title: "Networking Opportunities",
-      description: "Connect with like-minded individuals, mentors, and professionals in the field.",
-    },
-  ];
-
-  const posterHighlights = [
-    { label: "Improve Communication", desc: "Sharpen public speaking & articulation" },
-    { label: "Explore Creativity", desc: "Unleash your writing & expression" },
-    { label: "Engage in Discussions", desc: "Debates, discussions & podcasts" },
-    { label: "Build Leadership Skills", desc: "Lead events & organize initiatives" },
-    { label: "Supportive Team", desc: "Grow together with an energetic community" },
-  ];
+  const triggerCheer = () => {
+    confetti({
+      particleCount: 70,
+      spread: 60,
+      origin: { y: 0.7 }
+    });
+    if (!hasCheered) {
+      setCheerCount((prev) => prev + 1);
+      setHasCheered(true);
+    }
+  };
 
   const handleCustomAnswerChange = (questionId: string, value: any) => {
-    setCustomAnswers(prev => ({
+    setCustomAnswers((prev) => ({
       ...prev,
       [questionId]: value
     }));
@@ -165,7 +309,9 @@ export function JoinUs() {
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
     if (name === "candidate_crn" || name === "candidate_urn") {
       const numericValue = value.replace(/\D/g, "");
@@ -175,814 +321,739 @@ export function JoinUs() {
     }
   };
 
-  const container = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: { staggerChildren: 0.1 }
+  const departments = [
+    {
+      id: "TECHNICAL",
+      title: "Technical Department",
+      subtitle: "Code, Web Dev & Digital Infrastructure",
+      icon: Code,
+      color: "from-blue-600 to-cyan-400",
+      glow: "shadow-cyan-500/20",
+      badge: "Tech & Systems",
+      desc: "Architecting web platforms, voting hubs, digital automation, and technical infrastructure for all club operations."
+    },
+    {
+      id: "EVENT_MANAGEMENT",
+      title: "Event Management",
+      subtitle: "Stage Production & Execution",
+      icon: Sparkles,
+      color: "from-emerald-600 to-teal-400",
+      glow: "shadow-emerald-500/20",
+      badge: "Logistics & Ops",
+      desc: "Orchestrating debates, stage setups, auditorium scheduling, and seamless execution of flagships events."
+    },
+    {
+      id: "FINANCE_MARKET",
+      title: "Finance & Relations",
+      subtitle: "Sponsorship & Strategic Budgeting",
+      icon: Shield,
+      color: "from-amber-500 to-yellow-400",
+      glow: "shadow-amber-500/20",
+      badge: "Budget & Outreach",
+      desc: "Managing resource allocations, corporate sponsorships, venue partnerships, and financial auditing."
+    },
+    {
+      id: "CREATIVE_PHOTO",
+      title: "Creative & Media",
+      subtitle: "Design, Visual Art & Photography",
+      icon: Camera,
+      color: "from-sky-500 to-indigo-500",
+      glow: "shadow-sky-500/20",
+      badge: "Art & Lens",
+      desc: "Crafting captivating poster art, event graphics, photography coverage, and artistic club branding."
+    },
+    {
+      id: "PROMOTION",
+      title: "Promotion & Hype",
+      subtitle: "Social Media & Public Outreach",
+      icon: Megaphone,
+      color: "from-orange-500 to-amber-500",
+      glow: "shadow-orange-500/20",
+      badge: "Outreach & Hype",
+      desc: "Driving campus buzz, managing Instagram & digital campaigns, and leading candidate registration drives."
+    },
+    {
+      id: "ANCHORING",
+      title: "Anchoring & Oratory",
+      subtitle: "Stage Hosting & Voice of the Club",
+      icon: Mic,
+      color: "from-yellow-400 to-amber-400",
+      glow: "shadow-yellow-500/20",
+      badge: "Public Speaking",
+      desc: "Commanding the stage, hosting flagship sessions, podcast discussions, and articulating the club's voice."
     }
-  };
+  ];
 
-  const item = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0 }
-  };
+  const pipelineSteps = [
+    {
+      step: "01",
+      title: "Registrations Closed",
+      date: "25 Aug 2026",
+      status: "COMPLETED",
+      icon: CheckCircle,
+      desc: "Over 300+ student applications received across departments."
+    },
+    {
+      step: "02",
+      title: "Auditorium Interviews",
+      date: "26 Aug 2026",
+      status: "COMPLETED",
+      icon: CheckCircle,
+      desc: "Dynamic live interview rounds held at College Auditorium."
+    },
+    {
+      step: "03",
+      title: "Jury Deliberation",
+      date: "In Progress",
+      status: "ACTIVE",
+      icon: Zap,
+      desc: "Panel review and score aggregation across department heads."
+    },
+    {
+      step: "04",
+      title: "Official Results Unveil",
+      date: "Coming Soon",
+      status: "PENDING",
+      icon: Trophy,
+      desc: "Inducted candidate lists will be released officially."
+    }
+  ];
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
-        <Loader2 className="w-12 h-12 animate-spin text-purple-600" />
-      </div>
-    );
-  }
-
-  // RECRUITMENTS NOT ACTIVE
-  if (!recruitmentsActive) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-purple-950 text-white py-16 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-        <div className="absolute top-1/4 left-10 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-1/4 right-10 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="max-w-6xl mx-auto relative z-10 space-y-12">
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center space-y-4 max-w-3xl mx-auto"
-          >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-400 text-sm font-semibold tracking-wide backdrop-blur-md">
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
-              </span>
-              REGISTRATIONS CLOSED (LAST DAY: 25 AUG 2026)
-            </div>
-
-            <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight" style={{ fontFamily: 'Poppins, sans-serif' }}>
-              English Club <span className="bg-gradient-to-r from-blue-400 via-purple-300 to-amber-400 bg-clip-text text-transparent">Recruitment</span>
-            </h1>
-
-            <p className="text-lg sm:text-xl text-blue-100/90 font-semibold" style={{ fontFamily: 'Poppins, sans-serif' }}>
-              "New Session, New Voice, New You!"
-            </p>
-            <p className="text-sm sm:text-base text-gray-300 max-w-2xl mx-auto" style={{ fontFamily: 'Open Sans, sans-serif' }}>
-              Step in. Speak up. Stand out. Join a community where words create impact, ideas spark change and confidence grows.
-            </p>
-
-            <div className="pt-2 flex justify-center">
-              {!settingsLoading && (resultsActive || isAuthenticated) && (
-                <Link
-                  to="/results"
-                  className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-purple-600 to-indigo-600 hover:from-amber-400 hover:to-indigo-500 text-white font-bold text-sm sm:text-base shadow-xl shadow-purple-500/25 hover:shadow-purple-500/40 hover:-translate-y-0.5 transition-all"
-                >
-                  <Trophy className="w-5 h-5 text-amber-300 animate-bounce" />
-                  View Recruitment Results
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-              )}
-            </div>
-          </motion.div>
-
-          {/* Featured Major Announcement Interview Banner */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="relative rounded-3xl p-6 sm:p-8 bg-gradient-to-r from-blue-950 via-slate-900 to-indigo-950 border-2 border-blue-500/40 shadow-2xl backdrop-blur-xl overflow-hidden"
-          >
-            <div className="absolute top-0 right-0 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-            <div className="flex flex-col lg:flex-row items-center justify-between gap-6 relative z-10">
-              <div className="space-y-3 text-center lg:text-left">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 text-xs font-bold uppercase tracking-widest border border-blue-400/30">
-                  <Megaphone className="w-4 h-4 text-blue-400 animate-pulse" /> MAJOR ANNOUNCEMENT
-                </div>
-                <h2 className="text-3xl sm:text-5xl font-extrabold text-white tracking-wide" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                  RECRUITMENT <span className="bg-gradient-to-r from-blue-400 via-cyan-300 to-indigo-300 bg-clip-text text-transparent">INTERVIEWS</span>
-                </h2>
-                <p className="text-xs sm:text-sm text-blue-200/90 font-medium max-w-xl">
-                  "Words have power. You have a voice. Let's create impact together."
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 w-full lg:w-auto text-center">
-                <div className="bg-white/10 border border-blue-400/30 rounded-2xl p-4 backdrop-blur-md hover:border-blue-400 transition-colors">
-                  <Calendar className="w-6 h-6 text-blue-400 mx-auto mb-1" />
-                  <div className="text-xs text-blue-200/70 uppercase font-semibold">Date</div>
-                  <div className="text-base sm:text-lg font-extrabold text-white">26 AUG 2026</div>
-                </div>
-
-                <div className="bg-white/10 border border-cyan-400/30 rounded-2xl p-4 backdrop-blur-md hover:border-cyan-400 transition-colors">
-                  <Calendar className="w-6 h-6 text-cyan-400 mx-auto mb-1" />
-                  <div className="text-xs text-blue-200/70 uppercase font-semibold">Time</div>
-                  <div className="text-xs sm:text-sm font-extrabold text-white leading-tight mt-0.5">11:45 AM - 2:15 PM</div>
-                </div>
-
-                <div className="bg-white/10 border border-amber-400/30 rounded-2xl p-4 backdrop-blur-md hover:border-amber-400 transition-colors">
-                  <Sparkle className="w-6 h-6 text-amber-400 mx-auto mb-1" />
-                  <div className="text-xs text-blue-200/70 uppercase font-semibold">Venue</div>
-                  <div className="text-xs sm:text-sm font-extrabold text-white leading-tight mt-0.5">College Auditorium</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-6 pt-4 border-t border-blue-500/20 flex flex-wrap items-center justify-between gap-3 text-xs text-blue-200/80">
-              <span className="flex items-center gap-1.5 font-medium">
-                <CheckCircle className="w-4 h-4 text-emerald-400" /> Registration Deadline: <span className="text-amber-300 font-bold">25 August 2026</span> (Closed)
-              </span>
-              <span className="font-semibold text-cyan-300">
-                GNDEC English Club • Guru Nanak Dev Engineering College, Ludhiana
-              </span>
-            </div>
-          </motion.div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="lg:col-span-5 flex flex-col items-center"
-            >
-              <div className="relative group w-full max-w-md rounded-3xl overflow-hidden shadow-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-3">
-                <div className="relative rounded-2xl overflow-hidden">
-                  <img
-                    src={POSTER_IMAGE}
-                    alt="English Club Recruitment Poster"
-                    className="w-full h-auto object-cover transform group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center p-6">
-                    <button
-                      onClick={() => setIsPosterOpen(true)}
-                      className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/90 text-slate-900 font-semibold shadow-lg hover:bg-white transition-colors text-sm"
-                    >
-                      <Maximize2 className="w-4 h-4" /> Expand Poster
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between mt-3 px-2">
-                  <span className="text-xs text-blue-200/70 font-mono">GNDEC English Club Official Poster</span>
-                  <button
-                    onClick={() => setIsPosterOpen(true)}
-                    className="text-xs text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1"
-                  >
-                    View Full Poster <ArrowRight className="w-3 h-3" />
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: 30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-              className="lg:col-span-7 space-y-6"
-            >
-              {/* Who Can Join Card */}
-              <div className="rounded-3xl p-6 sm:p-8 bg-white/5 border border-white/10 backdrop-blur-xl space-y-4">
-                <h3 className="text-xl font-bold text-white flex items-center gap-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                  <Users className="w-5 h-5 text-blue-400" /> Who Can Join?
-                </h3>
-                <p className="text-xs sm:text-sm text-gray-300">
-                  Anyone with a passion for words, ideas, and expression!
-                </p>
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-center">
-                    <div className="text-sm font-bold text-blue-300">Writers</div>
-                  </div>
-                  <div className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-center">
-                    <div className="text-sm font-bold text-purple-300">Speakers</div>
-                  </div>
-                  <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-center">
-                    <div className="text-sm font-bold text-amber-300">Thinkers & Dreamers</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="relative rounded-3xl p-6 sm:p-8 bg-gradient-to-br from-emerald-950/80 via-slate-900 to-emerald-900/40 border border-emerald-500/30 shadow-2xl backdrop-blur-xl overflow-hidden group">
-                <div className="absolute -top-12 -right-12 w-40 h-40 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/20 transition-all pointer-events-none" />
-                
-                <div className="flex items-start gap-4">
-                  <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center flex-shrink-0 text-emerald-400 shadow-inner">
-                    <WhatsAppIcon className="w-8 h-8" />
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold uppercase tracking-wider">
-                      Official Candidate Updates
-                    </div>
-                    <h2 className="text-2xl sm:text-3xl font-bold text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                      Join Our WhatsApp Group
-                    </h2>
-                    <p className="text-sm sm:text-base text-gray-300" style={{ fontFamily: 'Open Sans, sans-serif' }}>
-                      Stay updated on interview desk calls, venue allocations, shortlist announcements, and live club updates directly on WhatsApp!
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-6 pt-4 border-t border-emerald-500/20 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-                  <span className="text-xs text-emerald-200/80 flex items-center gap-1.5">
-                    <Sparkles className="w-4 h-4 text-emerald-400" /> Free to join • Instant updates
-                  </span>
-
-                  <a
-                    href={WHATSAPP_GROUP_LINK}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-base shadow-xl shadow-emerald-500/20 hover:shadow-emerald-500/40 hover:-translate-y-0.5 transition-all"
-                  >
-                    <WhatsAppIcon className="w-5 h-5" /> Join WhatsApp Group
-                  </a>
-                </div>
-              </div>
-
-              <div className="rounded-3xl p-6 sm:p-8 bg-white/5 border border-white/10 backdrop-blur-xl space-y-4">
-                <h3 className="text-xl font-bold text-white flex items-center gap-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
-                  <CheckCircle className="w-5 h-5 text-emerald-400" /> Next Steps for Applicants
-                </h3>
-
-                <div className="space-y-3">
-                  <div className="p-3.5 rounded-xl bg-white/5 border border-white/5 flex items-start gap-3">
-                    <div className="w-6 h-6 rounded-full bg-purple-500/20 text-purple-300 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">1</div>
-                    <div className="text-xs sm:text-sm text-gray-300">
-                      <strong className="text-white block font-semibold mb-0.5">Interview Reporting</strong>
-                      Interview rounds take place on <span className="text-blue-300 font-semibold">26 August 2026</span> from <span className="text-blue-300 font-semibold">11:45 AM to 2:15 PM</span> at the <span className="text-amber-300 font-semibold">College Auditorium</span>.
-                    </div>
-                  </div>
-
-                  <div className="p-3.5 rounded-xl bg-white/5 border border-white/5 flex items-start gap-3">
-                    <div className="w-6 h-6 rounded-full bg-blue-500/20 text-blue-300 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">2</div>
-                    <div className="text-xs sm:text-sm text-gray-300">
-                      <strong className="text-white block font-semibold mb-0.5">Reporting at Desk</strong>
-                      Report at the designated interview venue with your CRN/URN confirmation when called.
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-2xl p-5 bg-blue-900/20 border border-blue-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                    <WhatsAppIcon className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="text-xs text-blue-300 font-semibold uppercase tracking-wider">In Case of Any Queries</div>
-                    <div className="text-base font-bold text-white">Raghav Kamboj</div>
-                    <div className="text-xs text-blue-200/80 font-medium">Convenor</div>
-                  </div>
-                </div>
-
-                <a
-                  href="https://wa.me/917696045458?text=Hi,%20I%20have%20a%20query%20regarding%20English%20Club%20recruitment"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm shadow-md hover:shadow-emerald-500/30 transition-all"
-                >
-                  <WhatsAppIcon className="w-4 h-4" />
-                  Chat on WhatsApp (+91 76960 45458)
-                </a>
-              </div>
-            </motion.div>
-          </div>
-
-          <div className="text-center pt-6 border-t border-white/10 text-xs sm:text-sm text-gray-400 font-medium tracking-wide">
-            COMMUNICATE &nbsp;|&nbsp; CREATE &nbsp;|&nbsp; CONNECT &nbsp;|&nbsp; GROW TOGETHER
-          </div>
+      <div className="min-h-screen flex items-center justify-center bg-slate-950 text-white">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-12 h-12 animate-spin text-purple-400" />
+          <p className="text-gray-400 text-sm font-mono animate-pulse">
+            Loading English Club Recruitment Portal...
+          </p>
         </div>
-
-        <AnimatePresence>
-          {isPosterOpen && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsPosterOpen(false)}
-              className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4"
-            >
-              <div className="relative max-w-4xl max-h-[90vh] overflow-auto rounded-2xl bg-slate-900 p-2 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-                <button
-                  onClick={() => setIsPosterOpen(false)}
-                  className="absolute top-4 right-4 p-2 rounded-full bg-black/60 text-white hover:bg-black transition-colors z-10"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-                <img
-                  src={POSTER_IMAGE}
-                  alt="Full Recruitment Poster"
-                  className="w-full h-auto max-h-[85vh] object-contain rounded-xl"
-                />
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
     );
   }
 
-  // RECRUITMENTS ARE ACTIVE
   return (
-    <div className="bg-white dark:bg-gray-950">
-      <section className="relative py-12 bg-gradient-to-br from-blue-900 via-slate-900 to-purple-950 text-white overflow-hidden">
-        <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-12 gap-8 items-center">
-          <div className="md:col-span-7 space-y-4">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-semibold uppercase tracking-wider">
-              <Sparkles className="w-3.5 h-3.5" /> Applications Now Open!
-            </div>
+    <div className="min-h-screen bg-slate-950 text-white selection:bg-purple-500 selection:text-white relative overflow-hidden font-sans">
+      {/* Interactive Particle Canvas */}
+      <ParticleBackground />
 
-            <h1 className="text-4xl lg:text-5xl font-extrabold" style={{ fontFamily: 'Poppins, sans-serif' }}>
-              Become a Part of <span className="bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text text-transparent">Our Community</span>
-            </h1>
+      {/* Ambient Radial Background Glows */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-gradient-to-b from-purple-600/15 via-blue-600/10 to-transparent blur-[160px] pointer-events-none z-0" />
+      <div className="absolute top-1/3 left-[-200px] w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[180px] pointer-events-none z-0" />
+      <div className="absolute bottom-10 right-[-150px] w-[700px] h-[700px] bg-purple-600/10 rounded-full blur-[180px] pointer-events-none z-0" />
+      <div className="absolute top-2/3 right-1/4 w-[400px] h-[400px] bg-amber-500/5 rounded-full blur-[140px] pointer-events-none z-0" />
 
-            <p className="text-base lg:text-lg text-gray-300 max-w-2xl" style={{ fontFamily: 'Open Sans, sans-serif' }}>
-              Join a vibrant community of passionate learners, speakers, and creators. Fill out the application form below to apply!
-            </p>
+      {/* Grid Pattern Overlay */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f293712_1px,transparent_1px),linear-gradient(to_bottom,#1f293712_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_70%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none z-0" />
 
-            <div className="pt-4 flex flex-wrap gap-4 items-center">
-              <button
-                type="button"
-                onClick={() => {
-                  document.getElementById('application-form')?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="group inline-flex items-center gap-3 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-purple-600 via-pink-500 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-bold text-sm shadow-xl shadow-purple-500/30 hover:shadow-purple-500/50 transition-all hover:scale-105"
-              >
-                <span>Scroll Down to Apply</span>
-                <motion.div
-                  animate={{ y: [0, 4, 0] }}
-                  transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
-                >
-                  <ArrowDown className="w-4 h-4 text-white group-hover:translate-y-1 transition-transform" />
-                </motion.div>
-              </button>
-
-              <a
-                href="https://chat.whatsapp.com/KicH5iymVi8H2ZAG5qh8Do"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2.5 px-5 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-lg shadow-emerald-600/30 hover:shadow-emerald-500/50 transition-all hover:scale-105"
-              >
-                <WhatsAppIcon className="w-5 h-5 fill-current" />
-                <span>Join WhatsApp Group</span>
-              </a>
-
-              {!settingsLoading && (resultsActive || isAuthenticated) && (
-                <Link
-                  to="/results"
-                  className="inline-flex items-center gap-2 px-5 py-3.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold text-sm border border-white/20 shadow-lg transition-all hover:scale-105"
-                >
-                  <Trophy className="w-4 h-4 text-amber-300" />
-                  Show Results
-                </Link>
-              )}
-            </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 relative z-10 space-y-16">
+        
+        {/* ========================================================================= */}
+        {/* HERO SECTION: "THE VERDICT IS BREWING" / RESULTS COMING SOON */}
+        {/* ========================================================================= */}
+        <motion.div
+          initial={{ opacity: 0, y: -30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="text-center space-y-6 max-w-4xl mx-auto"
+        >
+          {/* Pulsing Status Pill */}
+          <div className="inline-flex items-center gap-3 px-5 py-2.5 rounded-full bg-slate-900/90 border border-purple-500/40 text-purple-300 text-xs sm:text-sm font-semibold tracking-wide backdrop-blur-xl shadow-xl shadow-purple-500/10 hover:border-purple-400 transition-all">
+            <span className="relative flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-400"></span>
+            </span>
+            <span className="font-mono text-amber-300 font-bold uppercase tracking-wider">
+              RECRUITMENT RESULTS • COMING SOON
+            </span>
+            <span className="hidden sm:inline text-purple-400/50">|</span>
+            <span className="hidden sm:inline text-gray-300 text-xs">Session 2026-27</span>
           </div>
 
-          <div className="hidden md:flex md:col-span-5 justify-center">
-            <div
-              onClick={() => setIsPosterOpen(true)}
-              className="relative cursor-pointer group w-64 rounded-2xl overflow-hidden shadow-2xl border border-white/20 hover:scale-105 transition-transform"
+          {/* Main Glowing Headline */}
+          <div className="space-y-3">
+            <h1
+              className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight leading-tight"
+              style={{ fontFamily: "'Poppins', sans-serif" }}
             >
-              <img
-                src={POSTER_IMAGE}
-                alt="Recruitment Poster Preview"
-                className="w-full h-auto object-cover"
-              />
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold gap-1">
-                <Maximize2 className="w-4 h-4" /> Click to Expand
+              The Verdict is{" "}
+              <span className="bg-gradient-to-r from-amber-300 via-purple-300 to-cyan-300 bg-clip-text text-transparent drop-shadow-[0_10px_35px_rgba(168,85,247,0.3)]">
+                Brewing.
+              </span>
+            </h1>
+            <p
+              className="text-lg sm:text-2xl text-blue-100/90 font-medium max-w-2xl mx-auto"
+              style={{ fontFamily: "'Playfair Display', serif" }}
+            >
+              "Words create impact. Ideas spark change. Your new journey is taking shape."
+            </p>
+          </div>
+
+          {/* Subtle Descriptive Subtext */}
+          <p
+            className="text-sm sm:text-base text-gray-400 max-w-2xl mx-auto leading-relaxed"
+            style={{ fontFamily: "'Open Sans', sans-serif" }}
+          >
+            The interview rounds at the College Auditorium have concluded. Our executive panel is currently evaluating candidate scores and final allocations. Inducted lists will be announced shorty!
+          </p>
+
+          {/* Dynamic Live Ticker Cards */}
+          <div className="pt-4 flex flex-wrap items-center justify-center gap-3 sm:gap-6">
+            <div className="bg-slate-900/80 border border-purple-500/30 hover:border-purple-500/60 rounded-2xl px-5 py-3.5 backdrop-blur-xl shadow-xl flex items-center gap-3 transition-all hover:scale-105">
+              <Clock className="w-5 h-5 text-amber-400 animate-spin-slow" />
+              <div className="text-left">
+                <div className="text-[10px] text-gray-400 font-mono uppercase tracking-widest font-semibold">
+                  Status Matrix
+                </div>
+                <div className="text-sm font-extrabold text-white flex items-center gap-1.5 font-mono">
+                  EVALUATION IN PROGRESS
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-slate-900/80 border border-cyan-500/30 hover:border-cyan-500/60 rounded-2xl px-5 py-3.5 backdrop-blur-xl shadow-xl flex items-center gap-3 transition-all hover:scale-105">
+              <Users className="w-5 h-5 text-cyan-400" />
+              <div className="text-left">
+                <div className="text-[10px] text-gray-400 font-mono uppercase tracking-widest font-semibold">
+                  Auditorium Desk
+                </div>
+                <div className="text-sm font-extrabold text-cyan-300 font-mono">
+                  300+ APPLICANTS
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-slate-900/80 border border-emerald-500/30 hover:border-emerald-500/60 rounded-2xl px-5 py-3.5 backdrop-blur-xl shadow-xl flex items-center gap-3 transition-all hover:scale-105">
+              <Award className="w-5 h-5 text-emerald-400" />
+              <div className="text-left">
+                <div className="text-[10px] text-gray-400 font-mono uppercase tracking-widest font-semibold">
+                  Departments
+                </div>
+                <div className="text-sm font-extrabold text-emerald-300 font-mono">
+                  6 SPECIALIZED TEAMS
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
 
-      <section className="py-16 bg-gray-50 dark:bg-gray-900/50">
-        <div className="max-w-7xl mx-auto px-6">
-          <motion.div
-            className="grid md:grid-cols-3 gap-8"
-            variants={container}
-            initial="hidden"
-            animate="show"
-          >
-            {benefits.map((benefit, index) => (
-              <motion.div
-                key={index}
-                variants={item}
-                className="group p-8 rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 hover:border-purple-500 dark:hover:border-purple-500 hover:shadow-2xl hover:shadow-purple-500/20 transition-all hover:-translate-y-2"
+          {/* Action Buttons Hub */}
+          <div className="pt-6 flex flex-wrap justify-center items-center gap-4">
+            {/* WhatsApp Candidates Link */}
+            <a
+              href={WHATSAPP_GROUP_LINK}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2.5 px-6 py-4 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-500 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-sm sm:text-base shadow-xl shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:-translate-y-0.5 transition-all group"
+            >
+              <WhatsAppIcon className="w-5 h-5 fill-current group-hover:scale-110 transition-transform" />
+              <span>Join Official WhatsApp Channel</span>
+              <ArrowUpRight className="w-4 h-4 text-emerald-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+            </a>
+
+            {/* Interactive Good Luck / Cheer Button */}
+            <button
+              onClick={triggerCheer}
+              className="inline-flex items-center gap-2.5 px-6 py-4 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/20 text-white font-extrabold text-sm sm:text-base backdrop-blur-xl shadow-xl hover:-translate-y-0.5 transition-all active:scale-95 cursor-pointer"
+            >
+              <Sparkles className="w-5 h-5 text-amber-300 animate-bounce" />
+              <span>Send Good Luck ({cheerCount})</span>
+            </button>
+
+            {/* View Official Results Button (when resultsActive is true or user is logged in admin) */}
+            {!settingsLoading && (resultsActive || isAuthenticated) && (
+              <Link
+                to="/results"
+                className="inline-flex items-center gap-2.5 px-6 py-4 rounded-2xl bg-gradient-to-r from-amber-500 via-purple-600 to-indigo-600 hover:from-amber-400 hover:to-indigo-500 text-white font-extrabold text-sm sm:text-base shadow-xl shadow-purple-500/30 hover:shadow-purple-500/50 hover:-translate-y-0.5 transition-all"
               >
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-900 to-purple-700 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                  <benefit.icon className="w-8 h-8 text-white" />
-                </div>
-                <h3 className="text-2xl text-gray-900 dark:text-white mb-3" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 600 }}>
-                  {benefit.title}
-                </h3>
-                <p className="text-gray-600 dark:text-gray-300" style={{ fontFamily: 'Open Sans, sans-serif' }}>
-                  {benefit.description}
-                </p>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
+                <Trophy className="w-5 h-5 text-amber-300" />
+                <span>View Inducted Candidates</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            )}
 
-      {/* Application Form Section */}
-      <section id="application-form" className="py-20 bg-white dark:bg-gray-950">
-        <div className="max-w-5xl mx-auto px-6">
+            {/* Optional Application Form Toggle if recruitmentsActive is enabled */}
+            {recruitmentsActive && (
+              <button
+                onClick={() => setShowApplyForm(!showApplyForm)}
+                className="inline-flex items-center gap-2 px-5 py-3.5 rounded-2xl bg-purple-600/30 border border-purple-500/40 text-purple-200 hover:bg-purple-600/40 font-semibold text-sm transition-all"
+              >
+                <Layers className="w-4 h-4 text-purple-300" />
+                {showApplyForm ? "Hide Application Form" : "Open Application Form"}
+                <ChevronDown className={`w-4 h-4 transition-transform ${showApplyForm ? "rotate-180" : ""}`} />
+              </button>
+            )}
+          </div>
+        </motion.div>
+
+        {/* ========================================================================= */}
+        {/* RECRUITMENT PIPELINE TIMELINE TRACKER */}
+        {/* ========================================================================= */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.7 }}
+          className="relative rounded-3xl p-6 sm:p-10 bg-slate-900/70 border border-white/10 backdrop-blur-2xl shadow-2xl space-y-8"
+        >
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-6">
+            <div className="space-y-1">
+              <div className="inline-flex items-center gap-2 text-xs font-mono font-bold text-amber-400 uppercase tracking-widest">
+                <Radio className="w-3.5 h-3.5 animate-pulse text-amber-400" />
+                Live Status Tracker
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-white" style={{ fontFamily: "'Poppins', sans-serif" }}>
+                Recruitment Journey & Milestones
+              </h2>
+            </div>
+            <div className="text-xs text-gray-400 font-mono">
+              Guru Nanak Dev Engineering College • Ludhiana
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 relative">
+            {/* Connecting Track Line for Desktop */}
+            <div className="hidden md:block absolute top-1/2 left-8 right-8 h-0.5 bg-gradient-to-r from-emerald-500 via-amber-500 to-purple-500/40 -translate-y-6 z-0" />
+
+            {pipelineSteps.map((stepItem, idx) => {
+              const StepIcon = stepItem.icon;
+              const isCompleted = stepItem.status === "COMPLETED";
+              const isActive = stepItem.status === "ACTIVE";
+
+              return (
+                <div
+                  key={idx}
+                  className={`relative z-10 rounded-2xl p-5 border transition-all ${
+                    isActive
+                      ? "bg-gradient-to-b from-amber-500/15 via-slate-900 to-slate-900 border-amber-500/60 shadow-xl shadow-amber-500/10 scale-105"
+                      : isCompleted
+                      ? "bg-slate-900/90 border-emerald-500/40 text-gray-300"
+                      : "bg-slate-900/40 border-white/5 opacity-70"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-xs font-mono font-bold text-gray-400">
+                      STAGE {stepItem.step}
+                    </span>
+                    <div
+                      className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold shadow-md ${
+                        isCompleted
+                          ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
+                          : isActive
+                          ? "bg-amber-500/20 text-amber-300 border border-amber-500/50 animate-pulse"
+                          : "bg-white/5 text-gray-500 border border-white/10"
+                      }`}
+                    >
+                      <StepIcon className="w-5 h-5" />
+                    </div>
+                  </div>
+
+                  <h3 className="text-lg font-bold text-white mb-1" style={{ fontFamily: "'Poppins', sans-serif" }}>
+                    {stepItem.title}
+                  </h3>
+                  <div className="text-xs font-mono text-amber-300/90 font-semibold mb-2">
+                    {stepItem.date}
+                  </div>
+                  <p className="text-xs text-gray-400 leading-relaxed font-sans">
+                    {stepItem.desc}
+                  </p>
+
+                  {isActive && (
+                    <div className="mt-4 pt-3 border-t border-amber-500/20 flex items-center gap-2 text-[11px] text-amber-300 font-semibold font-mono">
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-400"></span>
+                      </span>
+                      Currently Underway
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </motion.div>
+
+        {/* ========================================================================= */}
+        {/* INTERACTIVE DEPARTMENT SHOWCASE CARDS */}
+        {/* ========================================================================= */}
+        <div className="space-y-8">
+          <div className="text-center space-y-2 max-w-2xl mx-auto">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-300 text-xs font-mono uppercase font-semibold">
+              <Sparkle className="w-3.5 h-3.5 text-blue-400" /> Elite Wings & Teams
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-white" style={{ fontFamily: "'Poppins', sans-serif" }}>
+              Explore Our Club Departments
+            </h2>
+            <p className="text-sm text-gray-400">
+              Each candidate is evaluated based on passion, creativity, and department compatibility.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {departments.map((dept, index) => {
+              const DeptIcon = dept.icon;
+
+              return (
+                <motion.div
+                  key={dept.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  className="group relative rounded-3xl p-6 bg-slate-900/60 border border-white/10 hover:border-white/20 transition-all hover:-translate-y-2 hover:shadow-2xl backdrop-blur-xl overflow-hidden"
+                >
+                  <div className={`absolute top-0 right-0 w-36 h-36 bg-gradient-to-br ${dept.color} opacity-10 rounded-full blur-2xl group-hover:opacity-25 transition-opacity pointer-events-none`} />
+
+                  <div className="flex items-center justify-between mb-4 relative z-10">
+                    <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${dept.color} p-0.5 shadow-lg`}>
+                      <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center text-white">
+                        <DeptIcon className="w-6 h-6" />
+                      </div>
+                    </div>
+                    <span className="px-3 py-1 rounded-full text-[11px] font-mono font-bold bg-white/5 border border-white/10 text-gray-300">
+                      {dept.badge}
+                    </span>
+                  </div>
+
+                  <h3 className="text-xl font-bold text-white group-hover:text-amber-300 transition-colors mb-1" style={{ fontFamily: "'Poppins', sans-serif" }}>
+                    {dept.title}
+                  </h3>
+                  <div className="text-xs font-mono text-cyan-300/80 mb-3">
+                    {dept.subtitle}
+                  </div>
+                  <p className="text-xs sm:text-sm text-gray-400 leading-relaxed font-sans">
+                    {dept.desc}
+                  </p>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ========================================================================= */}
+        {/* POSTER & WHATSAPP CANDIDATE SUPPORT SECTION */}
+        {/* ========================================================================= */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+          {/* Poster Showcase Box */}
           <motion.div
-            className="text-center mb-12"
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, x: -30 }}
+            whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
+            className="lg:col-span-5 flex flex-col"
           >
-            <h2 className="text-4xl lg:text-5xl text-gray-900 dark:text-white mb-6" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700 }}>
-              Ready to Join?
-            </h2>
-            <p className="text-lg text-gray-600 dark:text-gray-300" style={{ fontFamily: 'Open Sans, sans-serif' }}>
-              Fill out the form below and start your journey with us
-            </p>
-          </motion.div>
-
-          <div className="grid lg:grid-cols-2 gap-12 items-start">
-            <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-              className="block relative lg:sticky lg:top-24"
-            >
-              <div
-                onClick={() => setIsPosterOpen(true)}
-                className="relative rounded-3xl overflow-hidden shadow-2xl cursor-pointer group border border-gray-200 dark:border-gray-800"
-              >
+            <div className="relative group w-full h-full rounded-3xl overflow-hidden shadow-2xl border border-white/10 bg-slate-900/80 backdrop-blur-xl p-4 flex flex-col justify-between">
+              <div className="relative rounded-2xl overflow-hidden cursor-pointer flex-grow" onClick={() => setIsPosterOpen(true)}>
                 <img
                   src={POSTER_IMAGE}
                   alt="English Club Recruitment Poster"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center p-6 text-white text-sm font-semibold gap-2">
-                  <Maximize2 className="w-4 h-4" /> Expand Poster
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center p-6">
+                  <span className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/90 text-slate-950 font-bold shadow-lg text-sm">
+                    <Maximize2 className="w-4 h-4" /> Expand Poster
+                  </span>
                 </div>
               </div>
-              <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-gradient-to-br from-blue-900 to-purple-700 rounded-3xl blur-3xl opacity-50 pointer-events-none"></div>
-            </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0, x: 30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-            >
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label htmlFor="candidate_name" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                      Full Name *
-                    </label>
-                    <input
-                      type="text"
-                      id="candidate_name"
-                      name="candidate_name"
-                      value={formData.candidate_name}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                      style={{ fontFamily: 'Open Sans, sans-serif' }}
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="candidate_email" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                      Email Address *
-                    </label>
-                    <input
-                      type="email"
-                      id="candidate_email"
-                      name="candidate_email"
-                      value={formData.candidate_email}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                      style={{ fontFamily: 'Open Sans, sans-serif' }}
-                    />
-                  </div>
-
-                  <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-6">
-                    <div>
-                      <label htmlFor="year" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                        Year *
-                      </label>
-                      <select
-                        id="year"
-                        name="year"
-                        value={formData.year}
-                        onChange={handleChange}
-                        required
-                        className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                        style={{ fontFamily: 'Open Sans, sans-serif' }}
-                      >
-                        <option value="" disabled>Select Year</option>
-                        <option value="1">1</option>
-                        <option value="2">2</option>
-                        <option value="3">3</option>
-                        <option value="4">4</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label htmlFor="stream" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                        Stream *
-                      </label>
-                      <select
-                        id="stream"
-                        name="stream"
-                        value={formData.stream}
-                        onChange={handleChange}
-                        required
-                        className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                        style={{ fontFamily: 'Open Sans, sans-serif' }}
-                      >
-                        <option value="" disabled>Select Stream</option>
-                        {['IT', 'CSE', 'RAI', 'ECE', 'CE', 'EE', 'ME', 'BBA', 'BCA'].map(s => (
-                          <option key={s} value={s}>{s}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label htmlFor="section" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                        Section *
-                      </label>
-                      <input
-                        type="text"
-                        id="section"
-                        name="section"
-                        value={formData.section}
-                        onChange={handleChange}
-                        required
-                        placeholder="e.g. A"
-                        className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                        style={{ fontFamily: 'Open Sans, sans-serif' }}
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label htmlFor="candidate_crn" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                      CRN * <span className="text-xs font-normal text-purple-600 dark:text-purple-400">(Enter 123 if not assigned yet)</span>
-                    </label>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      id="candidate_crn"
-                      name="candidate_crn"
-                      value={formData.candidate_crn}
-                      onChange={handleChange}
-                      placeholder="e.g. 2315001 or 123"
-                      required
-                      className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                      style={{ fontFamily: 'Open Sans, sans-serif' }}
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="candidate_urn" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                      URN (Optional) <span className="text-xs font-normal text-purple-600 dark:text-purple-400">(Enter 123 if not assigned yet)</span>
-                    </label>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      id="candidate_urn"
-                      name="candidate_urn"
-                      value={formData.candidate_urn}
-                      onChange={handleChange}
-                      placeholder="e.g. 2303001 or 123"
-                      className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                      style={{ fontFamily: 'Open Sans, sans-serif' }}
-                    />
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <label htmlFor="interested_department" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                      Interested Department *
-                    </label>
-                    <select
-                      id="interested_department"
-                      name="interested_department"
-                      value={formData.interested_department}
-                      onChange={handleChange}
-                      required
-                      className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                      style={{ fontFamily: 'Open Sans, sans-serif' }}
-                    >
-                      <option value="TECHNICAL">Technical</option>
-                      <option value="EVENT_MANAGEMENT">Event Management</option>
-                      <option value="FINANCE_&_MARKET_RELATIONS">Finance & Market Relations</option>
-                      <option value="CREATIVE_&_PHOTOGRAPHY">Creative & Photography</option>
-                      <option value="PROMOTION">Promotion</option>
-                      <option value="ANCHORING">Anchoring</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* --- DYNAMIC CUSTOM FORM QUESTIONS --- */}
-                {dynamicQuestions.length > 0 ? (
-                  <div className="space-y-6 pt-4 border-t border-gray-200 dark:border-gray-800">
-                    {dynamicQuestions.map((q) => (
-                      <div key={q.question_id} className="space-y-2">
-                        <label className="block text-sm text-gray-700 dark:text-gray-300 font-semibold">
-                          {q.question_label} {q.is_required && <span className="text-red-500">*</span>}
-                        </label>
-
-                        {/* SHORT TEXT */}
-                        {q.question_type === 'SHORT_TEXT' && (
-                          <input
-                            type="text"
-                            value={customAnswers[q.question_id] || ''}
-                            onChange={(e) => handleCustomAnswerChange(q.question_id, e.target.value)}
-                            placeholder={q.placeholder || ''}
-                            required={q.is_required}
-                            className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                          />
-                        )}
-
-                        {/* LONG TEXT */}
-                        {q.question_type === 'LONG_TEXT' && (
-                          <textarea
-                            value={customAnswers[q.question_id] || ''}
-                            onChange={(e) => handleCustomAnswerChange(q.question_id, e.target.value)}
-                            placeholder={q.placeholder || ''}
-                            required={q.is_required}
-                            rows={4}
-                            className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all resize-none"
-                          />
-                        )}
-
-                        {/* DROPDOWN */}
-                        {q.question_type === 'DROPDOWN' && (
-                          <select
-                            value={customAnswers[q.question_id] || ''}
-                            onChange={(e) => handleCustomAnswerChange(q.question_id, e.target.value)}
-                            required={q.is_required}
-                            className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                          >
-                            <option value="" disabled>Select an option...</option>
-                            {q.options?.map((opt) => (
-                              <option key={opt} value={opt}>{opt}</option>
-                            ))}
-                          </select>
-                        )}
-
-                        {/* MULTIPLE CHOICE CHECKBOXES */}
-                        {q.question_type === 'MULTIPLE_CHOICE' && (
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                            {q.options?.map((opt) => {
-                              const selectedList: string[] = customAnswers[q.question_id] || [];
-                              const isChecked = selectedList.includes(opt);
-                              return (
-                                <label key={opt} className="flex items-center gap-3 p-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer transition-colors">
-                                  <input
-                                    type="checkbox"
-                                    checked={isChecked}
-                                    onChange={(e) => {
-                                      const newList = e.target.checked
-                                        ? [...selectedList, opt]
-                                        : selectedList.filter((item) => item !== opt);
-                                      handleCustomAnswerChange(q.question_id, newList);
-                                    }}
-                                    className="w-4 h-4 text-purple-600 rounded border-gray-300 focus:ring-purple-500"
-                                  />
-                                  <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{opt}</span>
-                                </label>
-                              );
-                            })}
-                          </div>
-                        )}
-
-                        {/* SINGLE CHECKBOX */}
-                        {q.question_type === 'CHECKBOX' && (
-                          <label className="flex items-center gap-3 p-3.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={!!customAnswers[q.question_id]}
-                              onChange={(e) => handleCustomAnswerChange(q.question_id, e.target.checked)}
-                              required={q.is_required}
-                              className="w-4 h-4 text-purple-600 rounded border-gray-300 focus:ring-purple-500"
-                            />
-                            <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                              {q.placeholder || 'I confirm / agree'}
-                            </span>
-                          </label>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  /* Fallback standard questions if no dynamic questions exist in DB */
-                  <>
-                    <div>
-                      <label htmlFor="candidate_description" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                        Introduce Yourself *
-                      </label>
-                      <textarea
-                        id="candidate_description"
-                        name="candidate_description"
-                        value={formData.candidate_description}
-                        onChange={handleChange}
-                        required
-                        rows={3}
-                        placeholder="Tell us a little about yourself..."
-                        className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all resize-none"
-                        style={{ fontFamily: 'Open Sans, sans-serif' }}
-                      />
-                    </div>
-
-                    <div>
-                      <label htmlFor="candidate_why_eligible" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                        Why do you want to be part of this club and how can you contribute? *
-                      </label>
-                      <textarea
-                        id="candidate_why_eligible"
-                        name="candidate_why_eligible"
-                        value={formData.candidate_why_eligible}
-                        onChange={handleChange}
-                        required
-                        rows={4}
-                        placeholder="Share your motivation and potential contributions..."
-                        className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all resize-none"
-                        style={{ fontFamily: 'Open Sans, sans-serif' }}
-                      />
-                    </div>
-                  </>
-                )}
-
+              <div className="flex items-center justify-between mt-4 px-2">
+                <span className="text-xs text-gray-400 font-mono">GNDEC English Club Official Campaign</span>
                 <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full px-8 py-4 rounded-xl bg-gradient-to-r from-blue-900 to-purple-700 text-white hover:shadow-2xl hover:shadow-purple-500/50 transition-all hover:scale-105 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-3"
-                  style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}
+                  onClick={() => setIsPosterOpen(true)}
+                  className="text-xs text-amber-300 hover:text-amber-200 font-bold flex items-center gap-1 cursor-pointer"
                 >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      <span>Submitting...</span>
-                    </>
-                  ) : (
-                    "Submit Application"
-                  )}
+                  View High-Res <ArrowRight className="w-3 h-3" />
                 </button>
-              </form>
-            </motion.div>
-          </div>
-        </div>
-      </section>
+              </div>
+            </div>
+          </motion.div>
 
-      {/* Submission Success Modal */}
-      {isSubmitted && (
-        <motion.div
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-6"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-        >
+          {/* Candidate Support & WhatsApp Hub Card */}
           <motion.div
-            className="bg-white dark:bg-gray-900 rounded-3xl p-8 sm:p-12 max-w-md text-center shadow-2xl relative border border-slate-200 dark:border-slate-800"
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.8, opacity: 0 }}
+            initial={{ opacity: 0, x: 30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="lg:col-span-7 flex flex-col justify-between space-y-6"
           >
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-            >
-              <CheckCircle className="w-16 h-16 sm:w-20 sm:h-20 text-emerald-500 mx-auto mb-4 sm:mb-6" />
-            </motion.div>
-            <h3 className="text-2xl sm:text-3xl text-gray-900 dark:text-white mb-3" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700 }}>
-              Application Submitted!
-            </h3>
-            <p className="text-gray-600 dark:text-gray-300 text-sm sm:text-base mb-6" style={{ fontFamily: 'Open Sans, sans-serif' }}>
-              Thank you for your interest. We'll review your application and get back to you soon!
-            </p>
+            {/* WhatsApp Official Candidates Banner */}
+            <div className="relative rounded-3xl p-6 sm:p-8 bg-gradient-to-br from-emerald-950/80 via-slate-900 to-teal-950/90 border border-emerald-500/40 shadow-2xl backdrop-blur-2xl overflow-hidden space-y-6">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
-            <div className="pt-6 border-t border-gray-100 dark:border-gray-800 flex flex-col gap-3">
-              <p className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">
-                Join our official WhatsApp group for real-time recruitment updates:
-              </p>
+              <div className="flex items-start gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center flex-shrink-0 text-emerald-400 shadow-inner">
+                  <WhatsAppIcon className="w-8 h-8" />
+                </div>
+                <div className="space-y-1">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[11px] font-mono font-bold uppercase tracking-wider">
+                    Official Announcement Desk
+                  </div>
+                  <h3 className="text-2xl sm:text-3xl font-extrabold text-white" style={{ fontFamily: "'Poppins', sans-serif" }}>
+                    Candidate WhatsApp Community
+                  </h3>
+                  <p className="text-xs sm:text-sm text-emerald-100/80 leading-relaxed" style={{ fontFamily: "'Open Sans', sans-serif" }}>
+                    Be the first to receive result drops, induction orientation schedules, venue guidelines, and direct updates on your phone.
+                  </p>
+                </div>
+              </div>
+
+              <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 border-t border-emerald-500/20">
+                <span className="text-xs text-emerald-300/80 flex items-center gap-1.5 font-mono">
+                  <Sparkles className="w-4 h-4 text-emerald-400" /> Free to join • Verified Channel
+                </span>
+
+                <a
+                  href={WHATSAPP_GROUP_LINK}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-sm shadow-xl shadow-emerald-500/20 hover:shadow-emerald-500/40 hover:-translate-y-0.5 transition-all"
+                >
+                  <WhatsAppIcon className="w-5 h-5" />
+                  <span>Join Candidates Group</span>
+                </a>
+              </div>
+            </div>
+
+            {/* Direct Convenor Contact Box */}
+            <div className="rounded-3xl p-6 bg-slate-900/70 border border-white/10 backdrop-blur-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400">
+                  <MessageCircle className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="text-[10px] text-blue-300 font-mono font-bold uppercase tracking-wider">Candidate Support</div>
+                  <div className="text-base font-extrabold text-white">Raghav Kamboj</div>
+                  <div className="text-xs text-gray-400 font-medium">Convenor • GNDEC English Club</div>
+                </div>
+              </div>
+
               <a
-                href="https://chat.whatsapp.com/KicH5iymVi8H2ZAG5qh8Do"
+                href="https://wa.me/917696045458?text=Hi,%20I%20have%20a%20query%20regarding%20English%20Club%20recruitment%20results"
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={() => setIsSubmitted(false)}
-                className="inline-flex items-center justify-center gap-2.5 w-full px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition-all shadow-lg shadow-emerald-600/25 active:scale-[0.98]"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-white font-bold text-xs shadow-md transition-all hover:scale-105"
               >
-                <WhatsAppIcon className="w-5 h-5 fill-current" />
-                <span>Join WhatsApp Group</span>
+                <WhatsAppIcon className="w-4 h-4 text-emerald-400" />
+                <span>Chat on WhatsApp (+91 76960 45458)</span>
               </a>
             </div>
           </motion.div>
-        </motion.div>
-      )}
+        </div>
 
-      {/* Poster Lightbox Modal */}
+        {/* ========================================================================= */}
+        {/* OPTIONAL APPLICATION FORM (EXPANDED IF RECRUITMENTS ARE ACTIVE) */}
+        {/* ========================================================================= */}
+        <AnimatePresence>
+          {recruitmentsActive && showApplyForm && (
+            <motion.section
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              id="application-form"
+              className="pt-8 overflow-hidden"
+            >
+              <div className="rounded-3xl p-6 sm:p-10 bg-slate-900/90 border border-purple-500/40 shadow-2xl backdrop-blur-2xl space-y-8">
+                <div className="text-center space-y-2">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-mono uppercase font-bold">
+                    <Sparkles className="w-3.5 h-3.5" /> Registrations Open
+                  </div>
+                  <h2 className="text-3xl font-extrabold text-white" style={{ fontFamily: "'Poppins', sans-serif" }}>
+                    Candidate Registration Form
+                  </h2>
+                  <p className="text-sm text-gray-400">
+                    Fill out the form details below to submit your application.
+                  </p>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-6 max-w-3xl mx-auto">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-300 uppercase mb-2">
+                        Full Name *
+                      </label>
+                      <input
+                        type="text"
+                        name="candidate_name"
+                        value={formData.candidate_name}
+                        onChange={handleChange}
+                        required
+                        className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-300 uppercase mb-2">
+                        Email Address *
+                      </label>
+                      <input
+                        type="email"
+                        name="candidate_email"
+                        value={formData.candidate_email}
+                        onChange={handleChange}
+                        required
+                        className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="md:col-span-2 grid grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-300 uppercase mb-2">
+                          Year *
+                        </label>
+                        <select
+                          name="year"
+                          value={formData.year}
+                          onChange={handleChange}
+                          required
+                          className="w-full px-4 py-3 rounded-xl border border-white/10 bg-slate-900 text-white focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                        >
+                          <option value="" disabled>Select Year</option>
+                          <option value="1">1</option>
+                          <option value="2">2</option>
+                          <option value="3">3</option>
+                          <option value="4">4</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-300 uppercase mb-2">
+                          Stream *
+                        </label>
+                        <select
+                          name="stream"
+                          value={formData.stream}
+                          onChange={handleChange}
+                          required
+                          className="w-full px-4 py-3 rounded-xl border border-white/10 bg-slate-900 text-white focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                        >
+                          <option value="" disabled>Select Stream</option>
+                          {['IT', 'CSE', 'RAI', 'ECE', 'CE', 'EE', 'ME', 'BBA', 'BCA'].map((s) => (
+                            <option key={s} value={s}>{s}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-300 uppercase mb-2">
+                          Section *
+                        </label>
+                        <input
+                          type="text"
+                          name="section"
+                          value={formData.section}
+                          onChange={handleChange}
+                          required
+                          placeholder="e.g. A"
+                          className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-300 uppercase mb-2">
+                        CRN *
+                      </label>
+                      <input
+                        type="text"
+                        name="candidate_crn"
+                        value={formData.candidate_crn}
+                        onChange={handleChange}
+                        placeholder="e.g. 2315001"
+                        required
+                        className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-300 uppercase mb-2">
+                        URN (Optional)
+                      </label>
+                      <input
+                        type="text"
+                        name="candidate_urn"
+                        value={formData.candidate_urn}
+                        onChange={handleChange}
+                        placeholder="e.g. 2303001"
+                        className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-semibold text-gray-300 uppercase mb-2">
+                        Interested Department *
+                      </label>
+                      <select
+                        name="interested_department"
+                        value={formData.interested_department}
+                        onChange={handleChange}
+                        required
+                        className="w-full px-4 py-3 rounded-xl border border-white/10 bg-slate-900 text-white focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                      >
+                        <option value="TECHNICAL">Technical</option>
+                        <option value="EVENT_MANAGEMENT">Event Management</option>
+                        <option value="FINANCE_&_MARKET_RELATIONS">Finance & Market Relations</option>
+                        <option value="CREATIVE_&_PHOTOGRAPHY">Creative & Photography</option>
+                        <option value="PROMOTION">Promotion</option>
+                        <option value="ANCHORING">Anchoring</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-300 uppercase mb-2">
+                      Introduce Yourself *
+                    </label>
+                    <textarea
+                      name="candidate_description"
+                      value={formData.candidate_description}
+                      onChange={handleChange}
+                      required
+                      rows={3}
+                      placeholder="Share your interests, skills, and background..."
+                      className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white focus:ring-2 focus:ring-purple-500 focus:outline-none resize-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-300 uppercase mb-2">
+                      Why do you want to join English Club? *
+                    </label>
+                    <textarea
+                      name="candidate_why_eligible"
+                      value={formData.candidate_why_eligible}
+                      onChange={handleChange}
+                      required
+                      rows={3}
+                      placeholder="Explain how you can contribute..."
+                      className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white focus:ring-2 focus:ring-purple-500 focus:outline-none resize-none"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full py-4 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-extrabold text-base shadow-xl hover:shadow-purple-500/30 hover:scale-[1.02] transition-all disabled:opacity-50"
+                  >
+                    {isSubmitting ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <Loader2 className="w-5 h-5 animate-spin" /> Submitting Application...
+                      </span>
+                    ) : (
+                      "Submit Application"
+                    )}
+                  </button>
+                </form>
+              </div>
+            </motion.section>
+          )}
+        </AnimatePresence>
+
+        {/* Footer Accent */}
+        <div className="pt-8 text-center border-t border-white/10 text-xs text-gray-400 font-mono tracking-widest uppercase">
+          GNDEC ENGLISH CLUB • COMMUNICATE &nbsp;|&nbsp; CREATE &nbsp;|&nbsp; CONNECT &nbsp;|&nbsp; GROW
+        </div>
+      </div>
+
+      {/* Lightbox Modal for Poster */}
       <AnimatePresence>
         {isPosterOpen && (
           <motion.div
@@ -992,10 +1063,13 @@ export function JoinUs() {
             onClick={() => setIsPosterOpen(false)}
             className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4"
           >
-            <div className="relative max-w-4xl max-h-[90vh] overflow-auto rounded-2xl bg-slate-900 p-2 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div
+              className="relative max-w-4xl max-h-[90vh] overflow-auto rounded-2xl bg-slate-900 p-2 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
               <button
                 onClick={() => setIsPosterOpen(false)}
-                className="absolute top-4 right-4 p-2 rounded-full bg-black/60 text-white hover:bg-black transition-colors z-10"
+                className="absolute top-4 right-4 p-2.5 rounded-full bg-black/70 text-white hover:bg-black transition-colors z-10 cursor-pointer"
               >
                 <X className="w-6 h-6" />
               </button>
@@ -1009,6 +1083,42 @@ export function JoinUs() {
         )}
       </AnimatePresence>
 
+      {/* Submission Success Modal */}
+      <AnimatePresence>
+        {isSubmitted && (
+          <motion.div
+            className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="bg-slate-900 rounded-3xl p-8 sm:p-12 max-w-md text-center shadow-2xl relative border border-white/10"
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+            >
+              <CheckCircle className="w-20 h-20 text-emerald-400 mx-auto mb-4 animate-bounce" />
+              <h3 className="text-2xl font-extrabold text-white mb-2" style={{ fontFamily: "'Poppins', sans-serif" }}>
+                Application Received!
+              </h3>
+              <p className="text-gray-300 text-sm mb-6">
+                Thank you for applying to GNDEC English Club! Join our official WhatsApp candidates group for immediate updates.
+              </p>
+              <a
+                href={WHATSAPP_GROUP_LINK}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setIsSubmitted(false)}
+                className="inline-flex items-center justify-center gap-2.5 w-full py-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold transition-all shadow-lg"
+              >
+                <WhatsAppIcon className="w-5 h-5 fill-current" />
+                <span>Join WhatsApp Group</span>
+              </a>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
