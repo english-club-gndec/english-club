@@ -98,10 +98,15 @@ export function Team() {
       .trim();
 
   const resolveSectionForMember = (member: Member): string | null => {
+    const rawPosition = String(member.member_postion ?? '').toUpperCase().trim();
+    if (rawPosition === 'ACTIVE_MEMBER' || rawPosition === 'ACTIVE MEMBER' || rawPosition === 'ACTIVE') {
+      return null;
+    }
+
     const position = normalizeSectionValue(member.member_postion);
     const clubDepartment = normalizeSectionValue(member.member_club_department);
 
-    if (position === 'CO CONVENOR' || position === 'CO CONVENOR') return 'CO-CONVENOR';
+    if (position === 'CO CONVENOR' || position === 'CO-CONVENOR') return 'CO-CONVENOR';
     if (position === 'CONVENOR') return 'CONVENOR';
     if (position === 'EXECUTIVE MEMBER' || position === 'EXECUTIVE') return 'EXECUTIVE';
     if (clubDepartment === 'CO CONVENOR') return 'CO-CONVENOR';
