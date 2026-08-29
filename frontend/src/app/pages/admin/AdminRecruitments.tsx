@@ -81,6 +81,18 @@ export function AdminRecruitments() {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingCandidate, setEditingCandidate] = useState<Candidate | null>(null);
+  const [editCandidateFormData, setEditCandidateFormData] = useState({
+    candidate_name: '',
+    candidate_class: '',
+    candidate_crn: '',
+    candidate_urn: '',
+    candidate_email: '',
+    candidate_mobile_no: '',
+    interested_department: '',
+    candidate_description: '',
+    candidate_why_eligible: ''
+  });
+  const [isSavingCandidate, setIsSavingCandidate] = useState(false);
   const [viewingCandidate, setViewingCandidate] = useState<Candidate | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const [recruitmentsActive, setRecruitmentsActive] = useState(false);
@@ -546,6 +558,59 @@ export function AdminRecruitments() {
       toast.error(error.message || "Failed to update status");
     } finally {
       setIsUpdatingStatus(false);
+    }
+  };
+
+  // Candidate Edit Handlers
+  const handleOpenEditCandidate = (candidate: Candidate) => {
+    setEditingCandidate(candidate);
+    setEditCandidateFormData({
+      candidate_name: candidate.candidate_name || '',
+      candidate_class: candidate.candidate_class || '',
+      candidate_crn: candidate.candidate_crn ? String(candidate.candidate_crn) : '',
+      candidate_urn: candidate.candidate_urn ? String(candidate.candidate_urn) : '',
+      candidate_email: candidate.candidate_email || '',
+      candidate_mobile_no: candidate.candidate_mobile_no || '',
+      interested_department: candidate.interested_department || 'TECHNICAL',
+      candidate_description: candidate.candidate_description || '',
+      candidate_why_eligible: candidate.candidate_why_eligible || ''
+    });
+  };
+
+  const handleSaveCandidateEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCandidate) return;
+
+    try {
+      setIsSavingCandidate(true);
+      const payload = {
+        candidate_name: editCandidateFormData.candidate_name,
+        candidate_class: editCandidateFormData.candidate_class,
+        candidate_crn: editCandidateFormData.candidate_crn ? Number(editCandidateFormData.candidate_crn) : null,
+        candidate_urn: editCandidateFormData.candidate_urn ? Number(editCandidateFormData.candidate_urn) : null,
+        candidate_email: editCandidateFormData.candidate_email,
+        candidate_mobile_no: editCandidateFormData.candidate_mobile_no,
+        interested_department: editCandidateFormData.interested_department,
+        candidate_description: editCandidateFormData.candidate_description,
+        candidate_why_eligible: editCandidateFormData.candidate_why_eligible
+      };
+
+      await recruitmentServices.updateCandidateById(editingCandidate.candidate_id, payload);
+      toast.success("Candidate updated successfully");
+
+      if (viewingCandidate && viewingCandidate.candidate_id === editingCandidate.candidate_id) {
+        setViewingCandidate({
+          ...viewingCandidate,
+          ...payload
+        });
+      }
+
+      setEditingCandidate(null);
+      fetchCandidates();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update candidate");
+    } finally {
+      setIsSavingCandidate(false);
     }
   };
 
@@ -1210,8 +1275,18 @@ export function AdminRecruitments() {
                                 </button>
                                 {!isInterviewee && (
                                   <button
+                                    onClick={() => handleOpenEditCandidate(candidate)}
+                                    className="px-2.5 py-1.5 rounded-lg text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/50 transition-colors cursor-pointer"
+                                    title="Edit Candidate Details"
+                                  >
+                                    <Edit2 className="w-4 h-4" />
+                                  </button>
+                                )}
+                                {!isInterviewee && (
+                                  <button
                                     onClick={() => promptDeleteSingle(candidate)}
                                     className="px-2.5 py-1.5 rounded-lg text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/50 transition-colors cursor-pointer"
+                                    title="Delete Candidate"
                                   >
                                     <Trash2 className="w-4 h-4" />
                                   </button>
@@ -1534,12 +1609,23 @@ export function AdminRecruitments() {
                     CRN: {viewingCandidate.candidate_crn} • Class: {viewingCandidate.candidate_class}
                   </p>
                 </div>
-                <button
-                  onClick={() => setViewingCandidate(null)}
-                  className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 cursor-pointer"
-                >
-                  <X className="w-6 h-6" />
-                </button>
+                <div className="flex items-center gap-2">
+                  {!isInterviewee && (
+                    <button
+                      onClick={() => handleOpenEditCandidate(viewingCandidate)}
+                      className="p-2 rounded-full hover:bg-blue-50 dark:hover:bg-blue-950/50 text-blue-600 dark:text-blue-400 cursor-pointer"
+                      title="Edit Candidate Details"
+                    >
+                      <Edit2 className="w-5 h-5" />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setViewingCandidate(null)}
+                    className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 cursor-pointer"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -2178,6 +2264,253 @@ export function AdminRecruitments() {
                   {isDeletingQuestion ? "Deleting..." : "Delete Question"}
                 </button>
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* --- DELETE CANDIDATE(S) CONFIRMATION MODAL --- */}
+      <AnimatePresence>
+        {deleteConfirmIds.length > 0 && (
+          <motion.div
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl border border-gray-200 dark:border-gray-800 p-6 space-y-4"
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+            >
+              <div className="flex items-center gap-3 text-red-600 dark:text-red-500">
+                <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-xl">
+                  <AlertTriangle className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">Delete Candidate Application(s)</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Irreversible deletion</p>
+                </div>
+              </div>
+
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                {deleteConfirmIds.length === 1 ? (
+                  <>
+                    Are you sure you want to delete the application for{" "}
+                    <span className="font-bold text-gray-900 dark:text-white">
+                      "{candidateToDelete?.candidate_name || 'this candidate'}"
+                    </span>?
+                  </>
+                ) : (
+                  <>
+                    Are you sure you want to delete <span className="font-bold text-red-600">{deleteConfirmIds.length}</span> selected candidate applications?
+                  </>
+                )}
+              </p>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDeleteConfirmIds([]);
+                    setCandidateToDelete(null);
+                  }}
+                  disabled={isDeleting}
+                  className="px-4 py-2 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors font-medium text-sm cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmDeleteCandidates}
+                  disabled={isDeleting}
+                  className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold transition-colors flex items-center gap-2 text-sm shadow-md shadow-red-500/20 cursor-pointer"
+                >
+                  {isDeleting && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {isDeleting ? "Deleting..." : "Delete Application(s)"}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* --- EDIT CANDIDATE DETAILS MODAL --- */}
+      <AnimatePresence>
+        {editingCandidate && (
+          <motion.div
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="bg-white dark:bg-gray-900 rounded-3xl w-full max-w-xl overflow-hidden shadow-2xl border border-gray-200 dark:border-gray-800 my-8 p-6 sm:p-8 space-y-6"
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+            >
+              <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-800 pb-4">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                  Edit Candidate Details
+                </h3>
+                <button
+                  onClick={() => setEditingCandidate(null)}
+                  className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveCandidateEdit} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                      Candidate Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={editCandidateFormData.candidate_name}
+                      onChange={(e) => setEditCandidateFormData({ ...editCandidateFormData, candidate_name: e.target.value })}
+                      required
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                      Class / Branch *
+                    </label>
+                    <input
+                      type="text"
+                      value={editCandidateFormData.candidate_class}
+                      onChange={(e) => setEditCandidateFormData({ ...editCandidateFormData, candidate_class: e.target.value })}
+                      required
+                      placeholder="e.g. D2 CSE B"
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                      CRN
+                    </label>
+                    <input
+                      type="text"
+                      value={editCandidateFormData.candidate_crn}
+                      onChange={(e) => setEditCandidateFormData({ ...editCandidateFormData, candidate_crn: e.target.value })}
+                      placeholder="e.g. 2515001"
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm font-mono"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                      URN
+                    </label>
+                    <input
+                      type="text"
+                      value={editCandidateFormData.candidate_urn}
+                      onChange={(e) => setEditCandidateFormData({ ...editCandidateFormData, candidate_urn: e.target.value })}
+                      placeholder="e.g. 2501001"
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm font-mono"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                      Email Address *
+                    </label>
+                    <input
+                      type="email"
+                      value={editCandidateFormData.candidate_email}
+                      onChange={(e) => setEditCandidateFormData({ ...editCandidateFormData, candidate_email: e.target.value })}
+                      required
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                      Phone Number
+                    </label>
+                    <input
+                      type="tel"
+                      value={editCandidateFormData.candidate_mobile_no}
+                      onChange={(e) => setEditCandidateFormData({ ...editCandidateFormData, candidate_mobile_no: e.target.value })}
+                      placeholder="Mobile number..."
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm font-mono"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    Interested Department *
+                  </label>
+                  <select
+                    value={editCandidateFormData.interested_department}
+                    onChange={(e) => setEditCandidateFormData({ ...editCandidateFormData, interested_department: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm font-semibold"
+                  >
+                    <option value="TECHNICAL">TECHNICAL</option>
+                    <option value="EVENT_MANAGEMENT">EVENT MANAGEMENT</option>
+                    <option value="FINANCE_&_MARKET_RELATIONS">FINANCE & MARKET RELATIONS</option>
+                    <option value="CREATIVE_&_PHOTOGRAPHY">CREATIVE & PHOTOGRAPHY</option>
+                    <option value="PROMOTION">PROMOTION</option>
+                    <option value="ANCHORING">ANCHORING</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    About Candidate / Description
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={editCandidateFormData.candidate_description}
+                    onChange={(e) => setEditCandidateFormData({ ...editCandidateFormData, candidate_description: e.target.value })}
+                    placeholder="Candidate description..."
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    Why Eligible
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={editCandidateFormData.candidate_why_eligible}
+                    onChange={(e) => setEditCandidateFormData({ ...editCandidateFormData, candidate_why_eligible: e.target.value })}
+                    placeholder="Why candidate is eligible..."
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                  />
+                </div>
+
+                <div className="pt-4 flex justify-end gap-3 border-t border-gray-200 dark:border-gray-800">
+                  <button
+                    type="button"
+                    onClick={() => setEditingCandidate(null)}
+                    className="px-4 py-2 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors font-medium text-sm cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSavingCandidate}
+                    className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold transition-colors flex items-center gap-2 text-sm shadow-md shadow-blue-500/20 cursor-pointer"
+                  >
+                    {isSavingCandidate && <Loader2 className="w-4 h-4 animate-spin" />}
+                    {isSavingCandidate ? "Saving Changes..." : "Save Candidate Details"}
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </motion.div>
         )}
