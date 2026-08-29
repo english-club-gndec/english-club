@@ -105,7 +105,7 @@ const recruitmentController = {
     try {
       let query = supabase
         .from('candidates')
-        .select('candidate_id, candidate_name, candidate_email, candidate_mobile_no, candidate_class, candidate_stream, candidate_year, section, candidate_crn, candidate_urn, interested_department, candidate_status, created_at, updated_at');
+        .select('*');
 
       if (req.user && req.user.user_role === 'INTERVIEWEE') {
         const { data: userData } = await supabase
