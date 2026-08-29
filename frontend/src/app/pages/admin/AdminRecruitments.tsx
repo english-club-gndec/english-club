@@ -1595,12 +1595,13 @@ export function AdminRecruitments() {
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className="bg-white dark:bg-gray-900 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl border border-gray-200 dark:border-gray-800 my-8 p-6 sm:p-8 space-y-6"
+              className="bg-white dark:bg-gray-900 rounded-3xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl border border-gray-200 dark:border-gray-800 my-8 p-6 sm:p-8"
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
             >
-              <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-800 pb-4">
+              {/* Fixed Header */}
+              <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-800 pb-4 shrink-0">
                 <div>
                   <h3 className="text-2xl font-bold text-gray-900 dark:text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>
                     {viewingCandidate.candidate_name}
@@ -1628,71 +1629,103 @@ export function AdminRecruitments() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-xs text-gray-400 uppercase font-semibold block">Email</span>
-                  <span className="text-gray-900 dark:text-white font-medium">{viewingCandidate.candidate_email}</span>
+              {/* Scrollable Body Content */}
+              <div className="flex-1 overflow-y-auto py-4 pr-1 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-xs text-gray-400 uppercase font-semibold block">Email</span>
+                    <span className="text-gray-900 dark:text-white font-medium">{viewingCandidate.candidate_email}</span>
+                  </div>
+                  <div>
+                    <span className="text-xs text-gray-400 uppercase font-semibold block">Department</span>
+                    <span className="text-gray-900 dark:text-white font-medium">{formatDepartment(viewingCandidate.interested_department)}</span>
+                  </div>
+                  <div>
+                    <span className="text-xs text-gray-400 uppercase font-semibold block">Phone Number</span>
+                    <input
+                      type="tel"
+                      value={newMobileNo}
+                      onChange={(e) => setNewMobileNo(e.target.value)}
+                      placeholder="Enter candidate phone number..."
+                      className="w-full mt-1 px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                    />
+                  </div>
+                  <div>
+                    <span className="text-xs text-gray-400 uppercase font-semibold block">Application Status</span>
+                    <select
+                      value={newStatus}
+                      onChange={(e) => setNewStatus(e.target.value)}
+                      className="w-full mt-1 px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm font-semibold"
+                    >
+                      <option value="PENDING">PENDING</option>
+                      <option value="IN_REVIEW">IN_REVIEW</option>
+                      <option value="PRESENT">PRESENT</option>
+                      <option value="SELECTED">SELECTED</option>
+                      <option value="REJECTED">REJECTED</option>
+                    </select>
+                  </div>
                 </div>
-                <div>
-                  <span className="text-xs text-gray-400 uppercase font-semibold block">Department</span>
-                  <span className="text-gray-900 dark:text-white font-medium">{formatDepartment(viewingCandidate.interested_department)}</span>
-                </div>
-                <div>
-                  <span className="text-xs text-gray-400 uppercase font-semibold block">Phone Number</span>
-                  <input
-                    type="tel"
-                    value={newMobileNo}
-                    onChange={(e) => setNewMobileNo(e.target.value)}
-                    placeholder="Enter candidate phone number..."
-                    className="w-full mt-1 px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+
+                {viewingCandidate.candidate_description && (
+                  <div className="space-y-1">
+                    <span className="text-xs text-gray-400 uppercase font-semibold block">Introduce Yourself</span>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/50 p-3 rounded-xl leading-relaxed">
+                      {viewingCandidate.candidate_description}
+                    </p>
+                  </div>
+                )}
+
+                {viewingCandidate.candidate_why_eligible && (
+                  <div className="space-y-1">
+                    <span className="text-xs text-gray-400 uppercase font-semibold block">Why join English Club?</span>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/50 p-3 rounded-xl leading-relaxed">
+                      {viewingCandidate.candidate_why_eligible}
+                    </p>
+                  </div>
+                )}
+
+                {viewingCandidate.custom_answers && Object.keys(viewingCandidate.custom_answers).length > 0 && (
+                  <div className="space-y-3 pt-3 border-t border-gray-200 dark:border-gray-800">
+                    <span className="text-xs font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider block">
+                      Custom Form Answers
+                    </span>
+                    {Object.entries(viewingCandidate.custom_answers).map(([qId, ans]) => {
+                      const questionObj = questions.find(q => q.question_id === qId);
+                      const label = questionObj?.question_label || qId;
+                      const formattedAns = Array.isArray(ans)
+                        ? ans.join(", ")
+                        : typeof ans === "boolean"
+                          ? (ans ? "Yes" : "No")
+                          : String(ans ?? "");
+
+                      if (!formattedAns) return null;
+
+                      return (
+                        <div key={qId} className="space-y-1">
+                          <span className="text-xs text-gray-500 dark:text-gray-400 font-semibold block">{label}</span>
+                          <p className="text-sm text-gray-800 dark:text-gray-200 bg-purple-50/50 dark:bg-purple-950/20 p-3 rounded-xl leading-relaxed border border-purple-100 dark:border-purple-900/30">
+                            {formattedAns}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                <div className="space-y-1">
+                  <span className="text-xs text-gray-400 uppercase font-semibold block">Reviewer Comment</span>
+                  <textarea
+                    rows={2}
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    placeholder="Add evaluation comments..."
+                    className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm resize-none"
                   />
                 </div>
-                <div>
-                  <span className="text-xs text-gray-400 uppercase font-semibold block">Application Status</span>
-                  <select
-                    value={newStatus}
-                    onChange={(e) => setNewStatus(e.target.value)}
-                    className="w-full mt-1 px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm font-semibold"
-                  >
-                    <option value="PENDING">PENDING</option>
-                    <option value="IN_REVIEW">IN_REVIEW</option>
-                    <option value="PRESENT">PRESENT</option>
-                    <option value="SELECTED">SELECTED</option>
-                    <option value="REJECTED">REJECTED</option>
-                  </select>
-                </div>
               </div>
 
-              {viewingCandidate.candidate_description && (
-                <div className="space-y-1">
-                  <span className="text-xs text-gray-400 uppercase font-semibold block">Introduce Yourself</span>
-                  <p className="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/50 p-3 rounded-xl leading-relaxed">
-                    {viewingCandidate.candidate_description}
-                  </p>
-                </div>
-              )}
-
-              {viewingCandidate.candidate_why_eligible && (
-                <div className="space-y-1">
-                  <span className="text-xs text-gray-400 uppercase font-semibold block">Why join English Club?</span>
-                  <p className="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/50 p-3 rounded-xl leading-relaxed">
-                    {viewingCandidate.candidate_why_eligible}
-                  </p>
-                </div>
-              )}
-
-              <div className="space-y-1">
-                <span className="text-xs text-gray-400 uppercase font-semibold block">Reviewer Comment</span>
-                <textarea
-                  rows={2}
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  placeholder="Add evaluation comments..."
-                  className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm resize-none"
-                />
-              </div>
-
-              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-800">
+              {/* Fixed Footer */}
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-800 shrink-0">
                 <button
                   onClick={() => setViewingCandidate(null)}
                   className="px-4 py-2 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-sm font-semibold"
