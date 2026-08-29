@@ -222,4 +222,64 @@ export const recruitmentServices = {
     }
     return response.json();
   },
+
+  submitInterviewFeedback: async (feedbackData: any) => {
+    const response = await fetch(`${API_BASE_URL}/interview-feedback`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify(feedbackData),
+    });
+
+    if (!response.ok) {
+      const errorMessage = await parseErrorResponse(response, "Failed to submit interview feedback");
+      throw new Error(errorMessage);
+    }
+
+    return response.json();
+  },
+
+  getAllInterviewFeedback: async (userId: string) => {
+    const response = await fetch(`${API_BASE_URL}/${userId}/interview-feedback`, {
+      credentials: "include",
+    });
+
+    if (!response.ok) {
+      const errorMessage = await parseErrorResponse(response, "Failed to fetch interview feedback");
+      throw new Error(errorMessage);
+    }
+
+    return response.json();
+  },
+
+  deleteInterviewFeedback: async (userId: string, feedbackId: string) => {
+    const response = await fetch(`${API_BASE_URL}/${userId}/interview-feedback/${feedbackId}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+
+    if (!response.ok) {
+      const errorMessage = await parseErrorResponse(response, "Failed to delete interview feedback");
+      throw new Error(errorMessage);
+    }
+
+    return response.json();
+  },
+
+  clearAllInterviewFeedback: async (userId: string) => {
+    const response = await fetch(`${API_BASE_URL}/${userId}/interview-feedback/clear-all`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+
+    if (!response.ok) {
+      const errorMessage = await parseErrorResponse(response, "Failed to clear interview feedback");
+      throw new Error(errorMessage);
+    }
+
+    return response.json();
+  },
 };
+

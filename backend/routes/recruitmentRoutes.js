@@ -45,4 +45,18 @@ router.patch('/:user_id/:question_id/updateQuestion', verifyToken, restrictRoles
 // DELETE /api/recruitment/:user_id/:question_id/deleteQuestion (Admin protected - forbidden for INTERVIEWEE)
 router.delete('/:user_id/:question_id/deleteQuestion', verifyToken, restrictRoles('INTERVIEWEE'), recruitmentController.deleteQuestion);
 
+// --- Interview Feedback Form Endpoints ---
+// POST /api/recruitment/interview-feedback (Public candidate submission)
+router.post('/interview-feedback', recruitmentController.createInterviewFeedback);
+
+// GET /api/recruitment/:user_id/interview-feedback (Admin protected)
+router.get('/:user_id/interview-feedback', verifyToken, recruitmentController.getAllInterviewFeedback);
+
+// DELETE /api/recruitment/:user_id/interview-feedback/clear-all (Admin protected)
+router.delete('/:user_id/interview-feedback/clear-all', verifyToken, restrictRoles('INTERVIEWEE'), recruitmentController.clearAllInterviewFeedback);
+
+// DELETE /api/recruitment/:user_id/interview-feedback/:feedback_id (Admin protected)
+router.delete('/:user_id/interview-feedback/:feedback_id', verifyToken, restrictRoles('INTERVIEWEE'), recruitmentController.deleteInterviewFeedbackById);
+
 module.exports = router;
+

@@ -538,6 +538,16 @@ export function JoinUs() {
 
           {/* Action Buttons Hub */}
           <div className="pt-6 flex flex-wrap justify-center items-center gap-4">
+            {/* Interview Feedback Button */}
+            <Link
+              to="/interview-feedback"
+              className="inline-flex items-center gap-2.5 px-6 py-4 rounded-2xl bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white font-extrabold text-sm sm:text-base shadow-xl shadow-purple-500/30 hover:shadow-purple-500/50 hover:-translate-y-0.5 transition-all group"
+            >
+              <MessageCircle className="w-5 h-5 text-amber-300 group-hover:scale-110 transition-transform" />
+              <span>Give Interview Feedback</span>
+              <ArrowUpRight className="w-4 h-4 text-cyan-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+            </Link>
+
             {/* WhatsApp Candidates Link */}
             <a
               href={WHATSAPP_GROUP_LINK}

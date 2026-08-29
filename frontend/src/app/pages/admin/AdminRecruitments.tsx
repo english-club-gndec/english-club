@@ -3,7 +3,8 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router";
 import { 
   Loader2, Edit2, X, Trash2, Archive, CheckSquare, Square, AlertTriangle, 
-  Plus, ArrowUp, ArrowDown, Layers, FileText, ToggleLeft, ToggleRight, CheckCircle2, Trophy, ExternalLink, Download
+  Plus, ArrowUp, ArrowDown, Layers, FileText, ToggleLeft, ToggleRight, CheckCircle2, Trophy, ExternalLink, Download,
+  MessageCircle, Star, Sparkles, User, Hash, Phone, Mail, BookOpen, ThumbsUp, Smile, HelpCircle, Eye, RefreshCw
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { toast, Toaster } from "sonner";
@@ -12,6 +13,7 @@ import { recruitmentServices } from "../../../services/recruitmentServices";
 import { settingsServices } from "../../../services/settingsServices";
 import { Switch } from "../../components/ui/switch";
 import { supabase } from "../../../lib/supabase";
+import { useAdminSearch } from "../../context/AdminSearchContext";
 
 interface RecruitmentQuestion {
   question_id: string;
@@ -44,7 +46,25 @@ interface Candidate {
   status_updated_by?: number | null;
 }
 
-import { useAdminSearch } from "../../context/AdminSearchContext";
+interface InterviewFeedback {
+  feedback_id: string;
+  candidate_name: string;
+  branch_section: string;
+  crn: string;
+  phone_number: string;
+  email_id: string;
+  overall_experience?: string;
+  issues_faced?: string;
+  rating_process?: number | null;
+  comfortable_organized?: string;
+  liked_aspects?: string;
+  suggestions?: string;
+  excitement_level?: number | null;
+  understanding_gained?: string;
+  additional_thoughts?: string;
+  future_interest?: string;
+  created_at: string;
+}
 
 export function AdminRecruitments() {
   const { userId, logout, user } = useAuth();
@@ -55,7 +75,7 @@ export function AdminRecruitments() {
     setSearchPlaceholder("Search candidates by name, email, class, CRN, URN...");
   }, [setSearchPlaceholder]);
 
-  const [activeTab, setActiveTab] = useState<'applications' | 'form_builder'>('applications');
+  const [activeTab, setActiveTab] = useState<'applications' | 'form_builder' | 'interview_feedback'>('applications');
   
   // Candidate States
   const [candidates, setCandidates] = useState<Candidate[]>([]);
@@ -111,6 +131,18 @@ export function AdminRecruitments() {
   const [questionToDelete, setQuestionToDelete] = useState<RecruitmentQuestion | null>(null);
   const [isDeletingQuestion, setIsDeletingQuestion] = useState(false);
 
+  // Interview Feedback States
+  const [feedbackList, setFeedbackList] = useState<InterviewFeedback[]>([]);
+  const [loadingFeedback, setLoadingFeedback] = useState(false);
+  const [viewingFeedback, setViewingFeedback] = useState<InterviewFeedback | null>(null);
+  const [feedbackToDelete, setFeedbackToDelete] = useState<InterviewFeedback | null>(null);
+  const [isDeletingFeedback, setIsDeletingFeedback] = useState(false);
+  const [isClearingAllFeedback, setIsClearingAllFeedback] = useState(false);
+  const [isClearFeedbackModalOpen, setIsClearFeedbackModalOpen] = useState(false);
+  const [feedbackRatingFilter, setFeedbackRatingFilter] = useState<string>("ALL");
+  const [feedbackInterestFilter, setFeedbackInterestFilter] = useState<string>("ALL");
+  const [isDownloadingFeedbackExcel, setIsDownloadingFeedbackExcel] = useState(false);
+
   const formatDepartment = (dept: string) => {
     if (!dept) return '';
     if (dept === "ALL") return "All Departments";
@@ -147,7 +179,6 @@ export function AdminRecruitments() {
     if (isInterviewee && normalizedIntervieweeDept && normalizedIntervieweeDept !== 'ALL') {
       matchesDepartment = normalizeDepartment(candidate.interested_department) === normalizedIntervieweeDept;
 
-      // Regular department interviewees do NOT see PENDING candidates
       const currentStatus = candidate.candidate_status || 'PENDING';
       if (currentStatus === 'PENDING') {
         return false;
@@ -170,6 +201,21 @@ export function AdminRecruitments() {
     }
     
     return matchesDepartment && matchesStatus && matchesSearch;
+  });
+
+  const filteredFeedbackList = feedbackList.filter(fb => {
+    const matchesRating = feedbackRatingFilter === "ALL" || String(fb.rating_process) === feedbackRatingFilter;
+    const matchesInterest = feedbackInterestFilter === "ALL" || fb.future_interest === feedbackInterestFilter;
+
+    const query = searchQuery.toLowerCase().trim();
+    const matchesSearch = !query ||
+      (fb.candidate_name && fb.candidate_name.toLowerCase().includes(query)) ||
+      (fb.email_id && fb.email_id.toLowerCase().includes(query)) ||
+      (fb.crn && String(fb.crn).toLowerCase().includes(query)) ||
+      (fb.phone_number && fb.phone_number.toLowerCase().includes(query)) ||
+      (fb.branch_section && fb.branch_section.toLowerCase().includes(query));
+
+    return matchesRating && matchesInterest && matchesSearch;
   });
 
   const fetchCandidates = async (isSilent = false) => {
@@ -206,6 +252,61 @@ export function AdminRecruitments() {
       setLoadingQuestions(false);
     }
   };
+
+  const fetchInterviewFeedback = async (isSilent = false) => {
+    if (!userId) return;
+    try {
+      if (!isSilent) setLoadingFeedback(true);
+      const data = await recruitmentServices.getAllInterviewFeedback(userId);
+      setFeedbackList(data || []);
+    } catch (error: any) {
+      console.error("Failed to fetch interview feedback:", error);
+      toast.error(error.message || "Failed to fetch interview feedback responses");
+    } finally {
+      if (!isSilent) setLoadingFeedback(false);
+    }
+  };
+
+  useEffect(() => {
+    if (userId) {
+      fetchCandidates();
+      fetchQuestions();
+      fetchInterviewFeedback();
+
+      const channel = supabase
+        .channel('realtime_recruitments_candidates')
+        .on(
+          'postgres_changes' as any,
+          { event: '*', schema: 'public', table: 'candidates' },
+          () => {
+            fetchCandidates(true);
+          }
+        )
+        .subscribe();
+
+      const feedbackChannel = supabase
+        .channel('realtime_interview_feedback')
+        .on(
+          'postgres_changes' as any,
+          { event: '*', schema: 'public', table: 'interview_feedback' },
+          () => {
+            fetchInterviewFeedback(true);
+          }
+        )
+        .subscribe();
+
+      const pollInterval = setInterval(() => {
+        fetchCandidates(true);
+        fetchInterviewFeedback(true);
+      }, 5000);
+
+      return () => {
+        supabase.removeChannel(channel);
+        supabase.removeChannel(feedbackChannel);
+        clearInterval(pollInterval);
+      };
+    }
+  }, [userId]);
 
   const formatExcelValue = (value: unknown) => {
     if (Array.isArray(value)) return value.join(", ");
@@ -290,32 +391,53 @@ export function AdminRecruitments() {
     }
   };
 
-  useEffect(() => {
-    if (userId) {
-      fetchCandidates();
-      fetchQuestions();
-
-      const channel = supabase
-        .channel('realtime_recruitments_candidates')
-        .on(
-          'postgres_changes' as any,
-          { event: '*', schema: 'public', table: 'candidates' },
-          () => {
-            fetchCandidates(true);
-          }
-        )
-        .subscribe();
-
-      const pollInterval = setInterval(() => {
-        fetchCandidates(true);
-      }, 5000);
-
-      return () => {
-        supabase.removeChannel(channel);
-        clearInterval(pollInterval);
-      };
+  const downloadFeedbackExcel = () => {
+    if (feedbackList.length === 0) {
+      toast.info("No interview feedback responses to download.");
+      return;
     }
-  }, [userId]);
+    try {
+      setIsDownloadingFeedbackExcel(true);
+      const worksheet = XLSX.utils.json_to_sheet(
+        feedbackList.map((fb, idx) => ({
+          "S.No": idx + 1,
+          "Feedback ID": fb.feedback_id,
+          "Candidate Name": fb.candidate_name,
+          "Branch & Section": fb.branch_section,
+          "CRN": fb.crn,
+          "Phone Number": fb.phone_number,
+          "Email ID": fb.email_id,
+          "Overall Experience (Q6)": fb.overall_experience || "",
+          "Issues Faced (Q7)": fb.issues_faced || "",
+          "Rating Process 1-5 (Q8)": fb.rating_process ?? "",
+          "Comfortable & Organized (Q9)": fb.comfortable_organized || "",
+          "Liked Aspects (Q10)": fb.liked_aspects || "",
+          "Suggestions (Q11)": fb.suggestions || "",
+          "Excitement Level 1-5 (Q12)": fb.excitement_level ?? "",
+          "Understanding Gained (Q13)": fb.understanding_gained || "",
+          "Additional Thoughts (Q14)": fb.additional_thoughts || "",
+          "Future Event Interest (Q15)": fb.future_interest || "",
+          "Submitted At": fb.created_at ? new Date(fb.created_at).toLocaleString() : ""
+        }))
+      );
+
+      worksheet["!cols"] = [
+        { wch: 6 }, { wch: 38 }, { wch: 22 }, { wch: 18 }, { wch: 14 },
+        { wch: 18 }, { wch: 28 }, { wch: 35 }, { wch: 35 }, { wch: 18 },
+        { wch: 22 }, { wch: 35 }, { wch: 35 }, { wch: 18 }, { wch: 22 },
+        { wch: 35 }, { wch: 22 }, { wch: 22 }
+      ];
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Interview Feedback");
+      XLSX.writeFile(workbook, "english-club-interview-feedback.xlsx");
+      toast.success("Interview Feedback Excel downloaded successfully!");
+    } catch (err: any) {
+      toast.error("Failed to download feedback Excel.");
+    } finally {
+      setIsDownloadingFeedbackExcel(false);
+    }
+  };
 
   const toggleRecruitmentStatus = async () => {
     try {
@@ -356,10 +478,6 @@ export function AdminRecruitments() {
     } finally {
       setIsTogglingResultsStatus(false);
     }
-  };
-
-  const handleEditClick = (candidate: Candidate) => {
-    setEditingCandidate(candidate);
   };
 
   const handleViewCandidate = async (candidate: Candidate) => {
@@ -423,46 +541,7 @@ export function AdminRecruitments() {
     }
   };
 
-  const handleUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingCandidate) return;
-
-    try {
-      setIsUpdating(true);
-      const payload = {
-        candidate_name: editingCandidate.candidate_name,
-        candidate_class: editingCandidate.candidate_class,
-        candidate_crn: Number(editingCandidate.candidate_crn),
-        candidate_urn: editingCandidate.candidate_urn ? Number(editingCandidate.candidate_urn) : null,
-        candidate_email: editingCandidate.candidate_email,
-        candidate_mobile_no: editingCandidate.candidate_mobile_no || '',
-        interested_department: editingCandidate.interested_department,
-      };
-
-      await recruitmentServices.updateCandidateById(editingCandidate.candidate_id, payload);
-      toast.success("Candidate updated successfully");
-      setEditingCandidate(null);
-      fetchCandidates();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to update candidate");
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
-  const handleEditChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    if (!editingCandidate) return;
-    const { name, value } = e.target;
-    
-    if (name === "candidate_crn" || name === "candidate_urn") {
-      const numericValue = value.replace(/\D/g, "");
-      setEditingCandidate({ ...editingCandidate, [name]: numericValue ? Number(numericValue) : null });
-    } else {
-      setEditingCandidate({ ...editingCandidate, [name]: value });
-    }
-  };
-
-  // Selection Handlers
+  // Candidate Selection & Delete Handlers
   const toggleSelectCandidate = (id: string) => {
     setSelectedIds(prev =>
       prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
@@ -477,7 +556,6 @@ export function AdminRecruitments() {
     setSelectedIds([]);
   };
 
-  // Candidate Delete Handlers
   const promptDeleteSingle = (candidate: Candidate) => {
     setCandidateToDelete(candidate);
     setDeleteConfirmIds([candidate.candidate_id]);
@@ -514,6 +592,40 @@ export function AdminRecruitments() {
       toast.error(error.message || "Failed to delete candidate(s)");
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  // Interview Feedback Delete Handlers
+  const confirmDeleteFeedback = async () => {
+    if (!userId || !feedbackToDelete) return;
+    try {
+      setIsDeletingFeedback(true);
+      await recruitmentServices.deleteInterviewFeedback(userId, feedbackToDelete.feedback_id);
+      toast.success("Interview feedback response deleted");
+      setFeedbackToDelete(null);
+      if (viewingFeedback?.feedback_id === feedbackToDelete.feedback_id) {
+        setViewingFeedback(null);
+      }
+      fetchInterviewFeedback();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to delete feedback response");
+    } finally {
+      setIsDeletingFeedback(false);
+    }
+  };
+
+  const confirmClearAllFeedback = async () => {
+    if (!userId) return;
+    try {
+      setIsClearingAllFeedback(true);
+      const result = await recruitmentServices.clearAllInterviewFeedback(userId);
+      toast.success(result.message || "All interview feedback responses cleared");
+      setIsClearFeedbackModalOpen(false);
+      fetchInterviewFeedback();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to clear interview feedback responses");
+    } finally {
+      setIsClearingAllFeedback(false);
     }
   };
 
@@ -682,6 +794,28 @@ export function AdminRecruitments() {
     }
   };
 
+  // Feedback Analytics Calculations
+  const totalFeedbackResponses = feedbackList.length;
+  const ratedFeedbackCount = feedbackList.filter(f => f.rating_process).length;
+  const avgProcessRating = ratedFeedbackCount > 0 
+    ? (feedbackList.reduce((acc, curr) => acc + (curr.rating_process || 0), 0) / ratedFeedbackCount).toFixed(1)
+    : "0.0";
+
+  const excitedFeedbackCount = feedbackList.filter(f => f.excitement_level).length;
+  const avgExcitementLevel = excitedFeedbackCount > 0
+    ? (feedbackList.reduce((acc, curr) => acc + (curr.excitement_level || 0), 0) / excitedFeedbackCount).toFixed(1)
+    : "0.0";
+
+  const comfortableCount = feedbackList.filter(f => 
+    f.comfortable_organized === "Yes, completely" || f.comfortable_organized === "Mostly"
+  ).length;
+  const comfortablePct = totalFeedbackResponses > 0 ? Math.round((comfortableCount / totalFeedbackResponses) * 100) : 0;
+
+  const futureInterestedCount = feedbackList.filter(f => 
+    f.future_interest === "Yes, definitely" || f.future_interest === "Maybe"
+  ).length;
+  const futureInterestedPct = totalFeedbackResponses > 0 ? Math.round((futureInterestedCount / totalFeedbackResponses) * 100) : 0;
+
   return (
     <>
       <Toaster position="top-right" />
@@ -693,14 +827,14 @@ export function AdminRecruitments() {
               Recruitments
             </h1>
             <p className="text-gray-600 dark:text-gray-400" style={{ fontFamily: 'Open Sans, sans-serif' }}>
-              Manage recruitment applications and form builder questions
+              Manage recruitment applications, form builder questions, and interview feedback
             </p>
           </div>
           <div className="flex gap-3 items-center flex-wrap">
             {!isInterviewee && activeTab === 'applications' && selectedIds.length > 0 && (
               <button
                 onClick={promptDeleteSelected}
-                className="px-5 py-3 rounded-xl font-semibold text-white bg-red-600 hover:bg-red-700 transition-all shadow-lg shadow-red-500/30 flex items-center gap-2 hover:-translate-y-0.5"
+                className="px-5 py-3 rounded-xl font-semibold text-white bg-red-600 hover:bg-red-700 transition-all shadow-lg shadow-red-500/30 flex items-center gap-2 hover:-translate-y-0.5 cursor-pointer"
               >
                 <Trash2 className="w-5 h-5" />
                 Delete Selected ({selectedIds.length})
@@ -711,7 +845,7 @@ export function AdminRecruitments() {
               <button
                 onClick={downloadRecruitmentExcel}
                 disabled={isDownloadingExcel || !userId}
-                className="px-5 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-5 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
                 {isDownloadingExcel ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
                 {isDownloadingExcel ? "Preparing Excel..." : "Download Excel"}
@@ -722,7 +856,7 @@ export function AdminRecruitments() {
               <button
                 onClick={() => setIsArchiveModalOpen(true)}
                 disabled={candidates.length === 0}
-                className="px-5 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 transition-all shadow-lg shadow-amber-500/20 flex items-center gap-2 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-5 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 transition-all shadow-lg shadow-amber-500/20 flex items-center gap-2 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 title="Archive current recruitment data to history and clear list"
               >
                 <Archive className="w-5 h-5" />
@@ -730,10 +864,32 @@ export function AdminRecruitments() {
               </button>
             )}
 
+            {!isInterviewee && activeTab === 'interview_feedback' && (
+              <button
+                onClick={downloadFeedbackExcel}
+                disabled={isDownloadingFeedbackExcel || feedbackList.length === 0}
+                className="px-5 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              >
+                {isDownloadingFeedbackExcel ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
+                Download Feedback Excel
+              </button>
+            )}
+
+            {!isInterviewee && activeTab === 'interview_feedback' && (
+              <button
+                onClick={() => setIsClearFeedbackModalOpen(true)}
+                disabled={feedbackList.length === 0}
+                className="px-5 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 transition-all shadow-lg shadow-rose-500/20 flex items-center gap-2 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              >
+                <Trash2 className="w-5 h-5" />
+                Clear All Feedback
+              </button>
+            )}
+
             {!isInterviewee && activeTab === 'form_builder' && (
               <button
                 onClick={openAddQuestionModal}
-                className="px-5 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg shadow-blue-500/30 flex items-center gap-2 hover:-translate-y-0.5"
+                className="px-5 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg shadow-blue-500/30 flex items-center gap-2 hover:-translate-y-0.5 cursor-pointer"
               >
                 <Plus className="w-5 h-5" />
                 Add Question
@@ -774,7 +930,7 @@ export function AdminRecruitments() {
               <button
                 onClick={toggleRecruitmentStatus}
                 disabled={isTogglingStatus}
-                className={`px-6 py-3 rounded-xl font-semibold text-white transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 flex items-center gap-2 ${
+                className={`px-6 py-3 rounded-xl font-semibold text-white transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 flex items-center gap-2 cursor-pointer ${
                   recruitmentsActive 
                     ? 'bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 shadow-red-500/30' 
                     : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-emerald-500/30'
@@ -789,7 +945,7 @@ export function AdminRecruitments() {
               <button
                 onClick={toggleRecruitmentStartedStatus}
                 disabled={isTogglingRecruitmentStarted}
-                className={`px-6 py-3 rounded-xl font-semibold text-white transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 flex items-center gap-2 ${
+                className={`px-6 py-3 rounded-xl font-semibold text-white transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 flex items-center gap-2 cursor-pointer ${
                   isRecruitmentStarted 
                     ? 'bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 shadow-orange-500/30'
                     : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-blue-500/30'
@@ -802,12 +958,12 @@ export function AdminRecruitments() {
           </div>
         </div>
 
-        {/* Navigation Tabs (Applications vs Form Builder) */}
+        {/* Navigation Tabs (Applications vs Form Builder vs Interview Feedback) */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-gray-200 dark:border-gray-800 pb-3 gap-4">
           <div className="flex gap-2 bg-gray-100 dark:bg-gray-800 p-1.5 rounded-2xl overflow-x-auto">
             <button
               onClick={() => setActiveTab('applications')}
-              className={`px-4 sm:px-6 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center gap-2 whitespace-nowrap ${
+              className={`px-4 sm:px-6 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
                 activeTab === 'applications'
                   ? 'bg-white dark:bg-gray-900 text-blue-600 dark:text-blue-400 shadow-md'
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
@@ -820,7 +976,7 @@ export function AdminRecruitments() {
             {!isInterviewee && (
               <button
                 onClick={() => setActiveTab('form_builder')}
-                className={`px-4 sm:px-6 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center gap-2 whitespace-nowrap ${
+                className={`px-4 sm:px-6 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
                   activeTab === 'form_builder'
                     ? 'bg-white dark:bg-gray-900 text-purple-600 dark:text-purple-400 shadow-md'
                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
@@ -830,6 +986,18 @@ export function AdminRecruitments() {
                 Form Builder ({questions.length})
               </button>
             )}
+
+            <button
+              onClick={() => setActiveTab('interview_feedback')}
+              className={`px-4 sm:px-6 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+                activeTab === 'interview_feedback'
+                  ? 'bg-white dark:bg-gray-900 text-amber-600 dark:text-amber-400 shadow-md'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              <MessageCircle className="w-4 h-4 text-amber-500" />
+              Interview Feedback ({feedbackList.length})
+            </button>
           </div>
 
           {activeTab === 'applications' && (
@@ -870,6 +1038,34 @@ export function AdminRecruitments() {
               </select>
             </div>
           )}
+
+          {activeTab === 'interview_feedback' && (
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              <select
+                value={feedbackRatingFilter}
+                onChange={(e) => setFeedbackRatingFilter(e.target.value)}
+                className="px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 font-semibold text-sm"
+              >
+                <option value="ALL">All Ratings (1-5)</option>
+                <option value="5">5 - Excellent</option>
+                <option value="4">4 - Good</option>
+                <option value="3">3 - Average</option>
+                <option value="2">2 - Poor</option>
+                <option value="1">1 - Very Poor</option>
+              </select>
+
+              <select
+                value={feedbackInterestFilter}
+                onChange={(e) => setFeedbackInterestFilter(e.target.value)}
+                className="px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 font-semibold text-sm"
+              >
+                <option value="ALL">All Event Interests</option>
+                <option value="Yes, definitely">Yes, definitely</option>
+                <option value="Maybe">Maybe</option>
+                <option value="No">No</option>
+              </select>
+            </div>
+          )}
         </div>
 
         {/* --- TAB 1: APPLICATIONS LIST --- */}
@@ -880,7 +1076,7 @@ export function AdminRecruitments() {
                 {!isSelectionMode ? (
                   <button
                     onClick={() => setIsSelectionMode(true)}
-                    className="text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 hover:underline flex items-center gap-1.5"
+                    className="text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 hover:underline flex items-center gap-1.5 cursor-pointer"
                   >
                     <CheckSquare className="w-4 h-4" />
                     Select Multiple
@@ -889,13 +1085,13 @@ export function AdminRecruitments() {
                   <div className="flex items-center gap-4">
                     <button
                       onClick={selectAllCandidates}
-                      className="text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 hover:underline"
+                      className="text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 hover:underline cursor-pointer"
                     >
                       Select All ({filteredCandidates.length})
                     </button>
                     <button
                       onClick={unselectAllCandidates}
-                      className="text-sm font-semibold text-gray-500 hover:text-gray-700 dark:text-gray-400 hover:underline"
+                      className="text-sm font-semibold text-gray-500 hover:text-gray-700 dark:text-gray-400 hover:underline cursor-pointer"
                     >
                       Unselect All
                     </button>
@@ -904,7 +1100,7 @@ export function AdminRecruitments() {
                         setIsSelectionMode(false);
                         unselectAllCandidates();
                       }}
-                      className="text-sm font-semibold text-red-500 hover:text-red-600 hover:underline"
+                      className="text-sm font-semibold text-red-500 hover:text-red-600 hover:underline cursor-pointer"
                     >
                       Exit Selection
                     </button>
@@ -948,655 +1144,664 @@ export function AdminRecruitments() {
                         <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Phone No</th>
                         <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Class</th>
                         <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">CRN</th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">URN</th>
                         <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Department</th>
                         <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Status</th>
-                        {!isInterviewee && (
-                          <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Actions</th>
-                        )}
+                        <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
                       {filteredCandidates.map((candidate) => {
                         const isSelected = selectedIds.includes(candidate.candidate_id);
                         return (
-                          <tr 
-                            key={candidate.candidate_id} 
-                            onClick={() => {
-                              if (isSelectionMode) {
-                                toggleSelectCandidate(candidate.candidate_id);
-                              } else {
-                                handleViewCandidate(candidate);
-                              }
-                            }}
-                            className={`transition-colors ${
-                              isSelected ? 'bg-blue-50/60 dark:bg-blue-950/30' : ''
-                            } hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer`}
-                          >
+                          <tr key={candidate.candidate_id} className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${isSelected ? 'bg-blue-50/50 dark:bg-blue-950/20' : ''}`}>
                             {isSelectionMode && (
                               <td className="px-4 py-4 text-center">
-                                <input
-                                  type="checkbox"
-                                  checked={isSelected}
-                                  onChange={(e) => {
-                                    e.stopPropagation();
-                                    toggleSelectCandidate(candidate.candidate_id);
-                                  }}
-                                  className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-800"
-                                />
+                                <button
+                                  onClick={() => toggleSelectCandidate(candidate.candidate_id)}
+                                  className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                                >
+                                  {isSelected ? (
+                                    <CheckSquare className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                  ) : (
+                                    <Square className="w-5 h-5" />
+                                  )}
+                                </button>
                               </td>
                             )}
-                            <td className="px-6 py-4 font-semibold text-gray-900 dark:text-white">{candidate.candidate_name}</td>
-                            <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{candidate.candidate_email}</td>
-                            <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{candidate.candidate_mobile_no || 'N/A'}</td>
-                            <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{candidate.candidate_class}</td>
-                            <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{candidate.candidate_crn || 'N/A'}</td>
-                            <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{candidate.candidate_urn || 'N/A'}</td>
-                            <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{formatDepartment(candidate.interested_department)}</td>
-                            <td className="px-6 py-4 text-sm">
-                              <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                                candidate.candidate_status === 'SELECTED' ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' :
-                                candidate.candidate_status === 'REJECTED' ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' :
-                                candidate.candidate_status === 'IN_REVIEW' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' :
-                                candidate.candidate_status === 'PRESENT' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' :
-                                'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300'
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-white">
+                              {candidate.candidate_name}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                              {candidate.candidate_email}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-600 dark:text-gray-400">
+                              {candidate.candidate_mobile_no || "—"}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                              {candidate.candidate_class}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-600 dark:text-gray-400">
+                              {candidate.candidate_crn ?? "—"}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                              {formatDepartment(candidate.interested_department)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                                candidate.candidate_status === 'SELECTED'
+                                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
+                                  : candidate.candidate_status === 'REJECTED'
+                                  ? 'bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300'
+                                  : candidate.candidate_status === 'IN_REVIEW' || candidate.candidate_status === 'PRESENT'
+                                  ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
+                                  : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
                               }`}>
-                                {candidate.candidate_status === 'IN_REVIEW' ? 'IN REVIEW' : (candidate.candidate_status || 'PENDING')}
+                                {candidate.candidate_status || 'PENDING'}
                               </span>
                             </td>
-                            {!isInterviewee && (
-                              <td className="px-6 py-4 text-sm text-center">
-                                <div className="flex items-center justify-center gap-1">
-                                  {!recruitmentsActive && (
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleEditClick(candidate);
-                                      }}
-                                      className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/50 rounded-lg transition-colors"
-                                      title="Edit Candidate"
-                                    >
-                                      <Edit2 className="w-4 h-4" />
-                                    </button>
-                                  )}
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      promptDeleteSingle(candidate);
-                                    }}
-                                    className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/50 rounded-lg transition-colors"
-                                    title="Delete Candidate"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
-                                </div>
-                              </td>
-                            )}
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm space-x-2">
+                              <button
+                                onClick={() => handleViewCandidate(candidate)}
+                                className="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-950/50 dark:text-blue-400 dark:hover:bg-blue-900/50 transition-colors font-medium text-xs cursor-pointer"
+                              >
+                                View / Review
+                              </button>
+                              {!isInterviewee && (
+                                <button
+                                  onClick={() => promptDeleteSingle(candidate)}
+                                  className="px-2.5 py-1.5 rounded-lg text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/50 transition-colors cursor-pointer"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              )}
+                            </td>
                           </tr>
                         );
                       })}
-                      </tbody>
-                    </table>
-                  )}
-                </AnimatePresence>
-              </div>
+                    </tbody>
+                  </table>
+                )}
+              </AnimatePresence>
             </div>
           </div>
+        </div>
         )}
 
-        {/* --- TAB 2: FORM BUILDER --- */}
+        {/* --- TAB 2: FORM BUILDER QUESTIONS --- */}
         {activeTab === 'form_builder' && (
-          <div className="space-y-6">
-            <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/50 rounded-2xl p-4 flex items-center justify-between text-sm text-blue-900 dark:text-blue-200">
-              <div>
-                <span className="font-bold">Dynamic Form Builder:</span> Add custom questions that candidates will be required/prompted to answer on the recruitment form.
-              </div>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Configure dynamic questions for student recruitment applications
+              </p>
               <button
-                onClick={openAddQuestionModal}
-                className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-colors flex items-center gap-1.5 shadow-md"
+                onClick={fetchQuestions}
+                disabled={loadingQuestions}
+                className="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
               >
-                <Plus className="w-4 h-4" /> Add Question
+                <RefreshCw className={`w-3.5 h-3.5 ${loadingQuestions ? 'animate-spin' : ''}`} />
+                Refresh Questions
               </button>
             </div>
 
-            {loadingQuestions ? (
-              <div className="flex flex-col items-center justify-center py-20 gap-4 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800">
-                <Loader2 className="w-10 h-10 text-purple-600 animate-spin" />
-                <p className="text-gray-500 font-medium">Loading form questions...</p>
-              </div>
-            ) : questions.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 gap-4 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800">
-                <Layers className="w-12 h-12 text-gray-400" />
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white">No Custom Questions Configured</h3>
-                <p className="text-sm text-gray-500 max-w-sm text-center">Add custom questions to tailor your recruitment application form.</p>
-                <button
-                  onClick={openAddQuestionModal}
-                  className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-semibold text-sm transition-colors flex items-center gap-2"
+            <div className="space-y-3">
+              {questions.map((q, index) => (
+                <div
+                  key={q.question_id}
+                  className={`p-5 rounded-2xl bg-white dark:bg-gray-900 border transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm ${
+                    q.is_active ? 'border-gray-200 dark:border-gray-800' : 'border-gray-200 dark:border-gray-800 opacity-60 bg-gray-50 dark:bg-gray-900/40'
+                  }`}
                 >
-                  <Plus className="w-4 h-4" /> Add First Question
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {questions.map((q, index) => (
-                  <motion.div
-                    key={q.question_id}
-                    layout
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className={`p-6 rounded-2xl border transition-all ${
-                      q.is_active 
-                        ? 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 shadow-sm' 
-                        : 'bg-gray-50 dark:bg-gray-900/40 border-gray-200 dark:border-gray-800/60 opacity-60'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex items-start gap-3">
-                        <div className="flex flex-col items-center gap-1 pt-0.5">
-                          <button
-                            onClick={() => moveQuestion(index, 'up')}
-                            disabled={index === 0}
-                            className="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 disabled:opacity-30 transition-colors"
-                            title="Move Up"
-                          >
-                            <ArrowUp className="w-4 h-4" />
-                          </button>
-                          <span className="text-xs font-bold text-gray-400">#{index + 1}</span>
-                          <button
-                            onClick={() => moveQuestion(index, 'down')}
-                            disabled={index === questions.length - 1}
-                            className="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 disabled:opacity-30 transition-colors"
-                            title="Move Down"
-                          >
-                            <ArrowDown className="w-4 h-4" />
-                          </button>
-                        </div>
-
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-3 flex-wrap">
-                            <h4 className="text-base font-bold text-gray-900 dark:text-white">
-                              {q.question_label}
-                            </h4>
-
-                            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300">
-                              {getQuestionTypeLabel(q.question_type)}
-                            </span>
-
-                            {q.is_required ? (
-                              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300">
-                                Required
-                              </span>
-                            ) : (
-                              <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
-                                Optional
-                              </span>
-                            )}
-
-                            {!q.is_active && (
-                              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
-                                Inactive / Hidden
-                              </span>
-                            )}
-                          </div>
-
-                          {q.placeholder && (
-                            <p className="text-xs text-gray-500 dark:text-gray-400 italic">
-                              Placeholder: "{q.placeholder}"
-                            </p>
-                          )}
-
-                          {/* Options Preview for Dropdown / Multiple Choice */}
-                          {(q.question_type === 'DROPDOWN' || q.question_type === 'MULTIPLE_CHOICE') && q.options?.length > 0 && (
-                            <div className="flex items-center gap-2 flex-wrap pt-1">
-                              <span className="text-xs text-gray-400 font-semibold">Options:</span>
-                              {q.options.map((opt, oIdx) => (
-                                <span key={oIdx} className="px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800 text-xs font-medium text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700">
-                                  {opt}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => toggleQuestionActive(q)}
-                          className={`p-2 rounded-xl transition-colors flex items-center gap-1.5 text-xs font-bold ${
-                            q.is_active 
-                              ? 'text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/50' 
-                              : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                          }`}
-                          title={q.is_active ? "Deactivate Question" : "Activate Question"}
-                        >
-                          {q.is_active ? <ToggleRight className="w-5 h-5" /> : <ToggleLeft className="w-5 h-5" />}
-                          {q.is_active ? 'Active' : 'Inactive'}
-                        </button>
-
-                        <button
-                          onClick={() => openEditQuestionModal(q)}
-                          className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/50 rounded-xl transition-colors"
-                          title="Edit Question"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-
-                        <button
-                          onClick={() => setQuestionToDelete(q)}
-                          className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/50 rounded-xl transition-colors"
-                          title="Delete Question"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Edit Candidate Modal */}
-      <AnimatePresence>
-        {editingCandidate && (
-          <motion.div
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <motion.div
-              className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-lg overflow-hidden shadow-xl border border-gray-200 dark:border-gray-800"
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-            >
-              <div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-800">
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Edit Candidate</h3>
-                <button
-                  onClick={() => setEditingCandidate(null)}
-                  className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              
-              <form onSubmit={handleUpdate} className="p-6 space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
-                  <input
-                    type="text"
-                    name="candidate_name"
-                    value={editingCandidate.candidate_name}
-                    onChange={handleEditChange}
-                    required
-                    className="w-full px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
-                  <input
-                    type="email"
-                    name="candidate_email"
-                    value={editingCandidate.candidate_email}
-                    onChange={handleEditChange}
-                    required
-                    className="w-full px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Class</label>
-                  <input
-                    type="text"
-                    name="candidate_class"
-                    value={editingCandidate.candidate_class}
-                    onChange={handleEditChange}
-                    required
-                    className="w-full px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">CRN</label>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      name="candidate_crn"
-                      value={editingCandidate.candidate_crn || ''}
-                      onChange={handleEditChange}
-                      required
-                      className="w-full px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">URN</label>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      name="candidate_urn"
-                      value={editingCandidate.candidate_urn || ''}
-                      onChange={handleEditChange}
-                      className="w-full px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Department</label>
-                  <select
-                    name="interested_department"
-                    value={editingCandidate.interested_department}
-                    onChange={handleEditChange}
-                    required
-                    className="w-full px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="TECHNICAL">Technical</option>
-                    <option value="EVENT_MANAGEMENT">Event Management</option>
-                    <option value="FINANCE_&_MARKET_RELATIONS">Finance & Market Relations</option>
-                    <option value="CREATIVE_&_PHOTOGRAPHY">Creative & Photography</option>
-                    <option value="PROMOTION">Promotion</option>
-                    <option value="ANCHORING">Anchoring</option>
-                  </select>
-                </div>
-
-                <div className="pt-4 flex justify-end gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setEditingCandidate(null)}
-                    className="px-5 py-2 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors font-medium"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isUpdating}
-                    className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold transition-colors flex items-center gap-2 shadow-md shadow-blue-500/20"
-                  >
-                    {isUpdating && <Loader2 className="w-4 h-4 animate-spin" />}
-                    {isUpdating ? "Updating..." : "Save Changes"}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Candidate Details Modal (With Dynamic Q&A Answers) */}
-      <AnimatePresence>
-        {viewingCandidate && (
-          <motion.div
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <motion.div
-              className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-2xl overflow-hidden shadow-xl border border-gray-200 dark:border-gray-800"
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-            >
-              <div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-800">
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Candidate Details</h3>
-                <button
-                  onClick={() => setViewingCandidate(null)}
-                  className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              
-              <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400">Name</h4>
-                    <p className="text-gray-900 dark:text-white mt-1 font-medium">{viewingCandidate.candidate_name}</p>
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400">Email</h4>
-                    <p className="text-gray-900 dark:text-white mt-1 font-medium">{viewingCandidate.candidate_email}</p>
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400">Class</h4>
-                    <p className="text-gray-900 dark:text-white mt-1 font-medium">{viewingCandidate.candidate_class}</p>
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400">Department</h4>
-                    <p className="text-gray-900 dark:text-white mt-1 font-medium">{formatDepartment(viewingCandidate.interested_department)}</p>
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400">CRN</h4>
-                    <p className="text-gray-900 dark:text-white mt-1 font-medium">{viewingCandidate.candidate_crn || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400">URN</h4>
-                    <p className="text-gray-900 dark:text-white mt-1 font-medium">{viewingCandidate.candidate_urn || 'N/A'}</p>
-                  </div>
-
-                  {/* Status dropdown for specified department interviewees */}
-                  {isInterviewee && normalizedIntervieweeDept !== 'ALL' && (
-                    <div>
-                      <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400">Status</h4>
-                      {isRecruitmentStarted ? (
-                        <select
-                          value={newStatus}
-                          onChange={(e) => setNewStatus(e.target.value)}
-                          className={`mt-1 px-3 py-1 rounded-full text-xs font-bold border-2 transition-colors focus:outline-none ${
-                            newStatus === 'SELECTED' ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/40 dark:text-green-300 dark:border-green-800' :
-                            newStatus === 'REJECTED' ? 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/40 dark:text-red-300 dark:border-red-800' :
-                            newStatus === 'IN_REVIEW' ? 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-800' :
-                            newStatus === 'PRESENT' ? 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800' :
-                            'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/40 dark:text-yellow-300 dark:border-yellow-800'
-                          }`}
-                        >
-                          <option value="IN_REVIEW" className="bg-white dark:bg-gray-900 text-purple-700 dark:text-purple-400 font-semibold">IN REVIEW</option>
-                          <option value="PRESENT" className="bg-white dark:bg-gray-900 text-blue-700 dark:text-blue-400 font-semibold">PRESENT</option>
-                          <option value="SELECTED" className="bg-white dark:bg-gray-900 text-green-700 dark:text-green-400 font-semibold">SELECTED</option>
-                          <option value="REJECTED" className="bg-white dark:bg-gray-900 text-red-700 dark:text-red-400 font-semibold">REJECTED</option>
-                        </select>
-                      ) : (
-                        <div className="mt-1">
-                          <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold border-2 ${
-                            viewingCandidate.candidate_status === 'SELECTED' ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/40 dark:text-green-300 dark:border-green-800' :
-                            viewingCandidate.candidate_status === 'REJECTED' ? 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/40 dark:text-red-300 dark:border-red-800' :
-                            viewingCandidate.candidate_status === 'IN_REVIEW' ? 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-800' :
-                            viewingCandidate.candidate_status === 'PRESENT' ? 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800' :
-                            'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/40 dark:text-yellow-300 dark:border-yellow-800'
-                          }`}>
-                            {viewingCandidate.candidate_status === 'IN_REVIEW' ? 'IN REVIEW' : (viewingCandidate.candidate_status || 'PENDING')}
+                  <div className="flex items-start gap-4 flex-1">
+                    <span className="w-8 h-8 rounded-xl bg-purple-100 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 font-bold text-xs flex items-center justify-center shrink-0">
+                      Q{index + 1}
+                    </span>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="font-bold text-gray-900 dark:text-white text-base">
+                          {q.question_label}
+                        </h3>
+                        {q.is_required && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-600 dark:bg-red-950/50 dark:text-red-300 uppercase">
+                            Required
                           </span>
+                        )}
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300 font-mono">
+                          {getQuestionTypeLabel(q.question_type)}
+                        </span>
+                      </div>
+
+                      {q.options && q.options.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          {q.options.map((opt, oIdx) => (
+                            <span key={oIdx} className="px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs">
+                              {opt}
+                            </span>
+                          ))}
                         </div>
                       )}
                     </div>
-                  )}
-                </div>
-
-                {/* Candidate Phone & Status Control Box (For MASTER, ADMIN, MANAGER, and ALL-dept INTERVIEWEE) */}
-                {(!isInterviewee || (isInterviewee && normalizedIntervieweeDept === 'ALL')) && (
-                  <div className="bg-purple-50/70 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800/60 p-5 rounded-2xl space-y-4 my-2">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-purple-700 dark:text-purple-300 flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-purple-600" />
-                      Verification & Status Control
-                    </h4>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
-                      <div>
-                        <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">
-                          Phone Number {isInterviewee && normalizedIntervieweeDept === 'ALL' && <span className="text-red-500">*</span>}
-                        </label>
-                        <input
-                          type="tel"
-                          value={newMobileNo}
-                          onChange={(e) => setNewMobileNo(e.target.value)}
-                          placeholder="Enter phone number..."
-                          required={isInterviewee && normalizedIntervieweeDept === 'ALL'}
-                          className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm font-medium focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">
-                          Status <span className="text-red-500">*</span>
-                        </label>
-                        {isRecruitmentStarted ? (
-                          <select
-                            value={newStatus}
-                            onChange={(e) => setNewStatus(e.target.value)}
-                            className={`w-full px-4 py-2.5 rounded-xl text-xs font-bold border-2 transition-colors focus:outline-none ${
-                              newStatus === 'SELECTED' ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/40 dark:text-green-300 dark:border-green-800' :
-                              newStatus === 'REJECTED' ? 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/40 dark:text-red-300 dark:border-red-800' :
-                              newStatus === 'IN_REVIEW' ? 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-800' :
-                              newStatus === 'PRESENT' ? 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800' :
-                              'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/40 dark:text-yellow-300 dark:border-yellow-800'
-                            }`}
-                          >
-                            <option value="PENDING" className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white font-semibold">PENDING</option>
-                            {!(isInterviewee && normalizedIntervieweeDept === 'ALL') && (
-                              <option value="IN_REVIEW" className="bg-white dark:bg-gray-900 text-purple-700 dark:text-purple-400 font-semibold">IN REVIEW</option>
-                            )}
-                            <option value="PRESENT" className="bg-white dark:bg-gray-900 text-blue-700 dark:text-blue-400 font-semibold">PRESENT</option>
-                            {!(isInterviewee && normalizedIntervieweeDept === 'ALL') && (
-                              <>
-                                <option value="SELECTED" className="bg-white dark:bg-gray-900 text-green-700 dark:text-green-400 font-semibold">SELECTED</option>
-                                <option value="REJECTED" className="bg-white dark:bg-gray-900 text-red-700 dark:text-red-400 font-semibold">REJECTED</option>
-                              </>
-                            )}
-                          </select>
-                        ) : (
-                          <div className="px-3 py-2 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-600 text-xs font-bold">
-                            {viewingCandidate.candidate_status || 'PENDING'}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {isRecruitmentStarted && (
-                      newStatus !== viewingCandidate.candidate_status ||
-                      newMobileNo.trim() !== (viewingCandidate.candidate_mobile_no || '')
-                    ) && (
-                      <div className="flex justify-end pt-1">
-                        <button
-                          type="button"
-                          onClick={handleStatusUpdate}
-                          disabled={isUpdatingStatus}
-                          className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-sm transition-colors flex items-center gap-2 shadow-md shadow-purple-500/20"
-                        >
-                          {isUpdatingStatus && <Loader2 className="w-4 h-4 animate-spin" />}
-                          {isUpdatingStatus ? "Saving..." : "Save Status & Phone"}
-                        </button>
-                      </div>
-                    )}
                   </div>
-                )}
 
-                {/* Legacy / Direct Description */}
-                {viewingCandidate.candidate_description && (
-                  <div className="border-t border-gray-200 dark:border-gray-800 pt-6">
-                    <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-2">Introduction</h4>
-                    <p className="text-gray-900 dark:text-gray-300 whitespace-pre-wrap bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
-                      {viewingCandidate.candidate_description}
-                    </p>
-                  </div>
-                )}
-
-                {/* Legacy / Direct Why Eligible */}
-                {viewingCandidate.candidate_why_eligible && (
-                  <div className="border-t border-gray-200 dark:border-gray-800 pt-6">
-                    <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-2">Why eligible & Contribution</h4>
-                    <p className="text-gray-900 dark:text-gray-300 whitespace-pre-wrap bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
-                      {viewingCandidate.candidate_why_eligible}
-                    </p>
-                  </div>
-                )}
-
-                {/* Dynamic Questions & Answers Display */}
-                {viewingCandidate.custom_answers && Object.keys(viewingCandidate.custom_answers).length > 0 && (
-                  <div className="border-t border-gray-200 dark:border-gray-800 pt-6 space-y-4">
-                    <h4 className="text-sm font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider">
-                      Recruiter Dynamic Form Responses
-                    </h4>
-
-                    {Object.entries(viewingCandidate.custom_answers).map(([qId, val]) => {
-                      const matchedQuestion = questions.find(q => q.question_id === qId);
-                      const label = matchedQuestion ? matchedQuestion.question_label : `Question (${qId.slice(0, 8)}...)`;
-                      
-                      let displayVal = 'No response provided';
-                      if (Array.isArray(val)) {
-                        displayVal = val.length > 0 ? val.join(', ') : 'None selected';
-                      } else if (typeof val === 'boolean') {
-                        displayVal = val ? 'Yes / Agreed' : 'No';
-                      } else if (val) {
-                        displayVal = String(val);
-                      }
-
-                      return (
-                        <div key={qId} className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
-                          <h5 className="text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">{label}</h5>
-                          <p className="text-sm text-gray-900 dark:text-gray-200 font-medium whitespace-pre-wrap">
-                            {displayVal}
-                          </p>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {isRecruitmentStarted && !(isInterviewee && normalizedIntervieweeDept === 'ALL') && (
-                  <div className="border-t border-gray-200 dark:border-gray-800 pt-6">
-                    <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-2">Reviewer Comments</h4>
-                    <textarea
-                      value={newComment}
-                      onChange={(e) => setNewComment(e.target.value)}
-                      placeholder="Add an internal comment about this candidate..."
-                      rows={3}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 transition-all resize-none"
-                    />
-                  </div>
-                )}
-
-                <div className="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-800">
-                  {!isInterviewee ? (
+                  <div className="flex items-center gap-2 shrink-0 border-t md:border-t-0 pt-3 md:pt-0 border-gray-100 dark:border-gray-800">
                     <button
-                      onClick={() => promptDeleteSingle(viewingCandidate)}
-                      className="px-4 py-2 rounded-xl text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 font-semibold transition-colors flex items-center gap-2 border border-red-200 dark:border-red-900/50"
+                      onClick={() => moveQuestion(index, 'up')}
+                      disabled={index === 0}
+                      className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-30 cursor-pointer"
+                    >
+                      <ArrowUp className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => moveQuestion(index, 'down')}
+                      disabled={index === questions.length - 1}
+                      className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-30 cursor-pointer"
+                    >
+                      <ArrowDown className="w-4 h-4" />
+                    </button>
+
+                    <button
+                      onClick={() => toggleQuestionActive(q)}
+                      className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-colors cursor-pointer ${
+                        q.is_active
+                          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
+                          : 'bg-gray-200 text-gray-700 dark:bg-gray-800 dark:text-gray-400'
+                      }`}
+                    >
+                      {q.is_active ? 'Active' : 'Inactive'}
+                    </button>
+
+                    <button
+                      onClick={() => openEditQuestionModal(q)}
+                      className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-950/50 cursor-pointer"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setQuestionToDelete(q)}
+                      className="p-2 rounded-lg text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/50 cursor-pointer"
                     >
                       <Trash2 className="w-4 h-4" />
-                      Delete Candidate
                     </button>
-                  ) : <div />}
-
-                  {isRecruitmentStarted && !(isInterviewee && normalizedIntervieweeDept === 'ALL') && (
-                    newStatus !== viewingCandidate.candidate_status ||
-                    newComment !== (viewingCandidate.candidate_comment || '')
-                  ) ? (
-                    <button
-                      onClick={handleStatusUpdate}
-                      disabled={isUpdatingStatus}
-                      className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold transition-colors flex items-center gap-2 shadow-lg shadow-blue-500/30"
-                    >
-                      {isUpdatingStatus && <Loader2 className="w-4 h-4 animate-spin" />}
-                      {isUpdatingStatus ? "Saving..." : "Save Status"}
-                    </button>
-                  ) : null}
+                  </div>
                 </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* --- TAB 3: INTERVIEW FEEDBACK RESULTS DASHBOARD --- */}
+        {activeTab === 'interview_feedback' && (
+          <div className="space-y-8">
+            {/* Analytics Metric Summary Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              {/* Total Responses */}
+              <div className="p-5 rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center shrink-0 font-bold">
+                  <MessageCircle className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 font-semibold uppercase tracking-wider">Responses</div>
+                  <div className="text-2xl font-black text-gray-900 dark:text-white font-mono">{totalFeedbackResponses}</div>
+                </div>
+              </div>
+
+              {/* Avg Rating Process (Q8) */}
+              <div className="p-5 rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-500 flex items-center justify-center shrink-0 font-bold">
+                  <Star className="w-6 h-6 fill-current" />
+                </div>
+                <div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 font-semibold uppercase tracking-wider">Process Rating</div>
+                  <div className="text-2xl font-black text-gray-900 dark:text-white font-mono flex items-center gap-1">
+                    {avgProcessRating} <span className="text-sm font-normal text-gray-400">/ 5</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Avg Excitement Level (Q12) */}
+              <div className="p-5 rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-500 flex items-center justify-center shrink-0 font-bold">
+                  <Sparkles className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 font-semibold uppercase tracking-wider">Excitement</div>
+                  <div className="text-2xl font-black text-gray-900 dark:text-white font-mono flex items-center gap-1">
+                    {avgExcitementLevel} <span className="text-sm font-normal text-gray-400">/ 5</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Process Comfort % (Q9) */}
+              <div className="p-5 rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center shrink-0 font-bold">
+                  <ThumbsUp className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 font-semibold uppercase tracking-wider">Comfortable</div>
+                  <div className="text-2xl font-black text-gray-900 dark:text-white font-mono">{comfortablePct}%</div>
+                </div>
+              </div>
+
+              {/* Event Interest % (Q15) */}
+              <div className="p-5 rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-500 flex items-center justify-center shrink-0 font-bold">
+                  <Smile className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 font-semibold uppercase tracking-wider">Future Interest</div>
+                  <div className="text-2xl font-black text-gray-900 dark:text-white font-mono">{futureInterestedPct}%</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Response Table */}
+            <div className="rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
+              <div className="p-5 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between flex-wrap gap-4">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                  <MessageCircle className="w-5 h-5 text-amber-500" />
+                  Interview Feedback Responses ({filteredFeedbackList.length})
+                </h3>
+
+                <button
+                  onClick={() => fetchInterviewFeedback()}
+                  disabled={loadingFeedback}
+                  className="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${loadingFeedback ? 'animate-spin' : ''}`} />
+                  Refresh
+                </button>
+              </div>
+
+              <div className="overflow-x-auto">
+                {loadingFeedback ? (
+                  <div className="flex flex-col items-center justify-center py-20 gap-4">
+                    <Loader2 className="w-12 h-12 text-amber-500 animate-spin" />
+                    <p className="text-gray-500 text-sm">Loading feedback responses...</p>
+                  </div>
+                ) : filteredFeedbackList.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-20 gap-4">
+                    <MessageCircle className="w-12 h-12 text-gray-400 opacity-40" />
+                    <p className="text-gray-500 font-medium">No interview feedback responses recorded yet.</p>
+                  </div>
+                ) : (
+                  <table className="w-full">
+                    <thead className="bg-gray-50 dark:bg-gray-800/80 border-b border-gray-200 dark:border-gray-700">
+                      <tr>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Candidate Details</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Branch / CRN</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Contact</th>
+                        <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Process Rating (Q8)</th>
+                        <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Excitement (Q12)</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Comfort (Q9)</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Future Interest (Q15)</th>
+                        <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+                      {filteredFeedbackList.map((fb) => (
+                        <tr key={fb.feedback_id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-white">
+                            {fb.candidate_name}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                            <div>{fb.branch_section}</div>
+                            <div className="text-xs font-mono text-gray-400">CRN: {fb.crn || "—"}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                            <div>{fb.phone_number}</div>
+                            <div className="text-xs text-gray-400">{fb.email_id}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-bold font-mono">
+                            {fb.rating_process ? (
+                              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
+                                <Star className="w-3.5 h-3.5 fill-current text-amber-500" />
+                                {fb.rating_process} / 5
+                              </span>
+                            ) : "—"}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-bold font-mono">
+                            {fb.excitement_level ? (
+                              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300">
+                                <Sparkles className="w-3.5 h-3.5 text-purple-500" />
+                                {fb.excitement_level} / 5
+                              </span>
+                            ) : "—"}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                            <span className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 text-xs font-medium">
+                              {fb.comfortable_organized || "—"}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm">
+                            <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${
+                              fb.future_interest === "Yes, definitely"
+                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
+                                : fb.future_interest === "Maybe"
+                                ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'
+                                : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+                            }`}>
+                              {fb.future_interest || "—"}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm space-x-2">
+                            <button
+                              onClick={() => setViewingFeedback(fb)}
+                              className="px-3 py-1.5 rounded-lg bg-purple-50 text-purple-600 hover:bg-purple-100 dark:bg-purple-950/50 dark:text-purple-400 dark:hover:bg-purple-900/50 transition-colors font-semibold text-xs cursor-pointer inline-flex items-center gap-1"
+                            >
+                              <Eye className="w-3.5 h-3.5" /> Full Response
+                            </button>
+                            {!isInterviewee && (
+                              <button
+                                onClick={() => setFeedbackToDelete(fb)}
+                                className="px-2.5 py-1.5 rounded-lg text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/50 transition-colors cursor-pointer"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+      </div>
+
+      {/* --- CANDIDATE VIEW / EDIT MODAL --- */}
+      <AnimatePresence>
+        {viewingCandidate && (
+          <motion.div
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="bg-white dark:bg-gray-900 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl border border-gray-200 dark:border-gray-800 my-8 p-6 sm:p-8 space-y-6"
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+            >
+              <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-800 pb-4">
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                    {viewingCandidate.candidate_name}
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 font-mono">
+                    CRN: {viewingCandidate.candidate_crn} • Class: {viewingCandidate.candidate_class}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setViewingCandidate(null)}
+                  className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 cursor-pointer"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-xs text-gray-400 uppercase font-semibold block">Email</span>
+                  <span className="text-gray-900 dark:text-white font-medium">{viewingCandidate.candidate_email}</span>
+                </div>
+                <div>
+                  <span className="text-xs text-gray-400 uppercase font-semibold block">Department</span>
+                  <span className="text-gray-900 dark:text-white font-medium">{formatDepartment(viewingCandidate.interested_department)}</span>
+                </div>
+                <div>
+                  <span className="text-xs text-gray-400 uppercase font-semibold block">Phone Number</span>
+                  <input
+                    type="tel"
+                    value={newMobileNo}
+                    onChange={(e) => setNewMobileNo(e.target.value)}
+                    placeholder="Enter candidate phone number..."
+                    className="w-full mt-1 px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                  />
+                </div>
+                <div>
+                  <span className="text-xs text-gray-400 uppercase font-semibold block">Application Status</span>
+                  <select
+                    value={newStatus}
+                    onChange={(e) => setNewStatus(e.target.value)}
+                    className="w-full mt-1 px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm font-semibold"
+                  >
+                    <option value="PENDING">PENDING</option>
+                    <option value="IN_REVIEW">IN_REVIEW</option>
+                    <option value="PRESENT">PRESENT</option>
+                    <option value="SELECTED">SELECTED</option>
+                    <option value="REJECTED">REJECTED</option>
+                  </select>
+                </div>
+              </div>
+
+              {viewingCandidate.candidate_description && (
+                <div className="space-y-1">
+                  <span className="text-xs text-gray-400 uppercase font-semibold block">Introduce Yourself</span>
+                  <p className="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/50 p-3 rounded-xl leading-relaxed">
+                    {viewingCandidate.candidate_description}
+                  </p>
+                </div>
+              )}
+
+              {viewingCandidate.candidate_why_eligible && (
+                <div className="space-y-1">
+                  <span className="text-xs text-gray-400 uppercase font-semibold block">Why join English Club?</span>
+                  <p className="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/50 p-3 rounded-xl leading-relaxed">
+                    {viewingCandidate.candidate_why_eligible}
+                  </p>
+                </div>
+              )}
+
+              <div className="space-y-1">
+                <span className="text-xs text-gray-400 uppercase font-semibold block">Reviewer Comment</span>
+                <textarea
+                  rows={2}
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  placeholder="Add evaluation comments..."
+                  className="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm resize-none"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-800">
+                <button
+                  onClick={() => setViewingCandidate(null)}
+                  className="px-4 py-2 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-sm font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleStatusUpdate}
+                  disabled={isUpdatingStatus}
+                  className="px-6 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-semibold text-sm transition-colors flex items-center gap-2 shadow-md"
+                >
+                  {isUpdatingStatus && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Save Changes
+                </button>
               </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Candidate Delete Confirmation Modal */}
+      {/* --- INTERVIEW FEEDBACK RESPONSE DETAIL MODAL --- */}
       <AnimatePresence>
-        {deleteConfirmIds.length > 0 && (
+        {viewingFeedback && (
+          <motion.div
+            className="fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="bg-white dark:bg-gray-900 rounded-3xl w-full max-w-3xl overflow-hidden shadow-2xl border border-gray-200 dark:border-gray-800 my-8 p-6 sm:p-8 space-y-6 max-h-[90vh] overflow-y-auto"
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+            >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-800 pb-4">
+                <div>
+                  <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 text-xs font-mono font-bold uppercase mb-1">
+                    Interview Feedback Response
+                  </div>
+                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                    {viewingFeedback.candidate_name}
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 font-mono">
+                    {viewingFeedback.branch_section} • CRN: {viewingFeedback.crn || "—"} • Submitted: {new Date(viewingFeedback.created_at).toLocaleString()}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setViewingFeedback(null)}
+                  className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 cursor-pointer"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              {/* Candidate Info Summary Box */}
+              <div className="p-4 rounded-2xl bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+                <div>
+                  <span className="text-gray-400 font-semibold uppercase block">Phone Number</span>
+                  <span className="font-bold text-gray-900 dark:text-white">{viewingFeedback.phone_number}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400 font-semibold uppercase block">Email ID</span>
+                  <span className="font-bold text-gray-900 dark:text-white">{viewingFeedback.email_id}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400 font-semibold uppercase block">Process Rating (Q8)</span>
+                  <span className="font-bold text-amber-500 font-mono text-sm">{viewingFeedback.rating_process ? `${viewingFeedback.rating_process} / 5 Stars` : "N/A"}</span>
+                </div>
+              </div>
+
+              {/* 15 Questions Breakdown */}
+              <div className="space-y-6 text-sm">
+                {/* Q6 */}
+                <div className="p-4 rounded-2xl bg-white dark:bg-gray-800/40 border border-gray-200 dark:border-gray-800 space-y-2">
+                  <div className="font-bold text-gray-900 dark:text-white">
+                    6. Overall experience of Wednesday interview:
+                  </div>
+                  <p className="text-gray-700 dark:text-gray-300 leading-relaxed font-sans">
+                    {viewingFeedback.overall_experience || "No response provided."}
+                  </p>
+                </div>
+
+                {/* Q7 */}
+                <div className="p-4 rounded-2xl bg-white dark:bg-gray-800/40 border border-gray-200 dark:border-gray-800 space-y-2">
+                  <div className="font-bold text-gray-900 dark:text-white">
+                    7. Issues or difficulties faced during process:
+                  </div>
+                  <p className="text-gray-700 dark:text-gray-300 leading-relaxed font-sans">
+                    {viewingFeedback.issues_faced || "No issues reported."}
+                  </p>
+                </div>
+
+                {/* Q8 & Q9 */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="p-4 rounded-2xl bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 space-y-1">
+                    <div className="text-xs font-bold text-purple-700 dark:text-purple-300 uppercase">
+                      8. Overall Process Rating
+                    </div>
+                    <div className="text-lg font-black text-purple-900 dark:text-white font-mono">
+                      {viewingFeedback.rating_process ? `${viewingFeedback.rating_process} / 5` : "Not Rated"}
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 space-y-1">
+                    <div className="text-xs font-bold text-blue-700 dark:text-blue-300 uppercase">
+                      9. Comfortable & Organized
+                    </div>
+                    <div className="text-base font-black text-blue-900 dark:text-white">
+                      {viewingFeedback.comfortable_organized || "—"}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Q10 */}
+                <div className="p-4 rounded-2xl bg-white dark:bg-gray-800/40 border border-gray-200 dark:border-gray-800 space-y-2">
+                  <div className="font-bold text-gray-900 dark:text-white">
+                    10. Particularly liked aspects:
+                  </div>
+                  <p className="text-gray-700 dark:text-gray-300 leading-relaxed font-sans">
+                    {viewingFeedback.liked_aspects || "No specific feedback."}
+                  </p>
+                </div>
+
+                {/* Q11 */}
+                <div className="p-4 rounded-2xl bg-white dark:bg-gray-800/40 border border-gray-200 dark:border-gray-800 space-y-2">
+                  <div className="font-bold text-gray-900 dark:text-white">
+                    11. Suggestions for future interviews or events:
+                  </div>
+                  <p className="text-gray-700 dark:text-gray-300 leading-relaxed font-sans">
+                    {viewingFeedback.suggestions || "No suggestions provided."}
+                  </p>
+                </div>
+
+                {/* Q12 & Q13 */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="p-4 rounded-2xl bg-cyan-50 dark:bg-cyan-950/30 border border-cyan-200 dark:border-cyan-800 space-y-1">
+                    <div className="text-xs font-bold text-cyan-700 dark:text-cyan-300 uppercase">
+                      12. Excitement Level
+                    </div>
+                    <div className="text-lg font-black text-cyan-900 dark:text-white font-mono">
+                      {viewingFeedback.excitement_level ? `${viewingFeedback.excitement_level} / 5` : "Not Rated"}
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 space-y-1">
+                    <div className="text-xs font-bold text-emerald-700 dark:text-emerald-300 uppercase">
+                      13. Understanding Gained
+                    </div>
+                    <div className="text-base font-black text-emerald-900 dark:text-white">
+                      {viewingFeedback.understanding_gained || "—"}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Q14 */}
+                <div className="p-4 rounded-2xl bg-white dark:bg-gray-800/40 border border-gray-200 dark:border-gray-800 space-y-2">
+                  <div className="font-bold text-gray-900 dark:text-white">
+                    14. Additional thoughts shared:
+                  </div>
+                  <p className="text-gray-700 dark:text-gray-300 leading-relaxed font-sans">
+                    {viewingFeedback.additional_thoughts || "None."}
+                  </p>
+                </div>
+
+                {/* Q15 */}
+                <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border border-amber-200 dark:border-amber-800 space-y-1">
+                  <div className="text-xs font-bold text-amber-800 dark:text-amber-300 uppercase">
+                    15. Future Event Participation Interest
+                  </div>
+                  <div className="text-base font-extrabold text-amber-900 dark:text-white">
+                    {viewingFeedback.future_interest || "Not specified"}
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="flex justify-end pt-4 border-t border-gray-200 dark:border-gray-800">
+                <button
+                  onClick={() => setViewingFeedback(null)}
+                  className="px-6 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold transition-colors text-sm cursor-pointer shadow-md"
+                >
+                  Close Response
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* --- SINGLE DELETE FEEDBACK CONFIRMATION MODAL --- */}
+      <AnimatePresence>
+        {feedbackToDelete && (
           <motion.div
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
             initial={{ opacity: 0 }}
@@ -1614,51 +1819,33 @@ export function AdminRecruitments() {
                   <AlertTriangle className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">Confirm Deletion</h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">This action cannot be undone</p>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">Delete Feedback Response</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Permanently delete feedback item</p>
                 </div>
               </div>
 
-              <div className="text-sm text-gray-600 dark:text-gray-300">
-                {deleteConfirmIds.length === 1 ? (
-                  <p>
-                    Are you sure you want to delete candidate{" "}
-                    <span className="font-semibold text-gray-900 dark:text-white">
-                      {candidateToDelete?.candidate_name || 'this candidate'}
-                    </span>
-                    ?
-                  </p>
-                ) : (
-                  <p>
-                    Are you sure you want to delete{" "}
-                    <span className="font-semibold text-gray-900 dark:text-white">
-                      {deleteConfirmIds.length} candidate applications
-                    </span>
-                    ?
-                  </p>
-                )}
-              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                Are you sure you want to delete feedback from{" "}
+                <span className="font-bold text-gray-900 dark:text-white">"{feedbackToDelete.candidate_name}"</span>?
+              </p>
 
               <div className="flex justify-end gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => {
-                    setDeleteConfirmIds([]);
-                    setCandidateToDelete(null);
-                  }}
-                  disabled={isDeleting}
-                  className="px-4 py-2 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors font-medium text-sm"
+                  onClick={() => setFeedbackToDelete(null)}
+                  disabled={isDeletingFeedback}
+                  className="px-4 py-2 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors font-medium text-sm cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="button"
-                  onClick={confirmDeleteCandidates}
-                  disabled={isDeleting}
-                  className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold transition-colors flex items-center gap-2 text-sm shadow-md shadow-red-500/20"
+                  onClick={confirmDeleteFeedback}
+                  disabled={isDeletingFeedback}
+                  className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold transition-colors flex items-center gap-2 text-sm shadow-md shadow-red-500/20 cursor-pointer"
                 >
-                  {isDeleting && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {isDeleting ? "Deleting..." : "Delete Permanently"}
+                  {isDeletingFeedback && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {isDeletingFeedback ? "Deleting..." : "Delete Response"}
                 </button>
               </div>
             </motion.div>
@@ -1666,7 +1853,60 @@ export function AdminRecruitments() {
         )}
       </AnimatePresence>
 
-      {/* Archive Confirmation Modal */}
+      {/* --- CLEAR ALL FEEDBACK CONFIRMATION MODAL --- */}
+      <AnimatePresence>
+        {isClearFeedbackModalOpen && (
+          <motion.div
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl border border-gray-200 dark:border-gray-800 p-6 space-y-4"
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+            >
+              <div className="flex items-center gap-3 text-red-600 dark:text-red-500">
+                <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-xl">
+                  <AlertTriangle className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">Clear All Interview Feedback</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Irreversible action</p>
+                </div>
+              </div>
+
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                Are you sure you want to delete all <span className="font-bold text-red-600">{feedbackList.length}</span> interview feedback responses? This action cannot be undone.
+              </p>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsClearFeedbackModalOpen(false)}
+                  disabled={isClearingAllFeedback}
+                  className="px-4 py-2 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors font-medium text-sm cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmClearAllFeedback}
+                  disabled={isClearingAllFeedback}
+                  className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold transition-colors flex items-center gap-2 text-sm shadow-md shadow-red-500/20 cursor-pointer"
+                >
+                  {isClearingAllFeedback && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {isClearingAllFeedback ? "Clearing All..." : "Clear All Feedback"}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* --- ARCHIVE CONFIRMATION MODAL --- */}
       <AnimatePresence>
         {isArchiveModalOpen && (
           <motion.div
@@ -1687,26 +1927,21 @@ export function AdminRecruitments() {
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-gray-900 dark:text-white">Archive Recruitment Data</h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Save to history and clear candidates</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Save snapshot & clear active list</p>
                 </div>
               </div>
 
-              <div className="text-sm text-gray-600 dark:text-gray-300 space-y-3">
-                <p>
-                  This operation will archive all current candidate records ({candidates.length}) into the recruitment history table, and then clear the current active candidates list.
-                </p>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                    Recruitment Session / Date Label
-                  </label>
-                  <input
-                    type="text"
-                    value={recruitmentArchiveDate}
-                    onChange={(e) => setRecruitmentArchiveDate(e.target.value)}
-                    placeholder="e.g. Recruitment August 2026"
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 font-medium text-sm"
-                  />
-                </div>
+              <div className="space-y-2">
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                  Archive Batch Name / Date *
+                </label>
+                <input
+                  type="text"
+                  value={recruitmentArchiveDate}
+                  onChange={(e) => setRecruitmentArchiveDate(e.target.value)}
+                  placeholder="e.g. Recruitment August 2026"
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
+                />
               </div>
 
               <div className="flex justify-end gap-3 pt-2">
@@ -1714,7 +1949,7 @@ export function AdminRecruitments() {
                   type="button"
                   onClick={() => setIsArchiveModalOpen(false)}
                   disabled={isArchiving}
-                  className="px-4 py-2 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors font-medium text-sm"
+                  className="px-4 py-2 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors font-medium text-sm cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -1722,10 +1957,10 @@ export function AdminRecruitments() {
                   type="button"
                   onClick={handleArchiveConfirm}
                   disabled={isArchiving}
-                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-semibold transition-colors flex items-center gap-2 text-sm shadow-md shadow-amber-500/20"
+                  className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-semibold transition-colors flex items-center gap-2 text-sm shadow-md shadow-amber-500/20 cursor-pointer"
                 >
                   {isArchiving && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {isArchiving ? "Archiving..." : "Archive & Clear All"}
+                  {isArchiving ? "Archiving..." : "Archive & Clear"}
                 </button>
               </div>
             </motion.div>
@@ -1737,65 +1972,61 @@ export function AdminRecruitments() {
       <AnimatePresence>
         {isQuestionModalOpen && (
           <motion.div
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl border border-gray-200 dark:border-gray-800"
+              className="bg-white dark:bg-gray-900 rounded-3xl w-full max-w-xl overflow-hidden shadow-2xl border border-gray-200 dark:border-gray-800 my-8 p-6 sm:p-8 space-y-6"
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
             >
-              <div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-800">
+              <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-800 pb-4">
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                  {editingQuestion ? 'Edit Question' : 'Add Form Question'}
+                  {editingQuestion ? 'Edit Question' : 'Add New Question'}
                 </h3>
                 <button
                   onClick={() => setIsQuestionModalOpen(false)}
-                  className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+                  className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <form onSubmit={handleSaveQuestion} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+              <form onSubmit={handleSaveQuestion} className="space-y-4">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                    Question Label / Prompt *
+                    Question Prompt / Label *
                   </label>
                   <input
                     type="text"
                     value={questionFormData.question_label}
                     onChange={(e) => setQuestionFormData({ ...questionFormData, question_label: e.target.value })}
-                    placeholder="e.g. What skills can you contribute to English Club?"
                     required
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 text-sm font-medium"
+                    placeholder="e.g. Why do you want to join the English Club?"
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                    Question Type *
+                    Response Type *
                   </label>
                   <select
                     value={questionFormData.question_type}
-                    onChange={(e) => setQuestionFormData({ 
-                      ...questionFormData, 
-                      question_type: e.target.value as RecruitmentQuestion['question_type'] 
-                    })}
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 text-sm font-semibold"
+                    onChange={(e) => setQuestionFormData({ ...questionFormData, question_type: e.target.value as any })}
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm font-semibold"
                   >
-                    <option value="SHORT_TEXT">Short Text Input (Single Line)</option>
-                    <option value="LONG_TEXT">Long Paragraph (Multi-line Textarea)</option>
-                    <option value="DROPDOWN">Dropdown (Single Selection)</option>
+                    <option value="SHORT_TEXT">Short Text Input</option>
+                    <option value="LONG_TEXT">Long Paragraph (Textarea)</option>
+                    <option value="DROPDOWN">Dropdown (Single Select)</option>
                     <option value="MULTIPLE_CHOICE">Multiple Choice Checkboxes</option>
-                    <option value="CHECKBOX">Single Checkbox (Agreement / Confirmation)</option>
+                    <option value="CHECKBOX">Single Checkbox (Agreement)</option>
                   </select>
                 </div>
 
-                {/* Options Builder for Dropdown and Multiple Choice */}
                 {(questionFormData.question_type === 'DROPDOWN' || questionFormData.question_type === 'MULTIPLE_CHOICE') && (
                   <div className="space-y-2 border-t border-gray-200 dark:border-gray-800 pt-3">
                     <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
@@ -1818,7 +2049,7 @@ export function AdminRecruitments() {
                       <button
                         type="button"
                         onClick={handleAddOption}
-                        className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-semibold text-sm transition-colors"
+                        className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-semibold text-sm transition-colors cursor-pointer"
                       >
                         Add
                       </button>
@@ -1831,7 +2062,7 @@ export function AdminRecruitments() {
                           <button
                             type="button"
                             onClick={() => handleRemoveOption(idx)}
-                            className="text-purple-500 hover:text-purple-700 dark:hover:text-purple-200"
+                            className="text-purple-500 hover:text-purple-700 dark:hover:text-purple-200 cursor-pointer"
                           >
                             <X className="w-3.5 h-3.5" />
                           </button>
@@ -1880,14 +2111,14 @@ export function AdminRecruitments() {
                   <button
                     type="button"
                     onClick={() => setIsQuestionModalOpen(false)}
-                    className="px-4 py-2 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors font-medium text-sm"
+                    className="px-4 py-2 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors font-medium text-sm cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={isSavingQuestion}
-                    className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-semibold transition-colors flex items-center gap-2 text-sm shadow-md shadow-purple-500/20"
+                    className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-semibold transition-colors flex items-center gap-2 text-sm shadow-md shadow-purple-500/20 cursor-pointer"
                   >
                     {isSavingQuestion && <Loader2 className="w-4 h-4 animate-spin" />}
                     {isSavingQuestion ? "Saving..." : "Save Question"}
@@ -1934,7 +2165,7 @@ export function AdminRecruitments() {
                   type="button"
                   onClick={() => setQuestionToDelete(null)}
                   disabled={isDeletingQuestion}
-                  className="px-4 py-2 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors font-medium text-sm"
+                  className="px-4 py-2 rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors font-medium text-sm cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -1942,7 +2173,7 @@ export function AdminRecruitments() {
                   type="button"
                   onClick={confirmDeleteQuestion}
                   disabled={isDeletingQuestion}
-                  className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold transition-colors flex items-center gap-2 text-sm shadow-md shadow-red-500/20"
+                  className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold transition-colors flex items-center gap-2 text-sm shadow-md shadow-red-500/20 cursor-pointer"
                 >
                   {isDeletingQuestion && <Loader2 className="w-4 h-4 animate-spin" />}
                   {isDeletingQuestion ? "Deleting..." : "Delete Question"}

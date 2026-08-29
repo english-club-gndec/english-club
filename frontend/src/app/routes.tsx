@@ -10,6 +10,7 @@ import { Articles } from "./pages/Articles";
 import { SubmitArticle } from "./pages/SubmitArticle";
 import { VotingPage } from "./pages/VotingPage"; // Added
 import { RecruitmentResults } from "./pages/RecruitmentResults";
+import { InterviewFeedbackPage } from "./pages/InterviewFeedback";
 import { AdminLayout } from "./components/admin/AdminLayout";
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
 import { AdminUsers } from "./pages/admin/AdminUsers";
@@ -42,6 +43,8 @@ export const router = createBrowserRouter([
       { path: "vote", Component: VotingPage }, // Added
       { path: "recruitment-results", Component: RecruitmentResults },
       { path: "results", Component: RecruitmentResults },
+      { path: "interview-feedback", Component: InterviewFeedbackPage },
+      { path: "feedback", Component: InterviewFeedbackPage },
     ],
   },
   {

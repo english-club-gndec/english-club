@@ -554,7 +554,122 @@ const recruitmentController = {
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
+  },
+
+  // POST /interview-feedback (Public feedback form submission)
+  createInterviewFeedback: async (req, res) => {
+    try {
+      const {
+        candidate_name,
+        branch_section,
+        crn,
+        phone_number,
+        email_id,
+        overall_experience,
+        issues_faced,
+        rating_process,
+        comfortable_organized,
+        liked_aspects,
+        suggestions,
+        excitement_level,
+        understanding_gained,
+        additional_thoughts,
+        future_interest
+      } = req.body;
+
+      if (!candidate_name || !branch_section || !phone_number || !email_id) {
+        return res.status(400).json({ error: 'Candidate details (Name, Branch & Section, Phone, Email) are required' });
+      }
+
+      const insertPayload = {
+        candidate_name,
+        branch_section,
+        crn: crn || null,
+        phone_number,
+        email_id,
+        overall_experience: overall_experience || '',
+        issues_faced: issues_faced || '',
+        rating_process: rating_process ? Number(rating_process) : null,
+        comfortable_organized: comfortable_organized || '',
+        liked_aspects: liked_aspects || '',
+        suggestions: suggestions || '',
+        excitement_level: excitement_level ? Number(excitement_level) : null,
+        understanding_gained: understanding_gained || '',
+        additional_thoughts: additional_thoughts || '',
+        future_interest: future_interest || ''
+      };
+
+      const { data, error } = await supabase
+        .from('interview_feedback')
+        .insert([insertPayload])
+        .select();
+
+      if (error) {
+        // Handle case where table might not exist yet by returning structured response
+        console.error('Interview feedback insert error:', error.message);
+        throw error;
+      }
+
+      res.status(201).json({ message: 'Interview feedback submitted successfully', feedback: data[0] });
+    } catch (err) {
+      res.status(500).json({ error: err.message || 'Failed to submit interview feedback' });
+    }
+  },
+
+  // GET /:user_id/interview-feedback (Admin protected)
+  getAllInterviewFeedback: async (req, res) => {
+    try {
+      const { data, error } = await supabase
+        .from('interview_feedback')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        if (error.code === '42P01' || error.message.includes('does not exist')) {
+          return res.json([]);
+        }
+        throw error;
+      }
+
+      res.json(data || []);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+
+  // DELETE /:user_id/interview-feedback/:feedback_id (Admin protected)
+  deleteInterviewFeedbackById: async (req, res) => {
+    try {
+      const { feedback_id } = req.params;
+      const { data, error } = await supabase
+        .from('interview_feedback')
+        .delete()
+        .eq('feedback_id', feedback_id)
+        .select();
+
+      if (error) throw error;
+      res.json({ message: 'Interview feedback deleted successfully', data });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+
+  // DELETE /:user_id/interview-feedback/clear-all (Admin protected)
+  clearAllInterviewFeedback: async (req, res) => {
+    try {
+      const { data, error } = await supabase
+        .from('interview_feedback')
+        .delete()
+        .not('feedback_id', 'is', null)
+        .select();
+
+      if (error) throw error;
+      res.json({ message: 'All interview feedback cleared successfully', count: data ? data.length : 0 });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
   }
 };
 
 module.exports = recruitmentController;
+
