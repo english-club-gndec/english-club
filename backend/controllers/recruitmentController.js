@@ -105,7 +105,7 @@ const recruitmentController = {
     try {
       let query = supabase
         .from('candidates')
-        .select('*');
+        .select('candidate_id, candidate_name, candidate_email, candidate_mobile_no, candidate_class, candidate_stream, candidate_year, section, candidate_crn, candidate_urn, interested_department, candidate_status, created_at, updated_at');
 
       if (req.user && req.user.user_role === 'INTERVIEWEE') {
         const { data: userData } = await supabase
@@ -621,7 +621,7 @@ const recruitmentController = {
     try {
       const { data, error } = await supabase
         .from('interview_feedback')
-        .select('*')
+        .select('feedback_id, candidate_name, branch_section, crn, phone_number, email_id, rating_process, excitement_level, comfortable_organized, future_interest, overall_experience, issues_faced, liked_aspects, suggestions, additional_thoughts, created_at, updated_at')
         .order('created_at', { ascending: false });
 
       if (error) {

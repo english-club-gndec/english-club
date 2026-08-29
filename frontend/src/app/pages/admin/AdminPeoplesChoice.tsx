@@ -87,6 +87,7 @@ export function AdminPeoplesChoice() {
         'postgres_changes' as any, 
         { event: 'INSERT', schema: 'public', table: 'award_votes' }, 
         async () => {
+          if (document.hidden) return;
           // Refresh vote counts
           const votes = await votingService.getVoteCounts();
           setParticipants(prev => prev.map(p => ({
