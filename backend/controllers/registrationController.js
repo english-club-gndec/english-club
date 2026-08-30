@@ -10,42 +10,129 @@ const registrationController = {
         participant_crn, 
         participant_urn, 
         participant_email, 
-        registered_event 
+        participant_phone_no, 
+        registered_event, 
+        team_name,
+        members,
+        participants
       } = req.body;
 
-      if (!participant_name || !participant_class || !participant_crn || !participant_email || !registered_event) {
-        return res.status(400).json({ error: 'Required fields are missing' });
+      if (!registered_event) {
+        return res.status(400).json({ error: 'registered_event is required' });
       }
 
-      const { data, error } = await supabase
+      // 1. Fetch event details to check event_type and max_team_size
+      const { data: event, error: eventError } = await supabase
+        .from('events')
+        .select('event_id, event_name, event_type, max_team_size')
+        .eq('event_id', registered_event)
+        .single();
+
+      if (eventError || !event) {
+        return res.status(404).json({ error: 'Registered event not found' });
+      }
+
+      // 2. Determine participants list from payload (single participant or array of members)
+      let participantsList = [];
+      if (Array.isArray(members) && members.length > 0) {
+        participantsList = members;
+      } else if (Array.isArray(participants) && participants.length > 0) {
+        participantsList = participants;
+      } else {
+        participantsList = [{
+          participant_name,
+          participant_class,
+          participant_crn,
+          participant_urn,
+          participant_email,
+          participant_phone_no
+        }];
+      }
+
+      // Validate required fields for every participant
+      for (let i = 0; i < participantsList.length; i++) {
+        const p = participantsList[i];
+        if (!p.participant_name || !p.participant_class || !p.participant_email) {
+          return res.status(400).json({ 
+            error: `Participant ${i + 1} is missing required fields (name, class, and email are required)` 
+          });
+        }
+      }
+
+      let assignedTeamId = null;
+
+      // 3. Handle TEAM vs INDIVIDUAL logic
+      if (event.event_type === 'TEAM') {
+        if (!team_name || !team_name.trim()) {
+          return res.status(400).json({ error: 'Team name is mandatory for team events' });
+        }
+
+        if (event.max_team_size && participantsList.length > event.max_team_size) {
+          return res.status(400).json({ 
+            error: `Team size (${participantsList.length}) exceeds maximum allowed limit of ${event.max_team_size} for this event` 
+          });
+        }
+
+        // Save team in participating_teams table
+        const { data: teamData, error: teamError } = await supabase
+          .from('participating_teams')
+          .insert([{ 
+            team_name: team_name.trim(),
+            event_id: registered_event
+          }])
+          .select()
+          .single();
+
+        if (teamError) throw teamError;
+        assignedTeamId = teamData.team_id;
+      } else {
+        // For INDIVIDUAL events, team_id remains null
+        assignedTeamId = null;
+      }
+
+      // 4. Save participants in database
+      const recordsToInsert = participantsList.map(p => ({
+        participant_name: p.participant_name,
+        participant_class: p.participant_class,
+        participant_crn: p.participant_crn || null,
+        participant_urn: p.participant_urn || null,
+        participant_email: p.participant_email,
+        participant_phone_no: p.participant_phone_no || null,
+        registered_event: registered_event,
+        team_id: assignedTeamId
+      }));
+
+      const { data: insertedData, error: insertError } = await supabase
         .from('participants')
-        .insert([
-          { 
-            participant_name, 
-            participant_class, 
-            participant_crn, 
-            participant_urn: participant_urn || null, 
-            participant_email, 
-            registered_event 
-          }
-        ])
+        .insert(recordsToInsert)
         .select(`
           *,
           events (
-            event_name
+            event_name,
+            event_type
+          ),
+          participating_teams (
+            team_name
           )
         `);
 
-      if (error) throw error;
+      if (insertError) throw insertError;
 
       // Format response
-      const participantWithEvent = {
-        ...data[0],
-        event_name: data[0].events?.event_name,
-        events: undefined
-      };
+      const formattedParticipants = insertedData.map(p => ({
+        ...p,
+        event_name: p.events?.event_name,
+        team_name: p.participating_teams?.team_name || null,
+        events: undefined,
+        participating_teams: undefined
+      }));
 
-      res.status(201).json({ message: 'Participant registered successfully', participant: participantWithEvent });
+      res.status(201).json({ 
+        message: event.event_type === 'TEAM' ? 'Team registered successfully' : 'Participant registered successfully',
+        team_id: assignedTeamId,
+        team_name: team_name || null,
+        participants: formattedParticipants 
+      });
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
@@ -59,7 +146,11 @@ const registrationController = {
         .select(`
           *,
           events (
-            event_name
+            event_name,
+            event_type
+          ),
+          participating_teams (
+            team_name
           )
         `)
         .order('created_at', { ascending: false });
@@ -70,7 +161,9 @@ const registrationController = {
       const participantsWithEvent = data.map(p => ({
         ...p,
         event_name: p.events?.event_name,
-        events: undefined
+        team_name: p.participating_teams?.team_name || null,
+        events: undefined,
+        participating_teams: undefined
       }));
 
       res.json(participantsWithEvent);
@@ -88,7 +181,11 @@ const registrationController = {
         .select(`
           *,
           events (
-            event_name
+            event_name,
+            event_type
+          ),
+          participating_teams (
+            team_name
           )
         `)
         .eq('registered_event', event_id)
@@ -100,7 +197,9 @@ const registrationController = {
       const participantsWithEvent = data.map(p => ({
         ...p,
         event_name: p.events?.event_name,
-        events: undefined
+        team_name: p.participating_teams?.team_name || null,
+        events: undefined,
+        participating_teams: undefined
       }));
 
       res.json(participantsWithEvent);
@@ -119,7 +218,9 @@ const registrationController = {
         participant_crn, 
         participant_urn, 
         participant_email, 
-        registered_event 
+        participant_phone_no,
+        registered_event,
+        team_id
       } = req.body;
 
       const updateData = {};
@@ -128,7 +229,9 @@ const registrationController = {
       if (participant_crn !== undefined) updateData.participant_crn = participant_crn;
       if (participant_urn !== undefined) updateData.participant_urn = participant_urn;
       if (participant_email !== undefined) updateData.participant_email = participant_email;
+      if (participant_phone_no !== undefined) updateData.participant_phone_no = participant_phone_no;
       if (registered_event !== undefined) updateData.registered_event = registered_event;
+      if (team_id !== undefined) updateData.team_id = team_id;
 
       updateData.updated_at = new Date().toISOString();
 
@@ -143,7 +246,11 @@ const registrationController = {
         .select(`
           *,
           events (
-            event_name
+            event_name,
+            event_type
+          ),
+          participating_teams (
+            team_name
           )
         `);
 
@@ -156,7 +263,9 @@ const registrationController = {
       const participantWithEvent = {
         ...data[0],
         event_name: data[0].events?.event_name,
-        events: undefined
+        team_name: data[0].participating_teams?.team_name || null,
+        events: undefined,
+        participating_teams: undefined
       };
 
       res.json({ message: 'Participant updated successfully', participant: participantWithEvent });

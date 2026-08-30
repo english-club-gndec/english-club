@@ -5,7 +5,18 @@ const eventController = {
   // POST /api/events
   createEvent: async (req, res) => {
     try {
-      const { event_name, event_short_description, event_long_description, event_venue, event_date, event_time, event_poster_key, created_by } = req.body;
+      const { 
+        event_name, 
+        event_short_description, 
+        event_long_description, 
+        event_venue, 
+        event_date, 
+        event_time, 
+        event_poster_key, 
+        event_type, 
+        max_team_size, 
+        created_by 
+      } = req.body;
 
       if (!event_name || !event_short_description || !created_by) {
         return res.status(400).json({ error: 'Name, short description, and created_by are required' });
@@ -22,6 +33,8 @@ const eventController = {
             event_date, 
             event_time, 
             event_poster_key,
+            event_type: event_type || 'INDIVIDUAL',
+            max_team_size: max_team_size ? parseInt(max_team_size, 10) : null,
             created_by 
           }
         ])
@@ -122,7 +135,7 @@ const eventController = {
     updateEvent: async (req, res) => {
     try {
       const { event_id } = req.params;
-      const { event_name, event_short_description, event_long_description, event_venue, event_date, event_time, event_poster_key } = req.body;
+      const { event_name, event_short_description, event_long_description, event_venue, event_date, event_time, event_poster_key, event_type, max_team_size } = req.body;
 
       // Fetch existing record for audit logging
       const { data: existingEvent } = await supabase
@@ -140,6 +153,9 @@ const eventController = {
       if (event_date !== undefined) updateData.event_date = event_date;
       if (event_time !== undefined) updateData.event_time = event_time;
       if (event_poster_key !== undefined) updateData.event_poster_key = event_poster_key;
+      if (event_type !== undefined) updateData.event_type = event_type;
+      if (max_team_size !== undefined) updateData.max_team_size = max_team_size ? parseInt(max_team_size, 10) : null;
+
       
       // Explicitly set updated_at (though the DB trigger would also handle this if set up)
       updateData.updated_at = new Date().toISOString();

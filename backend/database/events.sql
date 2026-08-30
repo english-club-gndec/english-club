@@ -1,3 +1,14 @@
+-- Create custom ENUM type for event_type if it doesn't exist
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'event_type') THEN
+        CREATE TYPE event_type AS ENUM (
+            'INDIVIDUAL', 
+            'TEAM'
+        );
+    END IF;
+END $$;
+
 -- Events Table SQL
 CREATE TABLE events (
     event_id BIGSERIAL PRIMARY KEY,
@@ -8,10 +19,17 @@ CREATE TABLE events (
     event_date DATE,
     event_time TIME,
     event_poster_key TEXT,
+    event_type event_type NOT NULL DEFAULT 'INDIVIDUAL',
+    max_team_size INT,
     created_by BIGINT NOT NULL REFERENCES users(user_id),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
+
+-- Migration statement for existing events table
+ALTER TABLE events ADD COLUMN IF NOT EXISTS event_type event_type DEFAULT 'INDIVIDUAL';
+ALTER TABLE events ADD COLUMN IF NOT EXISTS max_team_size INT;
+
 
 -- Trigger to automatically update updated_at
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -22,7 +40,9 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
+DROP TRIGGER IF EXISTS update_events_updated_at ON events;
 CREATE TRIGGER update_events_updated_at
     BEFORE UPDATE ON events
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
+
