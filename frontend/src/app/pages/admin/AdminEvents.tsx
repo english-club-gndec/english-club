@@ -414,7 +414,7 @@ export function AdminEvents() {
                     <img 
                       src={event.poster ? getPublicUrl(event.poster) : "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&q=80&w=800"} 
                       alt={event.name}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      className="w-full h-full object-cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
@@ -866,7 +866,7 @@ export function AdminEvents() {
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="relative h-64 w-full">
+              <div className="relative aspect-[4/3] w-full overflow-hidden">
                 <img 
                   src={viewingEvent.poster ? getPublicUrl(viewingEvent.poster) : "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&q=80&w=800"} 
                   alt={viewingEvent.name}

@@ -195,7 +195,7 @@ export function Events() {
                       <img
                         src={getPublicUrl(event.event_poster_key)}
                         alt={event.event_name}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                        className="w-full h-full object-cover"
                       />
                       {isLive && (
                         <div className="absolute top-4 left-4 px-3 py-1 rounded-full bg-purple-600 text-white text-[10px] font-bold uppercase tracking-widest animate-pulse shadow-lg">
@@ -290,7 +290,7 @@ export function Events() {
                     <img
                       src={getPublicUrl(event.event_poster_key)}
                       alt={event.event_name}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                      className="w-full h-full object-cover"
                     />
                   </div>
                   <div className="p-5 flex flex-col flex-1">
@@ -367,7 +367,7 @@ export function Events() {
                     <img
                       src={getPublicUrl(event.event_poster_key)}
                       alt={event.event_name}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                      className="w-full h-full object-cover"
                     />
                   </div>
                   <div className="p-5 flex flex-col flex-1">
@@ -444,7 +444,7 @@ export function Events() {
             exit={{ scale: 0.9, opacity: 0 }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="relative h-64">
+            <div className="relative aspect-[4/3] w-full overflow-hidden">
               <img
                 src={getPublicUrl(selectedEvent.event_poster_key)}
                 alt={selectedEvent.event_name}
