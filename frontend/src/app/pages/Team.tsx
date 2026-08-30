@@ -170,9 +170,31 @@ export function Team() {
 
   Object.values(groupedMembers).forEach((sectionMembers) => {
     sectionMembers.sort((a, b) => {
+      const getRank = (m: Member) => {
+        const pos = String(m.member_postion ?? '').toUpperCase().trim();
+        const isCo = /\bCO\b/i.test(pos);
+        if (isCo) {
+          return 2;
+        }
+        if (pos.includes('HEAD') || pos.includes('CONVENOR')) {
+          return 1;
+        }
+        return 3;
+      };
+
+      const rankA = getRank(a);
+      const rankB = getRank(b);
+
+      if (rankA !== rankB) {
+        return rankA - rankB;
+      }
+
       const aPosition = a.member_postion || '';
       const bPosition = b.member_postion || '';
-      return aPosition.localeCompare(bPosition);
+      const posCompare = aPosition.localeCompare(bPosition);
+      if (posCompare !== 0) return posCompare;
+
+      return (a.member_name || '').localeCompare(b.member_name || '');
     });
   });
 
@@ -380,43 +402,51 @@ export function Team() {
               Try again
             </button>
           </div>
-        ) : (
-          <div className="grid gap-8 md:gap-10 lg:grid-cols-2">
-            {requiredSections.map((section) => {
-              const sectionMembers = groupedMembers[section] || [];
-              const isFullWidthSection = ['CONVENOR', 'CO-CONVENOR', 'EXECUTIVE'].includes(section);
+        ) : (() => {
+          const activeSections = requiredSections.filter(
+            (section) => (groupedMembers[section] || []).length > 0
+          );
 
-              return (
-                <section
-                  key={section}
-                  className={`${isFullWidthSection ? 'lg:col-span-2' : ''} mb-8 sm:mb-12`}
-                >
-                  <div className="text-center mb-8 sm:mb-10">
-                    <h3
-                      className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white"
-                      style={{ fontFamily: 'Poppins, sans-serif' }}
-                    >
-                      {section}
-                    </h3>
-                    <div className="w-12 h-1 bg-purple-600 rounded-full mx-auto mt-3"></div>
-                  </div>
+          if (activeSections.length === 0) {
+            return (
+              <div className="text-center text-gray-500 dark:text-gray-400 py-12">
+                No team members available right now.
+              </div>
+            );
+          }
 
-                  {sectionMembers.length > 0 ? (
+          return (
+            <div className="grid gap-8 md:gap-10 lg:grid-cols-2">
+              {activeSections.map((section) => {
+                const sectionMembers = groupedMembers[section] || [];
+                const isFullWidthSection = ['CONVENOR', 'CO-CONVENOR', 'EXECUTIVE'].includes(section);
+
+                return (
+                  <section
+                    key={section}
+                    className={`${isFullWidthSection ? 'lg:col-span-2' : ''} mb-8 sm:mb-12`}
+                  >
+                    <div className="text-center mb-8 sm:mb-10">
+                      <h3
+                        className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white"
+                        style={{ fontFamily: 'Poppins, sans-serif' }}
+                      >
+                        {section}
+                      </h3>
+                      <div className="w-12 h-1 bg-purple-600 rounded-full mx-auto mt-3"></div>
+                    </div>
+
                     <div className="flex flex-wrap justify-center gap-8">
                       {sectionMembers.map((member, index) => (
                         <MemberCard key={member.member_id} member={member} index={index} />
                       ))}
                     </div>
-                  ) : (
-                    <div className="flex justify-center items-center min-h-[120px] rounded-3xl border border-dashed border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 text-gray-500 dark:text-gray-400 text-sm sm:text-base">
-                      No members assigned yet.
-                    </div>
-                  )}
-                </section>
-              );
-            })}
-          </div>
-        )}
+                  </section>
+                );
+              })}
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
