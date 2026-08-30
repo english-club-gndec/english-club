@@ -17,6 +17,8 @@ interface Event {
   date: string;
   time: string;
   venue: string;
+  eventType: 'INDIVIDUAL' | 'TEAM';
+  maxTeamSize: number | null;
   createdBy: string;
   creatorId: number;
   poster?: string;
@@ -83,6 +85,8 @@ export function AdminEvents() {
         date: ev.event_date,
         time: ev.event_time,
         venue: ev.event_venue,
+        eventType: (ev.event_type || 'INDIVIDUAL').toUpperCase(),
+        maxTeamSize: ev.max_team_size ? Number(ev.max_team_size) : null,
         createdBy: ev.creater_name || "System",
         creatorId: ev.created_by,
         poster: ev.event_poster_key
@@ -104,6 +108,8 @@ export function AdminEvents() {
     date: "",
     time: "12:00 PM",
     venue: "",
+    eventType: "INDIVIDUAL" as 'INDIVIDUAL' | 'TEAM',
+    maxTeamSize: "",
     eventPoster: ""
   });
 
@@ -204,6 +210,14 @@ export function AdminEvents() {
     e.preventDefault();
     if (isSaving) return;
 
+    if (formData.eventType === 'TEAM') {
+      const maxTeamSize = Number(formData.maxTeamSize);
+      if (!Number.isInteger(maxTeamSize) || maxTeamSize < 2) {
+        toast.error("Please enter a valid maximum team size for team events.");
+        return;
+      }
+    }
+
     setIsSaving(true);
     try {
       if (editingEvent) {
@@ -219,6 +233,8 @@ export function AdminEvents() {
           event_date: formData.date,
           event_time: formData.time,
           event_venue: formData.venue,
+          event_type: formData.eventType,
+          max_team_size: formData.eventType === 'TEAM' ? Number(formData.maxTeamSize) : null,
           event_poster_key: posterKey
         };
         await eventService.updateEvent(editingEvent.id, payload);
@@ -242,6 +258,8 @@ export function AdminEvents() {
           event_date: formData.date,
           event_time: formData.time,
           event_venue: formData.venue,
+          event_type: formData.eventType,
+          max_team_size: formData.eventType === 'TEAM' ? Number(formData.maxTeamSize) : null,
           event_poster_key: posterKey,
           created_by: parseInt(userId)
         };
@@ -279,6 +297,8 @@ export function AdminEvents() {
         date: formattedDate,
         time: event.time,
         venue: event.venue,
+        eventType: event.eventType || 'INDIVIDUAL',
+        maxTeamSize: event.maxTeamSize ? String(event.maxTeamSize) : "",
         eventPoster: event.poster || ""
       });
       setPreviewUrl(event.poster ? getPublicUrl(event.poster) : "");
@@ -291,6 +311,8 @@ export function AdminEvents() {
         date: "",
         time: "12:00 PM",
         venue: "",
+        eventType: "INDIVIDUAL",
+        maxTeamSize: "",
         eventPoster: ""
       });
       setPreviewUrl("");
@@ -765,6 +787,42 @@ export function AdminEvents() {
                       )}
                     </AnimatePresence>
                   </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <label htmlFor="eventType" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
+                      Event Type
+                    </label>
+                    <select
+                      id="eventType"
+                      value={formData.eventType}
+                      onChange={(e) => setFormData({ ...formData, eventType: e.target.value as 'INDIVIDUAL' | 'TEAM' })}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                      style={{ fontFamily: 'Open Sans, sans-serif' }}
+                    >
+                      <option value="INDIVIDUAL">Individual</option>
+                      <option value="TEAM">Team</option>
+                    </select>
+                  </div>
+
+                  {formData.eventType === 'TEAM' && (
+                    <div>
+                      <label htmlFor="maxTeamSize" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
+                        Maximum Team Size
+                      </label>
+                      <input
+                        type="number"
+                        id="maxTeamSize"
+                        min="2"
+                        value={formData.maxTeamSize}
+                        onChange={(e) => setFormData({ ...formData, maxTeamSize: e.target.value })}
+                        required={formData.eventType === 'TEAM'}
+                        className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                        style={{ fontFamily: 'Open Sans, sans-serif' }}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div>

@@ -21,7 +21,6 @@ const registrationController = {
         return res.status(400).json({ error: 'registered_event is required' });
       }
 
-      // 1. Fetch event details to check event_type and max_team_size
       const { data: event, error: eventError } = await supabase
         .from('events')
         .select('event_id, event_name, event_type, max_team_size')
@@ -32,7 +31,8 @@ const registrationController = {
         return res.status(404).json({ error: 'Registered event not found' });
       }
 
-      // 2. Determine participants list from payload (single participant or array of members)
+      const normalizedEventType = String(event.event_type || 'INDIVIDUAL').trim().toUpperCase();
+
       let participantsList = [];
       if (Array.isArray(members) && members.length > 0) {
         participantsList = members;
@@ -49,35 +49,51 @@ const registrationController = {
         }];
       }
 
-      // Validate required fields for every participant
+      if (!participantsList.length) {
+        return res.status(400).json({ error: 'At least one participant is required' });
+      }
+
       for (let i = 0; i < participantsList.length; i++) {
         const p = participantsList[i];
-        if (!p.participant_name || !p.participant_class || !p.participant_email) {
+        const trimmedPhone = String(p.participant_phone_no ?? '').trim();
+        const trimmedName = String(p.participant_name ?? '').trim();
+        const trimmedClass = String(p.participant_class ?? '').trim();
+        const trimmedEmail = String(p.participant_email ?? '').trim();
+
+        if (!trimmedName || !trimmedClass || !trimmedEmail || !trimmedPhone) {
           return res.status(400).json({ 
-            error: `Participant ${i + 1} is missing required fields (name, class, and email are required)` 
+            error: `Participant ${i + 1} is missing required fields (name, class, email, and phone are required)` 
           });
+        }
+
+        const phoneValid = /^[0-9+()\-\s]{7,15}$/.test(trimmedPhone);
+        if (!phoneValid) {
+          return res.status(400).json({ error: `Participant ${i + 1} has an invalid phone number` });
         }
       }
 
       let assignedTeamId = null;
 
-      // 3. Handle TEAM vs INDIVIDUAL logic
-      if (event.event_type === 'TEAM') {
-        if (!team_name || !team_name.trim()) {
+      if (normalizedEventType === 'TEAM') {
+        if (!team_name || !String(team_name).trim()) {
           return res.status(400).json({ error: 'Team name is mandatory for team events' });
         }
 
-        if (event.max_team_size && participantsList.length > event.max_team_size) {
+        const maxTeamSize = Number(event.max_team_size);
+        if (!Number.isInteger(maxTeamSize) || maxTeamSize < 1) {
+          return res.status(400).json({ error: 'This team event does not have a valid max_team_size configured' });
+        }
+
+        if (participantsList.length > maxTeamSize) {
           return res.status(400).json({ 
-            error: `Team size (${participantsList.length}) exceeds maximum allowed limit of ${event.max_team_size} for this event` 
+            error: `Team size (${participantsList.length}) exceeds maximum allowed limit of ${maxTeamSize} for this event` 
           });
         }
 
-        // Save team in participating_teams table
         const { data: teamData, error: teamError } = await supabase
           .from('participating_teams')
           .insert([{ 
-            team_name: team_name.trim(),
+            team_name: String(team_name).trim(),
             event_id: registered_event
           }])
           .select()
@@ -85,19 +101,15 @@ const registrationController = {
 
         if (teamError) throw teamError;
         assignedTeamId = teamData.team_id;
-      } else {
-        // For INDIVIDUAL events, team_id remains null
-        assignedTeamId = null;
       }
 
-      // 4. Save participants in database
       const recordsToInsert = participantsList.map(p => ({
-        participant_name: p.participant_name,
-        participant_class: p.participant_class,
-        participant_crn: p.participant_crn || null,
-        participant_urn: p.participant_urn || null,
-        participant_email: p.participant_email,
-        participant_phone_no: p.participant_phone_no || null,
+        participant_name: String(p.participant_name ?? '').trim(),
+        participant_class: String(p.participant_class ?? '').trim(),
+        participant_crn: p.participant_crn !== undefined && p.participant_crn !== null && p.participant_crn !== '' ? Number(p.participant_crn) : null,
+        participant_urn: p.participant_urn !== undefined && p.participant_urn !== null && p.participant_urn !== '' ? Number(p.participant_urn) : null,
+        participant_email: String(p.participant_email ?? '').trim(),
+        participant_phone_no: String(p.participant_phone_no ?? '').trim(),
         registered_event: registered_event,
         team_id: assignedTeamId
       }));

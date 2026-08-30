@@ -22,6 +22,18 @@ const eventController = {
         return res.status(400).json({ error: 'Name, short description, and created_by are required' });
       }
 
+      const normalizedEventType = String(event_type || 'INDIVIDUAL').trim().toUpperCase();
+      if (normalizedEventType !== 'INDIVIDUAL' && normalizedEventType !== 'TEAM') {
+        return res.status(400).json({ error: 'event_type must be either INDIVIDUAL or TEAM' });
+      }
+
+      if (normalizedEventType === 'TEAM') {
+        const parsedMaxTeamSize = Number(max_team_size);
+        if (!Number.isInteger(parsedMaxTeamSize) || parsedMaxTeamSize < 1) {
+          return res.status(400).json({ error: 'max_team_size is required and must be a positive integer for team events' });
+        }
+      }
+
       const { data, error } = await supabase
         .from('events')
         .insert([
@@ -33,8 +45,8 @@ const eventController = {
             event_date, 
             event_time, 
             event_poster_key,
-            event_type: event_type || 'INDIVIDUAL',
-            max_team_size: max_team_size ? parseInt(max_team_size, 10) : null,
+            event_type: normalizedEventType,
+            max_team_size: normalizedEventType === 'TEAM' ? parseInt(max_team_size, 10) : null,
             created_by 
           }
         ])
@@ -137,6 +149,20 @@ const eventController = {
       const { event_id } = req.params;
       const { event_name, event_short_description, event_long_description, event_venue, event_date, event_time, event_poster_key, event_type, max_team_size } = req.body;
 
+      if (event_type !== undefined) {
+        const normalizedEventType = String(event_type).trim().toUpperCase();
+        if (normalizedEventType !== 'INDIVIDUAL' && normalizedEventType !== 'TEAM') {
+          return res.status(400).json({ error: 'event_type must be either INDIVIDUAL or TEAM' });
+        }
+      }
+
+      if (event_type !== undefined && String(event_type).trim().toUpperCase() === 'TEAM') {
+        const parsedMaxTeamSize = Number(max_team_size ?? 0);
+        if (!Number.isInteger(parsedMaxTeamSize) || parsedMaxTeamSize < 1) {
+          return res.status(400).json({ error: 'max_team_size is required and must be a positive integer for team events' });
+        }
+      }
+
       // Fetch existing record for audit logging
       const { data: existingEvent } = await supabase
         .from('events')
@@ -153,8 +179,8 @@ const eventController = {
       if (event_date !== undefined) updateData.event_date = event_date;
       if (event_time !== undefined) updateData.event_time = event_time;
       if (event_poster_key !== undefined) updateData.event_poster_key = event_poster_key;
-      if (event_type !== undefined) updateData.event_type = event_type;
-      if (max_team_size !== undefined) updateData.max_team_size = max_team_size ? parseInt(max_team_size, 10) : null;
+      if (event_type !== undefined) updateData.event_type = String(event_type).trim().toUpperCase();
+      if (max_team_size !== undefined) updateData.max_team_size = String(event_type || existingEvent?.event_type || 'INDIVIDUAL').trim().toUpperCase() === 'TEAM' ? parseInt(max_team_size, 10) : null;
 
       
       // Explicitly set updated_at (though the DB trigger would also handle this if set up)
