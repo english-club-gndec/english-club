@@ -397,7 +397,7 @@ export function EventRegistration() {
                 <div className="space-y-5">
                   <div>
                     <label htmlFor="teamName" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                      Team Name
+                      Law Firm / Counsel Name
                     </label>
                     <input
                       type="text"
@@ -406,7 +406,7 @@ export function EventRegistration() {
                       onChange={(e) => setTeamName(e.target.value)}
                       required
                       className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                      placeholder="Enter your team name"
+                      placeholder="e.g. Pearson & Hardman, Justice Advocates"
                     />
                   </div>
 
