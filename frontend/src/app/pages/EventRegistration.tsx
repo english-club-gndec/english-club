@@ -1,7 +1,7 @@
 import { motion } from "motion/react";
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router";
-import { CheckCircle, AlertCircle, Loader2, Plus, Trash2 } from "lucide-react";
+import { CheckCircle, AlertCircle, Loader2, Plus, Trash2, MessageCircle } from "lucide-react";
 import { eventService } from "../../services/eventService";
 import { registrationService } from "../../services/EventRegistration";
 
@@ -37,6 +37,7 @@ export function EventRegistration() {
   const [eventsList, setEventsList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
+  const [submittedEvent, setSubmittedEvent] = useState<any | null>(null);
   const [teamName, setTeamName] = useState("");
   const [teamParticipants, setTeamParticipants] = useState<TeamParticipant[]>([createParticipant()]);
 
@@ -184,14 +185,12 @@ export function EventRegistration() {
         });
       }
 
+      setSubmittedEvent(selectedEvent);
       setIsSubmitted(true);
-      setTimeout(() => {
-        setFormData({ name: "", email: "", phone: "", stream: "", year: "", section: "", crn: "", urn: "", event_id: "" });
-        setTeamName("");
-        setTeamParticipants([createParticipant()]);
-        setSelectedEvent(null);
-        setIsSubmitted(false);
-      }, 3000);
+      setFormData({ name: "", email: "", phone: "", stream: "", year: "", section: "", crn: "", urn: "", event_id: "" });
+      setTeamName("");
+      setTeamParticipants([createParticipant()]);
+      setSelectedEvent(null);
     } catch (err: any) {
       setError(err.message || "Registration failed");
     } finally {
@@ -613,7 +612,7 @@ export function EventRegistration() {
           exit={{ opacity: 0 }}
         >
           <motion.div
-            className="bg-white dark:bg-gray-900 rounded-3xl p-6 sm:p-12 max-w-md w-[92vw] text-center"
+            className="bg-white dark:bg-gray-900 rounded-3xl p-6 sm:p-10 max-w-md w-[92vw] text-center shadow-2xl border border-gray-100 dark:border-gray-800"
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.8, opacity: 0 }}
@@ -623,14 +622,47 @@ export function EventRegistration() {
               animate={{ scale: 1 }}
               transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
             >
-              <CheckCircle className="w-20 h-20 text-green-500 mx-auto mb-6" />
+              <CheckCircle className="w-16 h-16 sm:w-20 sm:h-20 text-green-500 mx-auto mb-4 sm:mb-6" />
             </motion.div>
-            <h3 className="text-3xl text-gray-900 dark:text-white mb-4" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700 }}>
+            <h3 className="text-2xl sm:text-3xl text-gray-900 dark:text-white mb-3" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700 }}>
               Registration Successful!
             </h3>
-            <p className="text-gray-600 dark:text-gray-300" style={{ fontFamily: 'Open Sans, sans-serif' }}>
-              We've sent a confirmation email. See you at the event!
+            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 mb-6" style={{ fontFamily: 'Open Sans, sans-serif' }}>
+              We've registered you for <span className="font-semibold text-purple-600 dark:text-purple-400">{submittedEvent?.event_name || 'the event'}</span>. See you there!
             </p>
+
+            {submittedEvent?.whatsapp_group_link && (
+              <div className="mb-6 p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-left">
+                <p className="text-xs font-bold text-emerald-800 dark:text-emerald-300 mb-1 uppercase tracking-wider">
+                  Official WhatsApp Group
+                </p>
+                <p className="text-xs text-emerald-700 dark:text-emerald-400 mb-3" style={{ fontFamily: 'Open Sans, sans-serif' }}>
+                  Join the official WhatsApp group for event updates and announcements.
+                </p>
+                <a
+                  href={submittedEvent.whatsapp_group_link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-md hover:shadow-emerald-500/30 transition-all flex items-center justify-center gap-2 active:scale-95"
+                  style={{ fontFamily: 'Poppins, sans-serif' }}
+                >
+                  <MessageCircle className="w-5 h-5" />
+                  Join WhatsApp Group
+                </a>
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={() => {
+                setIsSubmitted(false);
+                setSubmittedEvent(null);
+              }}
+              className="w-full py-3 px-6 rounded-xl bg-gradient-to-r from-blue-900 to-purple-700 text-white font-semibold text-sm hover:shadow-lg transition-all"
+              style={{ fontFamily: 'Open Sans, sans-serif' }}
+            >
+              Done
+            </button>
           </motion.div>
         </motion.div>
       )}

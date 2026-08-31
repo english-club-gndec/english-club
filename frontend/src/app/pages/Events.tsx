@@ -1,7 +1,7 @@
 import { motion } from "motion/react";
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
-import { Calendar, Clock, MapPin, Users, X, Info, MessageSquareHeart } from "lucide-react";
+import { Calendar, Clock, MapPin, Users, X, Info, MessageSquareHeart, MessageCircle } from "lucide-react";
 import { eventService } from "../../services/eventService";
 import { supabase } from "../../lib/supabase";
 import { toast } from "sonner";
@@ -17,6 +17,7 @@ interface Event {
   event_time: string;
   event_venue: string;
   event_poster_key: string;
+  whatsapp_group_link?: string;
   created_by: number;
   creater_name?: string;
 }
@@ -488,6 +489,18 @@ export function Events() {
                     <Info className="w-4 h-4" />
                     Detailed Overview
                   </h4>
+                  {selectedEvent.whatsapp_group_link && (
+                    <a
+                      href={selectedEvent.whatsapp_group_link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full mb-4 py-3.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-lg hover:shadow-emerald-500/30 transition-all flex items-center justify-center gap-2 active:scale-95"
+                      style={{ fontFamily: 'Poppins, sans-serif' }}
+                    >
+                      <MessageCircle className="w-5 h-5" />
+                      Join Official WhatsApp Group
+                    </a>
+                  )}
                   <p className="text-gray-700 dark:text-gray-200 leading-relaxed mb-6" style={{ fontFamily: 'Open Sans, sans-serif' }}>
                     {selectedEvent.event_long_description || "That's all for now, folks :)"}
                   </p>

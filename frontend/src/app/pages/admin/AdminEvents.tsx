@@ -19,6 +19,7 @@ interface Event {
   venue: string;
   eventType: 'INDIVIDUAL' | 'TEAM';
   maxTeamSize: number | null;
+  whatsappGroupLink?: string;
   createdBy: string;
   creatorId: number;
   poster?: string;
@@ -87,6 +88,7 @@ export function AdminEvents() {
         venue: ev.event_venue,
         eventType: (ev.event_type || 'INDIVIDUAL').toUpperCase(),
         maxTeamSize: ev.max_team_size ? Number(ev.max_team_size) : null,
+        whatsappGroupLink: ev.whatsapp_group_link || "",
         createdBy: ev.creater_name || "System",
         creatorId: ev.created_by,
         poster: ev.event_poster_key
@@ -110,6 +112,7 @@ export function AdminEvents() {
     venue: "",
     eventType: "INDIVIDUAL" as 'INDIVIDUAL' | 'TEAM',
     maxTeamSize: "",
+    whatsappGroupLink: "",
     eventPoster: ""
   });
 
@@ -235,6 +238,7 @@ export function AdminEvents() {
           event_venue: formData.venue,
           event_type: formData.eventType,
           max_team_size: formData.eventType === 'TEAM' ? Number(formData.maxTeamSize) : null,
+          whatsapp_group_link: formData.whatsappGroupLink,
           event_poster_key: posterKey
         };
         await eventService.updateEvent(editingEvent.id, payload);
@@ -260,6 +264,7 @@ export function AdminEvents() {
           event_venue: formData.venue,
           event_type: formData.eventType,
           max_team_size: formData.eventType === 'TEAM' ? Number(formData.maxTeamSize) : null,
+          whatsapp_group_link: formData.whatsappGroupLink,
           event_poster_key: posterKey,
           created_by: parseInt(userId)
         };
@@ -299,6 +304,7 @@ export function AdminEvents() {
         venue: event.venue,
         eventType: event.eventType || 'INDIVIDUAL',
         maxTeamSize: event.maxTeamSize ? String(event.maxTeamSize) : "",
+        whatsappGroupLink: event.whatsappGroupLink || "",
         eventPoster: event.poster || ""
       });
       setPreviewUrl(event.poster ? getPublicUrl(event.poster) : "");
@@ -313,6 +319,7 @@ export function AdminEvents() {
         venue: "",
         eventType: "INDIVIDUAL",
         maxTeamSize: "",
+        whatsappGroupLink: "",
         eventPoster: ""
       });
       setPreviewUrl("");
@@ -835,6 +842,21 @@ export function AdminEvents() {
                     value={formData.venue}
                     onChange={(e) => setFormData({ ...formData, venue: e.target.value })}
                     required
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                    style={{ fontFamily: 'Open Sans, sans-serif' }}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="whatsappGroupLink" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
+                    WhatsApp Group Link <span className="text-xs font-normal text-purple-600 dark:text-purple-400">(Optional)</span>
+                  </label>
+                  <input
+                    type="url"
+                    id="whatsappGroupLink"
+                    value={formData.whatsappGroupLink}
+                    onChange={(e) => setFormData({ ...formData, whatsappGroupLink: e.target.value })}
+                    placeholder="https://chat.whatsapp.com/..."
                     className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                     style={{ fontFamily: 'Open Sans, sans-serif' }}
                   />

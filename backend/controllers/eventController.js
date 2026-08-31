@@ -15,6 +15,7 @@ const eventController = {
         event_poster_key, 
         event_type, 
         max_team_size, 
+        whatsapp_group_link,
         created_by 
       } = req.body;
 
@@ -47,6 +48,7 @@ const eventController = {
             event_poster_key,
             event_type: normalizedEventType,
             max_team_size: normalizedEventType === 'TEAM' ? parseInt(max_team_size, 10) : null,
+            whatsapp_group_link: whatsapp_group_link ? String(whatsapp_group_link).trim() : null,
             created_by 
           }
         ])
@@ -147,7 +149,7 @@ const eventController = {
     updateEvent: async (req, res) => {
     try {
       const { event_id } = req.params;
-      const { event_name, event_short_description, event_long_description, event_venue, event_date, event_time, event_poster_key, event_type, max_team_size } = req.body;
+      const { event_name, event_short_description, event_long_description, event_venue, event_date, event_time, event_poster_key, event_type, max_team_size, whatsapp_group_link } = req.body;
 
       if (event_type !== undefined) {
         const normalizedEventType = String(event_type).trim().toUpperCase();
@@ -181,6 +183,7 @@ const eventController = {
       if (event_poster_key !== undefined) updateData.event_poster_key = event_poster_key;
       if (event_type !== undefined) updateData.event_type = String(event_type).trim().toUpperCase();
       if (max_team_size !== undefined) updateData.max_team_size = String(event_type || existingEvent?.event_type || 'INDIVIDUAL').trim().toUpperCase() === 'TEAM' ? parseInt(max_team_size, 10) : null;
+      if (whatsapp_group_link !== undefined) updateData.whatsapp_group_link = whatsapp_group_link ? String(whatsapp_group_link).trim() : null;
 
       
       // Explicitly set updated_at (though the DB trigger would also handle this if set up)

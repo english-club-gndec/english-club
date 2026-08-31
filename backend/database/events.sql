@@ -21,6 +21,7 @@ CREATE TABLE events (
     event_poster_key TEXT,
     event_type event_type NOT NULL DEFAULT 'INDIVIDUAL',
     max_team_size INT,
+    whatsapp_group_link TEXT,
     created_by BIGINT NOT NULL REFERENCES users(user_id),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
@@ -29,6 +30,7 @@ CREATE TABLE events (
 -- Migration statement for existing events table
 ALTER TABLE events ADD COLUMN IF NOT EXISTS event_type event_type DEFAULT 'INDIVIDUAL';
 ALTER TABLE events ADD COLUMN IF NOT EXISTS max_team_size INT;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS whatsapp_group_link TEXT;
 
 
 -- Trigger to automatically update updated_at
