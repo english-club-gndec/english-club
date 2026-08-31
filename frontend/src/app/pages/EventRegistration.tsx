@@ -56,6 +56,14 @@ export function EventRegistration() {
   const maxTeamSize = Number(selectedEvent?.max_team_size || 0);
   const canAddParticipant = isTeamEvent && Number.isFinite(maxTeamSize) && teamParticipants.length < maxTeamSize;
 
+  const upcomingEvents = eventsList.filter((ev) => {
+    if (!ev.event_date) return false;
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const eventDateStr = String(ev.event_date).split('T')[0];
+    return eventDateStr >= todayStr;
+  });
+
   useEffect(() => {
     const fetchEvents = async () => {
       try {
@@ -562,7 +570,7 @@ export function EventRegistration() {
                   style={{ fontFamily: 'Open Sans, sans-serif' }}
                 >
                   <option value="">{loading ? 'Loading events...' : 'Choose an event'}</option>
-                  {eventsList.map((ev) => (
+                  {upcomingEvents.map((ev) => (
                     <option key={ev.event_id} value={ev.event_id}>
                       {ev.event_name}
                     </option>
