@@ -18,6 +18,9 @@ interface Event {
   event_venue: string;
   event_poster_key: string;
   event_rulebook_pdf_key?: string;
+  event_type?: 'INDIVIDUAL' | 'TEAM';
+  min_team_size?: number | null;
+  max_team_size?: number | null;
   whatsapp_group_link?: string;
   created_by: number;
   creater_name?: string;

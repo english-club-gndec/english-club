@@ -24,7 +24,7 @@ const registrationController = {
 
       const { data: event, error: eventError } = await supabase
         .from('events')
-        .select('event_id, event_name, event_type, max_team_size')
+        .select('event_id, event_name, event_type, min_team_size, max_team_size')
         .eq('event_id', registered_event)
         .single();
 
@@ -83,6 +83,13 @@ const registrationController = {
         const maxTeamSize = Number(event.max_team_size);
         if (!Number.isInteger(maxTeamSize) || maxTeamSize < 1) {
           return res.status(400).json({ error: 'This team event does not have a valid max_team_size configured' });
+        }
+
+        const minTeamSize = Number(event.min_team_size);
+        if (Number.isInteger(minTeamSize) && minTeamSize > 1 && participantsList.length < minTeamSize) {
+          return res.status(400).json({
+            error: `Team size (${participantsList.length}) is below the minimum required limit of ${minTeamSize} for this event`
+          });
         }
 
         if (participantsList.length > maxTeamSize) {

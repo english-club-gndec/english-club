@@ -19,6 +19,7 @@ interface Event {
   time: string;
   venue: string;
   eventType: 'INDIVIDUAL' | 'TEAM';
+  minTeamSize: number | null;
   maxTeamSize: number | null;
   whatsappGroupLink?: string;
   createdBy: string;
@@ -121,6 +122,7 @@ export function AdminEvents() {
         time: ev.event_time,
         venue: ev.event_venue,
         eventType: (ev.event_type || 'INDIVIDUAL').toUpperCase(),
+        minTeamSize: ev.min_team_size ? Number(ev.min_team_size) : null,
         maxTeamSize: ev.max_team_size ? Number(ev.max_team_size) : null,
         whatsappGroupLink: ev.whatsapp_group_link || "",
         createdBy: ev.creater_name || "System",
@@ -147,6 +149,7 @@ export function AdminEvents() {
     time: "12:00 PM",
     venue: "",
     eventType: "INDIVIDUAL" as 'INDIVIDUAL' | 'TEAM',
+    minTeamSize: "",
     maxTeamSize: "",
     whatsappGroupLink: "",
     eventPoster: "",
@@ -318,9 +321,20 @@ export function AdminEvents() {
 
     if (formData.eventType === 'TEAM') {
       const maxTeamSize = Number(formData.maxTeamSize);
-      if (!Number.isInteger(maxTeamSize) || maxTeamSize < 2) {
+      if (!Number.isInteger(maxTeamSize) || maxTeamSize < 1) {
         toast.error("Please enter a valid maximum team size for team events.");
         return;
+      }
+      if (formData.minTeamSize) {
+        const minTeamSize = Number(formData.minTeamSize);
+        if (!Number.isInteger(minTeamSize) || minTeamSize < 1) {
+          toast.error("Minimum team size must be a positive integer.");
+          return;
+        }
+        if (minTeamSize > maxTeamSize) {
+          toast.error("Minimum team size cannot be greater than maximum team size.");
+          return;
+        }
       }
     }
 
@@ -345,6 +359,7 @@ export function AdminEvents() {
           event_time: formData.time,
           event_venue: formData.venue,
           event_type: formData.eventType,
+          min_team_size: formData.eventType === 'TEAM' && formData.minTeamSize ? Number(formData.minTeamSize) : null,
           max_team_size: formData.eventType === 'TEAM' ? Number(formData.maxTeamSize) : null,
           whatsapp_group_link: formData.whatsappGroupLink,
           event_poster_key: posterKey,
@@ -377,6 +392,7 @@ export function AdminEvents() {
           event_time: formData.time,
           event_venue: formData.venue,
           event_type: formData.eventType,
+          min_team_size: formData.eventType === 'TEAM' && formData.minTeamSize ? Number(formData.minTeamSize) : null,
           max_team_size: formData.eventType === 'TEAM' ? Number(formData.maxTeamSize) : null,
           whatsapp_group_link: formData.whatsappGroupLink,
           event_poster_key: posterKey,
@@ -419,6 +435,7 @@ export function AdminEvents() {
         time: event.time,
         venue: event.venue,
         eventType: event.eventType || 'INDIVIDUAL',
+        minTeamSize: event.minTeamSize ? String(event.minTeamSize) : "",
         maxTeamSize: event.maxTeamSize ? String(event.maxTeamSize) : "",
         whatsappGroupLink: event.whatsappGroupLink || "",
         eventPoster: event.poster || "",
@@ -438,6 +455,7 @@ export function AdminEvents() {
         time: "12:00 PM",
         venue: "",
         eventType: "INDIVIDUAL",
+        minTeamSize: "",
         maxTeamSize: "",
         whatsappGroupLink: "",
         eventPoster: "",
@@ -1057,7 +1075,7 @@ export function AdminEvents() {
                   </div>
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-6">
+                <div className={`grid md:grid-cols-${formData.eventType === 'TEAM' ? '3' : '1'} gap-6`}>
                   <div>
                     <label htmlFor="eventType" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
                       Event Type
@@ -1075,21 +1093,40 @@ export function AdminEvents() {
                   </div>
 
                   {formData.eventType === 'TEAM' && (
-                    <div>
-                      <label htmlFor="maxTeamSize" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                        Maximum Team Size
-                      </label>
-                      <input
-                        type="number"
-                        id="maxTeamSize"
-                        min="2"
-                        value={formData.maxTeamSize}
-                        onChange={(e) => setFormData({ ...formData, maxTeamSize: e.target.value })}
-                        required={formData.eventType === 'TEAM'}
-                        className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                        style={{ fontFamily: 'Open Sans, sans-serif' }}
-                      />
-                    </div>
+                    <>
+                      <div>
+                        <label htmlFor="minTeamSize" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
+                          Min Team Size <span className="text-xs font-normal text-purple-600 dark:text-purple-400">(Optional)</span>
+                        </label>
+                        <input
+                          type="number"
+                          id="minTeamSize"
+                          min="1"
+                          value={formData.minTeamSize}
+                          onChange={(e) => setFormData({ ...formData, minTeamSize: e.target.value })}
+                          placeholder="e.g. 1"
+                          className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                          style={{ fontFamily: 'Open Sans, sans-serif' }}
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="maxTeamSize" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
+                          Max Team Size <span className="text-xs font-semibold text-red-500">*</span>
+                        </label>
+                        <input
+                          type="number"
+                          id="maxTeamSize"
+                          min="1"
+                          value={formData.maxTeamSize}
+                          onChange={(e) => setFormData({ ...formData, maxTeamSize: e.target.value })}
+                          required={formData.eventType === 'TEAM'}
+                          placeholder="e.g. 4"
+                          className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                          style={{ fontFamily: 'Open Sans, sans-serif' }}
+                        />
+                      </div>
+                    </>
                   )}
                 </div>
 

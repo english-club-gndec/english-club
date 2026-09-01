@@ -158,6 +158,11 @@ export function EventRegistration() {
           throw new Error("Team name is required for team events.");
         }
 
+        const minTeamSize = Number(selectedEvent?.min_team_size || 1);
+        if (minTeamSize > 1 && teamParticipants.length < minTeamSize) {
+          throw new Error(`Team size must be at least ${minTeamSize} for this event.`);
+        }
+
         if (teamParticipants.length > maxTeamSize && maxTeamSize > 0) {
           throw new Error(`Team size cannot exceed ${maxTeamSize}.`);
         }
