@@ -32,9 +32,16 @@ const eventController = {
       }
 
       if (normalizedEventType === 'TEAM') {
+        const parsedMinTeamSize = Number(min_team_size);
         const parsedMaxTeamSize = Number(max_team_size);
+        if (!Number.isInteger(parsedMinTeamSize) || parsedMinTeamSize < 1) {
+          return res.status(400).json({ error: 'min_team_size is required and must be a positive integer for team events' });
+        }
         if (!Number.isInteger(parsedMaxTeamSize) || parsedMaxTeamSize < 1) {
           return res.status(400).json({ error: 'max_team_size is required and must be a positive integer for team events' });
+        }
+        if (parsedMinTeamSize > parsedMaxTeamSize) {
+          return res.status(400).json({ error: 'min_team_size cannot be greater than max_team_size' });
         }
       }
 
@@ -167,9 +174,16 @@ const eventController = {
       }
 
       if (event_type !== undefined && String(event_type).trim().toUpperCase() === 'TEAM') {
+        const parsedMinTeamSize = Number(min_team_size ?? 0);
         const parsedMaxTeamSize = Number(max_team_size ?? 0);
+        if (!Number.isInteger(parsedMinTeamSize) || parsedMinTeamSize < 1) {
+          return res.status(400).json({ error: 'min_team_size is required and must be a positive integer for team events' });
+        }
         if (!Number.isInteger(parsedMaxTeamSize) || parsedMaxTeamSize < 1) {
           return res.status(400).json({ error: 'max_team_size is required and must be a positive integer for team events' });
+        }
+        if (parsedMinTeamSize > parsedMaxTeamSize) {
+          return res.status(400).json({ error: 'min_team_size cannot be greater than max_team_size' });
         }
       }
 

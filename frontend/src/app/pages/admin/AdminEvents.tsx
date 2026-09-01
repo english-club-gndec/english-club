@@ -320,21 +320,20 @@ export function AdminEvents() {
     if (isSaving) return;
 
     if (formData.eventType === 'TEAM') {
+      const minTeamSize = Number(formData.minTeamSize);
       const maxTeamSize = Number(formData.maxTeamSize);
+
+      if (!Number.isInteger(minTeamSize) || minTeamSize < 1) {
+        toast.error("Please enter a valid minimum team size for team events.");
+        return;
+      }
       if (!Number.isInteger(maxTeamSize) || maxTeamSize < 1) {
         toast.error("Please enter a valid maximum team size for team events.");
         return;
       }
-      if (formData.minTeamSize) {
-        const minTeamSize = Number(formData.minTeamSize);
-        if (!Number.isInteger(minTeamSize) || minTeamSize < 1) {
-          toast.error("Minimum team size must be a positive integer.");
-          return;
-        }
-        if (minTeamSize > maxTeamSize) {
-          toast.error("Minimum team size cannot be greater than maximum team size.");
-          return;
-        }
+      if (minTeamSize > maxTeamSize) {
+        toast.error("Minimum team size cannot be greater than maximum team size.");
+        return;
       }
     }
 
@@ -1096,7 +1095,7 @@ export function AdminEvents() {
                     <>
                       <div>
                         <label htmlFor="minTeamSize" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                          Min Team Size <span className="text-xs font-normal text-purple-600 dark:text-purple-400">(Optional)</span>
+                          Min Team Size <span className="text-xs font-semibold text-red-500">*</span>
                         </label>
                         <input
                           type="number"
@@ -1104,7 +1103,8 @@ export function AdminEvents() {
                           min="1"
                           value={formData.minTeamSize}
                           onChange={(e) => setFormData({ ...formData, minTeamSize: e.target.value })}
-                          placeholder="e.g. 1"
+                          required={formData.eventType === 'TEAM'}
+                          placeholder="e.g. 2"
                           className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                           style={{ fontFamily: 'Open Sans, sans-serif' }}
                         />
