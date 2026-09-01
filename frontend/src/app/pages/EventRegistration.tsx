@@ -170,8 +170,8 @@ export function EventRegistration() {
         const normalizedParticipants = teamParticipants.map((participant, index) => {
           const participantClass = `D${participant.year}${participant.stream}${participant.section.toUpperCase()}`;
           const trimmedPhone = participant.phone.trim();
-          if (!participant.name.trim() || !participant.email.trim() || !participantClass || !participant.stream || !participant.year || !participant.section || !trimmedPhone) {
-            throw new Error(`Participant ${index + 1} is missing required details.`);
+          if (!participant.name.trim() || !participant.email.trim() || !participantClass || !participant.stream || !participant.year || !participant.section || !trimmedPhone || !participant.crn) {
+            throw new Error(`Participant ${index + 1} is missing required details (including CRN).`);
           }
 
           const phonePattern = /^[0-9+()\-\s]{7,15}$/;
@@ -200,8 +200,8 @@ export function EventRegistration() {
         const phonePattern = /^[0-9+()\-\s]{7,15}$/;
         const trimmedPhone = formData.phone.trim();
 
-        if (!formData.name.trim() || !formData.email.trim() || !participantClass || !formData.stream || !formData.year || !formData.section || !trimmedPhone) {
-          throw new Error("Please fill in all required registration fields, including phone number.");
+        if (!formData.name.trim() || !formData.email.trim() || !participantClass || !formData.stream || !formData.year || !formData.section || !trimmedPhone || !formData.crn) {
+          throw new Error("Please fill in all required registration fields, including CRN and phone number.");
         }
 
         if (!phonePattern.test(trimmedPhone)) {
@@ -505,12 +505,14 @@ export function EventRegistration() {
 
                         <div>
                           <label className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                            CRN (optional)
+                            CRN <span className="text-xs font-normal text-purple-600 dark:text-purple-400">(Enter 123 if not assigned yet)</span>
                           </label>
                           <input
                             type="number"
                             value={participant.crn}
                             onChange={(e) => handleTeamParticipantChange(participant.id, 'crn', e.target.value)}
+                            required
+                            placeholder="e.g. 2315001 or 123"
                             className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                           />
                         </div>
