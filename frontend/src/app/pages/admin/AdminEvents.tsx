@@ -1101,6 +1101,7 @@ export function AdminEvents() {
                           type="number"
                           id="minTeamSize"
                           min="1"
+                          max={formData.maxTeamSize || undefined}
                           value={formData.minTeamSize}
                           onChange={(e) => setFormData({ ...formData, minTeamSize: e.target.value })}
                           required={formData.eventType === 'TEAM'}
@@ -1117,7 +1118,7 @@ export function AdminEvents() {
                         <input
                           type="number"
                           id="maxTeamSize"
-                          min="1"
+                          min={formData.minTeamSize || "1"}
                           value={formData.maxTeamSize}
                           onChange={(e) => setFormData({ ...formData, maxTeamSize: e.target.value })}
                           required={formData.eventType === 'TEAM'}
