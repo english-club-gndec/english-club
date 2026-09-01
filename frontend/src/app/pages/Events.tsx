@@ -1,7 +1,7 @@
 import { motion } from "motion/react";
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
-import { Calendar, Clock, MapPin, Users, X, Info, MessageSquareHeart, MessageCircle } from "lucide-react";
+import { Calendar, Clock, MapPin, Users, X, Info, MessageSquareHeart, MessageCircle, FileText } from "lucide-react";
 import { eventService } from "../../services/eventService";
 import { supabase } from "../../lib/supabase";
 import { toast } from "sonner";
@@ -17,6 +17,7 @@ interface Event {
   event_time: string;
   event_venue: string;
   event_poster_key: string;
+  event_rulebook_pdf_key?: string;
   whatsapp_group_link?: string;
   created_by: number;
   creater_name?: string;
@@ -102,6 +103,12 @@ export function Events() {
   const getPublicUrl = (key: string | undefined) => {
     if (!key) return "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=800";
     const { data } = supabase.storage.from('event_posters').getPublicUrl(key);
+    return data.publicUrl;
+  };
+
+  const getPdfPublicUrl = (key: string | undefined) => {
+    if (!key) return "";
+    const { data } = supabase.storage.from('event_pdfs').getPublicUrl(key);
     return data.publicUrl;
   };
 
@@ -235,6 +242,20 @@ export function Events() {
                       </div>
                     </div>
 
+                    {event.event_rulebook_pdf_key && (
+                      <a
+                        href={getPdfPublicUrl(event.event_rulebook_pdf_key)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-full py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs font-bold hover:shadow-lg hover:shadow-indigo-500/30 transition-all flex items-center justify-center gap-1.5 active:scale-95 mb-2"
+                        style={{ fontFamily: 'Poppins, sans-serif' }}
+                      >
+                        <FileText className="w-4 h-4" />
+                        View Rulebook
+                      </a>
+                    )}
+
                     <div className="flex flex-col gap-2">
                       <button 
                         onClick={(e) => handleRegister(e, event.event_id)}
@@ -325,6 +346,20 @@ export function Events() {
                       </div>
                     </div>
 
+                    {event.event_rulebook_pdf_key && (
+                      <a
+                        href={getPdfPublicUrl(event.event_rulebook_pdf_key)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-full py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs font-bold hover:shadow-lg hover:shadow-indigo-500/30 transition-all flex items-center justify-center gap-1.5 active:scale-95 mb-2"
+                        style={{ fontFamily: 'Poppins, sans-serif' }}
+                      >
+                        <FileText className="w-4 h-4" />
+                        View Rulebook
+                      </a>
+                    )}
+
                     <button 
                       onClick={(e) => handleRegister(e, event.event_id)}
                       className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 text-white text-sm font-bold hover:shadow-lg hover:shadow-purple-500/30 transition-all active:scale-95" 
@@ -401,6 +436,20 @@ export function Events() {
                         <span className="truncate" style={{ fontFamily: 'Open Sans, sans-serif' }}>{event.event_venue}</span>
                       </div>
                     </div>
+
+                    {event.event_rulebook_pdf_key && (
+                      <a
+                        href={getPdfPublicUrl(event.event_rulebook_pdf_key)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-full py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs font-bold hover:shadow-lg hover:shadow-indigo-500/30 transition-all flex items-center justify-center gap-1.5 active:scale-95 mb-2"
+                        style={{ fontFamily: 'Poppins, sans-serif' }}
+                      >
+                        <FileText className="w-4 h-4" />
+                        View Rulebook
+                      </a>
+                    )}
 
                     {isFeedbackEligible(event.event_date) ? (
                       <button 
@@ -504,6 +553,19 @@ export function Events() {
                   <p className="text-gray-700 dark:text-gray-200 leading-relaxed mb-6" style={{ fontFamily: 'Open Sans, sans-serif' }}>
                     {selectedEvent.event_long_description || "That's all for now, folks :)"}
                   </p>
+
+                  {selectedEvent.event_rulebook_pdf_key && (
+                    <a
+                      href={getPdfPublicUrl(selectedEvent.event_rulebook_pdf_key)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full mb-4 py-3.5 px-4 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold text-sm shadow-lg hover:shadow-indigo-500/30 transition-all flex items-center justify-center gap-2 active:scale-95"
+                      style={{ fontFamily: 'Poppins, sans-serif' }}
+                    >
+                      <FileText className="w-5 h-5" />
+                      View Event Rulebook (PDF)
+                    </a>
+                  )}
 
                   {isFeedbackEligible(selectedEvent.event_date) ? (
                     <div className="flex flex-col sm:flex-row gap-3">

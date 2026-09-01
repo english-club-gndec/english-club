@@ -12,6 +12,7 @@ export const registrationService = {
     team_name?: string;
     members?: any[];
     participants?: any[];
+    custom_answers?: Record<string, any>;
   }) => {
     try {
       const response = await fetch(`${BASE_URL}/registration/register`, {

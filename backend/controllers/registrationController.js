@@ -14,7 +14,8 @@ const registrationController = {
         registered_event, 
         team_name,
         members,
-        participants
+        participants,
+        custom_answers
       } = req.body;
 
       if (!registered_event) {
@@ -111,7 +112,8 @@ const registrationController = {
         participant_email: String(p.participant_email ?? '').trim(),
         participant_phone_no: String(p.participant_phone_no ?? '').trim(),
         registered_event: registered_event,
-        team_id: assignedTeamId
+        team_id: assignedTeamId,
+        custom_answers: custom_answers || {}
       }));
 
       const { data: insertedData, error: insertError } = await supabase

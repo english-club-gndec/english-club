@@ -53,6 +53,8 @@ export function EventRegistration() {
     event_id: "",
   });
 
+  const [customAnswers, setCustomAnswers] = useState<Record<string, any>>({});
+
   const isTeamEvent = selectedEvent?.event_type?.toUpperCase() === "TEAM";
   const maxTeamSize = Number(selectedEvent?.max_team_size || 0);
   const canAddParticipant = isTeamEvent && Number.isFinite(maxTeamSize) && teamParticipants.length < maxTeamSize;
@@ -87,6 +89,7 @@ export function EventRegistration() {
   useEffect(() => {
     const foundEvent = eventsList.find((event) => String(event.event_id) === String(formData.event_id)) || null;
     setSelectedEvent(foundEvent);
+    setCustomAnswers({});
 
     if (!foundEvent || foundEvent.event_type?.toUpperCase() !== "TEAM") {
       setTeamName("");
@@ -125,6 +128,31 @@ export function EventRegistration() {
         throw new Error("Please select an event");
       }
 
+      // Validate required custom questions
+      const activeQuestions = (selectedEvent?.form_questions || [])
+        .filter((q: any) => q.is_active)
+        .sort((a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0));
+
+      for (const q of activeQuestions) {
+        if (q.is_required) {
+          const answer = customAnswers[q.question_id];
+          if (q.question_type === 'CHECKBOX') {
+            // checkbox doesn't need validation beyond being checked if required
+            if (!answer) {
+              throw new Error(`Please check the required field: "${q.question_label}"`);
+            }
+          } else if (q.question_type === 'MULTIPLE_CHOICE') {
+            if (!Array.isArray(answer) || answer.length === 0) {
+              throw new Error(`Please select at least one option for: "${q.question_label}"`);
+            }
+          } else {
+            if (!answer || (typeof answer === 'string' && !answer.trim())) {
+              throw new Error(`Please answer the required question: "${q.question_label}"`);
+            }
+          }
+        }
+      }
+
       if (isTeamEvent) {
         if (!teamName.trim()) {
           throw new Error("Team name is required for team events.");
@@ -160,6 +188,7 @@ export function EventRegistration() {
           team_name: teamName.trim(),
           registered_event: eventId,
           participants: normalizedParticipants,
+          custom_answers: customAnswers,
         });
       } else {
         const participantClass = `D${formData.year}${formData.stream}${formData.section.toUpperCase()}`;
@@ -182,12 +211,14 @@ export function EventRegistration() {
           participant_email: formData.email.trim(),
           participant_phone_no: trimmedPhone,
           registered_event: eventId,
+          custom_answers: customAnswers,
         });
       }
 
       setSubmittedEvent(selectedEvent);
       setIsSubmitted(true);
       setFormData({ name: "", email: "", phone: "", stream: "", year: "", section: "", crn: "", urn: "", event_id: "" });
+      setCustomAnswers({});
       setTeamName("");
       setTeamParticipants([createParticipant()]);
       setSelectedEvent(null);
@@ -576,6 +607,113 @@ export function EventRegistration() {
                   ))}
                 </select>
               </div>
+
+              {/* --- CUSTOM FORM QUESTIONS --- */}
+              {selectedEvent?.form_questions && (() => {
+                const activeQuestions = selectedEvent.form_questions
+                  .filter((q: any) => q.is_active)
+                  .sort((a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0));
+                
+                if (activeQuestions.length === 0) return null;
+
+                return (
+                  <div className="space-y-5 pt-6 border-t border-gray-200 dark:border-gray-800">
+                    <h3 className="text-sm font-bold text-purple-700 dark:text-purple-400 uppercase tracking-wider" style={{ fontFamily: 'Open Sans, sans-serif' }}>
+                      Additional Questions
+                    </h3>
+                    {activeQuestions.map((q: any) => (
+                      <div key={q.question_id}>
+                        <label className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
+                          {q.question_label}
+                          {q.is_required && <span className="text-red-500 ml-1">*</span>}
+                        </label>
+
+                        {q.question_type === 'SHORT_TEXT' && (
+                          <input
+                            type="text"
+                            value={customAnswers[q.question_id] || ''}
+                            onChange={(e) => setCustomAnswers(prev => ({ ...prev, [q.question_id]: e.target.value }))}
+                            required={q.is_required}
+                            placeholder={q.placeholder || ''}
+                            className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                            style={{ fontFamily: 'Open Sans, sans-serif' }}
+                          />
+                        )}
+
+                        {q.question_type === 'LONG_TEXT' && (
+                          <textarea
+                            value={customAnswers[q.question_id] || ''}
+                            onChange={(e) => setCustomAnswers(prev => ({ ...prev, [q.question_id]: e.target.value }))}
+                            required={q.is_required}
+                            placeholder={q.placeholder || ''}
+                            rows={4}
+                            className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all resize-none"
+                            style={{ fontFamily: 'Open Sans, sans-serif' }}
+                          />
+                        )}
+
+                        {q.question_type === 'DROPDOWN' && (
+                          <select
+                            value={customAnswers[q.question_id] || ''}
+                            onChange={(e) => setCustomAnswers(prev => ({ ...prev, [q.question_id]: e.target.value }))}
+                            required={q.is_required}
+                            className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                            style={{ fontFamily: 'Open Sans, sans-serif' }}
+                          >
+                            <option value="">{q.placeholder || 'Select an option'}</option>
+                            {(q.options || []).map((opt: string, idx: number) => (
+                              <option key={idx} value={opt}>{opt}</option>
+                            ))}
+                          </select>
+                        )}
+
+                        {q.question_type === 'MULTIPLE_CHOICE' && (
+                          <div className="space-y-2">
+                            {(q.options || []).map((opt: string, idx: number) => {
+                              const currentAnswers: string[] = customAnswers[q.question_id] || [];
+                              const isChecked = currentAnswers.includes(opt);
+                              return (
+                                <label key={idx} className="flex items-center gap-3 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-all">
+                                  <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    onChange={() => {
+                                      setCustomAnswers(prev => {
+                                        const current: string[] = prev[q.question_id] || [];
+                                        const updated = isChecked
+                                          ? current.filter((v: string) => v !== opt)
+                                          : [...current, opt];
+                                        return { ...prev, [q.question_id]: updated };
+                                      });
+                                    }}
+                                    className="w-4 h-4 text-purple-600 rounded border-gray-300 focus:ring-purple-500"
+                                  />
+                                  <span className="text-sm text-gray-700 dark:text-gray-300" style={{ fontFamily: 'Open Sans, sans-serif' }}>{opt}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {q.question_type === 'CHECKBOX' && (
+                          <label className="flex items-center gap-3 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-all">
+                            <input
+                              type="checkbox"
+                              checked={!!customAnswers[q.question_id]}
+                              onChange={(e) => setCustomAnswers(prev => ({ ...prev, [q.question_id]: e.target.checked }))}
+                              required={q.is_required}
+                              className="w-4 h-4 text-purple-600 rounded border-gray-300 focus:ring-purple-500"
+                            />
+                            <span className="text-sm text-gray-700 dark:text-gray-300" style={{ fontFamily: 'Open Sans, sans-serif' }}>
+                              {q.placeholder || q.question_label}
+                            </span>
+                          </label>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
 
               {error && (
                 <div className="p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 flex items-center gap-3 text-red-600 dark:text-red-400 text-sm">

@@ -13,9 +13,11 @@ const eventController = {
         event_date, 
         event_time, 
         event_poster_key, 
+        event_rulebook_pdf_key,
         event_type, 
         max_team_size, 
         whatsapp_group_link,
+        form_questions,
         created_by 
       } = req.body;
 
@@ -35,23 +37,27 @@ const eventController = {
         }
       }
 
+      const insertPayload = { 
+        event_name, 
+        event_short_description, 
+        event_long_description, 
+        event_venue, 
+        event_date, 
+        event_time, 
+        event_poster_key,
+        event_rulebook_pdf_key: event_rulebook_pdf_key || null,
+        event_type: normalizedEventType,
+        max_team_size: normalizedEventType === 'TEAM' ? parseInt(max_team_size, 10) : null,
+        whatsapp_group_link: whatsapp_group_link ? String(whatsapp_group_link).trim() : null,
+        created_by 
+      };
+      if (form_questions !== undefined) {
+        insertPayload.form_questions = form_questions;
+      }
+
       const { data, error } = await supabase
         .from('events')
-        .insert([
-          { 
-            event_name, 
-            event_short_description, 
-            event_long_description, 
-            event_venue, 
-            event_date, 
-            event_time, 
-            event_poster_key,
-            event_type: normalizedEventType,
-            max_team_size: normalizedEventType === 'TEAM' ? parseInt(max_team_size, 10) : null,
-            whatsapp_group_link: whatsapp_group_link ? String(whatsapp_group_link).trim() : null,
-            created_by 
-          }
-        ])
+        .insert([insertPayload])
         .select(`
           *,
           users (
@@ -149,7 +155,7 @@ const eventController = {
     updateEvent: async (req, res) => {
     try {
       const { event_id } = req.params;
-      const { event_name, event_short_description, event_long_description, event_venue, event_date, event_time, event_poster_key, event_type, max_team_size, whatsapp_group_link } = req.body;
+      const { event_name, event_short_description, event_long_description, event_venue, event_date, event_time, event_poster_key, event_rulebook_pdf_key, event_type, max_team_size, whatsapp_group_link, form_questions } = req.body;
 
       if (event_type !== undefined) {
         const normalizedEventType = String(event_type).trim().toUpperCase();
@@ -181,9 +187,11 @@ const eventController = {
       if (event_date !== undefined) updateData.event_date = event_date;
       if (event_time !== undefined) updateData.event_time = event_time;
       if (event_poster_key !== undefined) updateData.event_poster_key = event_poster_key;
+      if (event_rulebook_pdf_key !== undefined) updateData.event_rulebook_pdf_key = event_rulebook_pdf_key || null;
       if (event_type !== undefined) updateData.event_type = String(event_type).trim().toUpperCase();
       if (max_team_size !== undefined) updateData.max_team_size = String(event_type || existingEvent?.event_type || 'INDIVIDUAL').trim().toUpperCase() === 'TEAM' ? parseInt(max_team_size, 10) : null;
       if (whatsapp_group_link !== undefined) updateData.whatsapp_group_link = whatsapp_group_link ? String(whatsapp_group_link).trim() : null;
+      if (form_questions !== undefined) updateData.form_questions = form_questions;
 
       
       // Explicitly set updated_at (though the DB trigger would also handle this if set up)
@@ -260,6 +268,18 @@ const eventController = {
 
         if (storageError) {
           console.error('Failed to delete event poster from storage:', storageError.message);
+        }
+      }
+
+      // 2b. Delete the rulebook PDF from Supabase Storage if it exists
+      if (event.event_rulebook_pdf_key) {
+        const { error: pdfStorageError } = await supabase
+          .storage
+          .from('event_pdfs')
+          .remove([event.event_rulebook_pdf_key]);
+
+        if (pdfStorageError) {
+          console.error('Failed to delete event rulebook PDF from storage:', pdfStorageError.message);
         }
       }
 
