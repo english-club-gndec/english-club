@@ -333,7 +333,7 @@ export function EventRegistration() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                     <div>
                       <label htmlFor="crn" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                        College Roll No. (CRN) <span className="text-xs font-normal text-purple-600 dark:text-purple-400">(Enter 123 if not assigned yet)</span>
+                        College Roll No. (CRN)
                       </label>
                       <input
                         type="number"
@@ -341,7 +341,7 @@ export function EventRegistration() {
                         name="crn"
                         value={formData.crn}
                         onChange={handleChange}
-                        placeholder="e.g. 2315001 or 123"
+                        placeholder="e.g. 2315001"
                         required
                         className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                         style={{ fontFamily: 'Open Sans, sans-serif' }}
@@ -350,7 +350,7 @@ export function EventRegistration() {
 
                     <div>
                       <label htmlFor="urn" className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                        Univ. Roll No. (URN) - Optional <span className="text-xs font-normal text-purple-600 dark:text-purple-400">(Enter 123 if not assigned yet)</span>
+                        Univ. Roll No. (URN) - Optional
                       </label>
                       <input
                         type="number"
@@ -358,7 +358,7 @@ export function EventRegistration() {
                         name="urn"
                         value={formData.urn}
                         onChange={handleChange}
-                        placeholder="e.g. 2303001 or 123"
+                        placeholder="e.g. 2303001"
                         className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                         style={{ fontFamily: 'Open Sans, sans-serif' }}
                       />
@@ -505,14 +505,14 @@ export function EventRegistration() {
 
                         <div>
                           <label className="block text-sm text-gray-700 dark:text-gray-300 mb-2" style={{ fontFamily: 'Open Sans, sans-serif', fontWeight: 600 }}>
-                            CRN <span className="text-xs font-normal text-purple-600 dark:text-purple-400">(Enter 123 if not assigned yet)</span>
+                            CRN
                           </label>
                           <input
                             type="number"
                             value={participant.crn}
                             onChange={(e) => handleTeamParticipantChange(participant.id, 'crn', e.target.value)}
                             required
-                            placeholder="e.g. 2315001 or 123"
+                            placeholder="e.g. 2315001"
                             className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                           />
                         </div>
