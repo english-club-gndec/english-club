@@ -311,7 +311,102 @@ const registrationController = {
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
+  },
+
+  // DELETE /api/registration/:participant_id
+  deleteParticipant: async (req, res) => {
+    try {
+      const { participant_id } = req.params;
+
+      if (!participant_id) {
+        return res.status(400).json({ error: 'participant_id is required' });
+      }
+
+      const { data, error } = await supabase
+        .from('participants')
+        .delete()
+        .eq('participant_id', participant_id)
+        .select(`
+          *,
+          events (
+            event_name,
+            event_type
+          ),
+          participating_teams (
+            team_name
+          )
+        `);
+
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        return res.status(404).json({ error: 'Participant not found' });
+      }
+
+      const participantWithEvent = {
+        ...data[0],
+        event_name: data[0].events?.event_name,
+        team_name: data[0].participating_teams?.team_name || null,
+        events: undefined,
+        participating_teams: undefined
+      };
+
+      res.json({ message: 'Participant deleted successfully', participant: participantWithEvent });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+
+  // DELETE /api/registration/multipleParticipants
+  deleteMultipleParticipants: async (req, res) => {
+    try {
+      let participant_ids = req.body?.participant_ids;
+      if (!participant_ids && Array.isArray(req.body)) {
+        participant_ids = req.body;
+      } else if (!participant_ids && req.body?.ids) {
+        participant_ids = req.body.ids;
+      }
+
+      if (!participant_ids || !Array.isArray(participant_ids) || participant_ids.length === 0) {
+        return res.status(400).json({ error: 'participant_ids array is required' });
+      }
+
+      const { data, error } = await supabase
+        .from('participants')
+        .delete()
+        .in('participant_id', participant_ids)
+        .select(`
+          *,
+          events (
+            event_name,
+            event_type
+          ),
+          participating_teams (
+            team_name
+          )
+        `);
+
+      if (error) throw error;
+
+      const deletedCount = data ? data.length : 0;
+      const formattedParticipants = (data || []).map(p => ({
+        ...p,
+        event_name: p.events?.event_name,
+        team_name: p.participating_teams?.team_name || null,
+        events: undefined,
+        participating_teams: undefined
+      }));
+
+      res.json({
+        message: `${deletedCount} participant(s) deleted successfully`,
+        count: deletedCount,
+        deletedCount,
+        participants: formattedParticipants
+      });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
   }
 };
 
 module.exports = registrationController;
+
