@@ -14,5 +14,31 @@ export const registrationService = {
       console.error('Failed to fetch participants:', error);
       throw error;
     }
+  },
+
+  deleteParticipant: async (participantId: string) => {
+    const response = await fetch(`${BASE_URL}/registration/${participantId}`, {
+      method: 'DELETE',
+      credentials: 'include'
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.error || `Error: ${response.statusText}`);
+    }
+    return await response.json();
+  },
+
+  deleteMultipleParticipants: async (participantIds: string[]) => {
+    const response = await fetch(`${BASE_URL}/registration/multipleParticipants`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ participant_ids: participantIds })
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.error || `Error: ${response.statusText}`);
+    }
+    return await response.json();
   }
 };
