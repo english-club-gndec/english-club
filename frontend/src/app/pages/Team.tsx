@@ -110,37 +110,42 @@ export function Team() {
     const position = normalizeSectionValue(member.member_postion);
     const clubDepartment = normalizeSectionValue(member.member_club_department);
 
-    if (position === 'CO CONVENOR' || position === 'CO-CONVENOR') return 'CO-CONVENOR';
+    // Direct role mappings for Convenors and Executives
     if (position === 'CONVENOR') return 'CONVENOR';
+    if (position === 'CO CONVENOR' || position === 'CO-CONVENOR' || position.startsWith('CO CONVENOR')) return 'CO-CONVENOR';
     if (position === 'EXECUTIVE MEMBER' || position === 'EXECUTIVE') return 'EXECUTIVE';
-    if (clubDepartment === 'CO CONVENOR') return 'CO-CONVENOR';
-    if (clubDepartment === 'CONVENOR') return 'CONVENOR';
-    if (clubDepartment === 'EXECUTIVE MEMBER' || clubDepartment === 'EXECUTIVE') return 'EXECUTIVE';
 
-    const sectionAliases: Array<[string, string[]]> = [
+    // Prioritized rules: check specific compound names first
+    const departmentRules: Array<[string, string[]]> = [
+      ['PHOTOGRAPHY & VIDEOGRAPHY', ['PHOTOGRAPHY AND VIDEOGRAPHY', 'PHOTOGRAPHY & VIDEOGRAPHY', 'PHOTOGRAPHY', 'VIDEOGRAPHY', 'VIDEO', 'PHOTO']],
       ['FINANCE & AI', ['FINANCE AND AI', 'FINANCE & AI', 'FINANCE AND MARKET RELATIONS', 'FINANCE & MARKET RELATIONS', 'FINANCE', 'MARKET RELATIONS', 'MARKET', 'AI']],
-      ['TECHNICAL', ['TECHNICAL', 'TECH']],
-      ['DISCIPLINE', ['DISCIPLINE']],
-      ['DOCUMENTATION', ['DOCUMENTATION', 'DOCS']],
       ['EVENT MANAGEMENT', ['EVENT MANAGEMENT', 'EVENT']],
-      ['CREATIVE', ['CREATIVE']],
-      ['PROMOTION', ['PROMOTION', 'PUBLICITY', 'MARKETING']],
       ['SOCIAL MEDIA', ['SOCIAL MEDIA']],
+      ['DOCUMENTATION', ['DOCUMENTATION', 'DOCS']],
+      ['DISCIPLINE', ['DISCIPLINE']],
+      ['TECHNICAL', ['TECHNICAL', 'TECH']],
+      ['PROMOTION', ['PROMOTION', 'PUBLICITY', 'MARKETING']],
       ['ANCHORING', ['ANCHORING', 'ANCHOR', 'HOST', 'EMCEE', 'MC']],
-      ['PHOTOGRAPHY & VIDEOGRAPHY', ['PHOTOGRAPHY AND VIDEOGRAPHY', 'PHOTOGRAPHY & VIDEOGRAPHY', 'CREATIVE AND PHOTOGRAPHY', 'CREATIVE & PHOTOGRAPHY', 'PHOTOGRAPHY', 'VIDEOGRAPHY', 'VIDEO']],
+      ['CREATIVE', ['CREATIVE']],
       ['EXECUTIVE', ['EXECUTIVE MEMBER', 'EXECUTIVE']],
     ];
 
-    for (const [section, aliases] of sectionAliases) {
-      if (aliases.some((alias) => clubDepartment === alias || clubDepartment.includes(alias))) {
+    // Priority 1: Map based on member_postion (the definitive role of the member)
+    for (const [section, keywords] of departmentRules) {
+      if (keywords.some((kw) => position.includes(kw))) {
         return section;
       }
     }
 
-    // Backwards compatibility by position string fallback
-    const legacyValue = `${position} ${clubDepartment}`;
-    for (const [section, aliases] of sectionAliases) {
-      if (aliases.some((alias) => legacyValue.includes(alias))) return section;
+    // Priority 2: Fallback to member_club_department
+    if (clubDepartment === 'CONVENOR') return 'CONVENOR';
+    if (clubDepartment === 'CO CONVENOR' || clubDepartment === 'CO-CONVENOR') return 'CO-CONVENOR';
+    if (clubDepartment === 'EXECUTIVE MEMBER' || clubDepartment === 'EXECUTIVE') return 'EXECUTIVE';
+
+    for (const [section, keywords] of departmentRules) {
+      if (keywords.some((kw) => clubDepartment.includes(kw))) {
+        return section;
+      }
     }
 
     return null;
@@ -198,7 +203,7 @@ export function Team() {
     });
   });
 
-  function MemberCard({ member, index }: { member: Member; index: number }) {
+  function MemberCard({ member, index, isExecutive }: { member: Member; index: number; isExecutive?: boolean }) {
     const [showSocials, setShowSocials] = useState(false);
     const linkedinUrl = getSafeExternalUrl(member.socials?.linkedin);
     const githubUrl = getSafeExternalUrl(member.socials?.github);
@@ -212,7 +217,9 @@ export function Team() {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.5, delay: index * 0.05 }}
-        className="group relative rounded-3xl overflow-hidden bg-white dark:bg-gray-900/60 backdrop-blur-md border border-gray-200/80 dark:border-gray-800/80 hover:border-purple-500/50 hover:shadow-2xl hover:shadow-purple-500/10 transition-all duration-300 hover:-translate-y-2 flex flex-col h-full w-full sm:w-[280px]"
+        className={`group relative rounded-3xl overflow-hidden bg-white dark:bg-gray-900/60 backdrop-blur-md border border-gray-200/80 dark:border-gray-800/80 hover:border-purple-500/50 hover:shadow-2xl hover:shadow-purple-500/10 transition-all duration-300 hover:-translate-y-2 flex flex-col h-full ${
+          isExecutive ? 'w-full' : 'w-full sm:w-[280px]'
+        }`}
       >
         <div
           onClick={() => setShowSocials(prev => !prev)}
@@ -285,11 +292,11 @@ export function Team() {
           </div>
         </div>
 
-        <div className="p-5 sm:p-6 flex flex-col flex-1">
+        <div className={`${isExecutive ? 'p-4 sm:p-5' : 'p-5 sm:p-6'} flex flex-col flex-1`}>
           <span className="text-[10px] uppercase tracking-widest font-extrabold text-purple-600 dark:text-purple-400 mb-2">
             {safePosition}
           </span>
-          <h3 className="text-xl text-gray-900 dark:text-white mb-2" style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700 }}>
+          <h3 className={`${isExecutive ? 'text-lg sm:text-xl' : 'text-xl'} text-gray-900 dark:text-white mb-2 line-clamp-1`} style={{ fontFamily: 'Poppins, sans-serif', fontWeight: 700 }}>
             {safeName}
           </h3>
         </div>
@@ -436,11 +443,19 @@ export function Team() {
                       <div className="w-12 h-1 bg-purple-600 rounded-full mx-auto mt-3"></div>
                     </div>
 
-                    <div className="flex flex-wrap justify-center gap-8">
-                      {sectionMembers.map((member, index) => (
-                        <MemberCard key={member.member_id} member={member} index={index} />
-                      ))}
-                    </div>
+                    {section === 'EXECUTIVE' ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+                        {sectionMembers.map((member, index) => (
+                          <MemberCard key={member.member_id} member={member} index={index} isExecutive={true} />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap justify-center gap-8">
+                        {sectionMembers.map((member, index) => (
+                          <MemberCard key={member.member_id} member={member} index={index} />
+                        ))}
+                      </div>
+                    )}
                   </section>
                 );
               })}
