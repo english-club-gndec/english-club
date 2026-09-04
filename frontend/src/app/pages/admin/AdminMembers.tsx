@@ -1470,7 +1470,7 @@ export function AdminMembers() {
                       <div>
                         <label className="block text-sm font-semibold mb-2">Dept</label>
                         <select value={formData.member_department} onChange={e => setFormData({...formData, member_department: e.target.value})} className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800">
-                          {['IT', 'CSE', 'ECE', 'CE', 'ME', 'BBA', 'BCA'].map(d => <option key={d} value={d}>{d}</option>)}
+                          {['IT', 'CSE', 'RAI', 'ECE', 'CE', 'EE', 'ME', 'BBA', 'BCA'].map(d => <option key={d} value={d}>{d}</option>)}
                         </select>
                       </div>
                       <div>
