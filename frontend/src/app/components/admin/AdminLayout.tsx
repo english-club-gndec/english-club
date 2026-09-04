@@ -8,7 +8,7 @@ import { AdminSearchProvider } from "../../context/AdminSearchContext";
 
 export function AdminLayout() {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const { user } = useAuth();
+  const { user, canAccessPanel } = useAuth();
   const location = useLocation();
 
   if (user?.user_role === "INTERVIEWEE") {
@@ -16,6 +16,30 @@ export function AdminLayout() {
     const isAllowed = allowedPaths.some(path => location.pathname === path || location.pathname.startsWith(`${path}/`));
     if (!isAllowed) {
       return <Navigate to="/admin/recruitments" replace />;
+    }
+  } else if (user) {
+    const path = location.pathname;
+    // Granular route protection
+    if (path.startsWith("/admin/users") && !canAccessPanel("users")) {
+      return <Navigate to="/admin" replace />;
+    }
+    if (path.startsWith("/admin/members") && !canAccessPanel("members")) {
+      return <Navigate to="/admin" replace />;
+    }
+    if (path.startsWith("/admin/events") && !canAccessPanel("events")) {
+      return <Navigate to="/admin" replace />;
+    }
+    if (path.startsWith("/admin/registrations") && !canAccessPanel("registrations")) {
+      return <Navigate to="/admin" replace />;
+    }
+    if (path.startsWith("/admin/submissions") && !canAccessPanel("submissions")) {
+      return <Navigate to="/admin" replace />;
+    }
+    if (path.startsWith("/admin/recruitments") && !canAccessPanel("recruitments")) {
+      return <Navigate to="/admin" replace />;
+    }
+    if (path.startsWith("/admin/vote") && !canAccessPanel("vote")) {
+      return <Navigate to="/admin" replace />;
     }
   }
 

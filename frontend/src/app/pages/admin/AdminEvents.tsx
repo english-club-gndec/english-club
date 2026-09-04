@@ -44,7 +44,7 @@ interface EventQuestion {
 import { useAdminSearch } from "../../context/AdminSearchContext";
 
 export function AdminEvents() {
-  const { userId } = useAuth();
+  const { userId, hasPermission } = useAuth();
   const { searchQuery, setSearchPlaceholder } = useAdminSearch();
   const [events, setEvents] = useState<Event[]>([]);
 
@@ -655,14 +655,16 @@ export function AdminEvents() {
                 </button>
               </div>
 
-              <button
-                onClick={() => openModal()}
-                className="flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-blue-900 to-purple-700 text-white hover:shadow-lg hover:shadow-purple-500/50 transition-all text-xs sm:text-sm font-semibold cursor-pointer"
-                style={{ fontFamily: 'Open Sans, sans-serif' }}
-              >
-                <Plus className="w-5 h-5" />
-                Create Event
-              </button>
+              {hasPermission('WRITE_EVENTS') && (
+                <button
+                  onClick={() => openModal()}
+                  className="flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-blue-900 to-purple-700 text-white hover:shadow-lg hover:shadow-purple-500/50 transition-all text-xs sm:text-sm font-semibold cursor-pointer"
+                  style={{ fontFamily: 'Open Sans, sans-serif' }}
+                >
+                  <Plus className="w-5 h-5" />
+                  Create Event
+                </button>
+              )}
           </div>
         </div>
 
@@ -741,24 +743,30 @@ export function AdminEvents() {
                           >
                             <BarChart3 className="w-4 h-4" />
                           </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openModal(event);
-                            }}
-                            className="p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 transition-colors"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDelete(event.id);
-                            }}
-                            className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          {hasPermission('UPDATE_EVENTS') && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openModal(event);
+                              }}
+                              className="p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 transition-colors"
+                              title="Edit Event"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                          )}
+                          {hasPermission('DELETE_EVENTS') && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(event.id);
+                              }}
+                              className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 transition-colors"
+                              title="Delete Event"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
                         </div>
                       </div>
 
@@ -868,18 +876,24 @@ export function AdminEvents() {
                                 <BarChart3 className="w-4 h-4" />
                                 <span className="hidden sm:inline">Feedback</span>
                               </button>
-                              <button
-                                onClick={() => openModal(event)}
-                                className="p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 transition-colors"
-                              >
-                                <Edit2 className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => handleDelete(event.id)}
-                                className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 transition-colors"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
+                              {hasPermission('UPDATE_EVENTS') && (
+                                <button
+                                  onClick={() => openModal(event)}
+                                  className="p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 transition-colors"
+                                  title="Edit Event"
+                                >
+                                  <Edit2 className="w-4 h-4" />
+                                </button>
+                              )}
+                              {hasPermission('DELETE_EVENTS') && (
+                                <button
+                                  onClick={() => handleDelete(event.id)}
+                                  className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 transition-colors"
+                                  title="Delete Event"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>

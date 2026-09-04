@@ -182,5 +182,27 @@ export const userService = {
       console.error('Failed to delete user:', error);
       throw error;
     }
+  },
+
+  deleteMultipleUsers: async (adminId: string, userIds: (number | string)[]) => {
+    try {
+      const response = await fetch(`${BASE_URL}/user/${adminId}/deleteMultipleUsers`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders(),
+        },
+        credentials: 'include',
+        body: JSON.stringify({ user_ids: userIds }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Error: ${response.statusText}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Failed to delete multiple users:', error);
+      throw error;
+    }
   }
 };

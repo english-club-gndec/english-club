@@ -8,7 +8,7 @@ import { submissionService, Submission } from "../../../services/submissionServi
 import { useAdminSearch } from "../../context/AdminSearchContext";
 
 export function AdminSubmissions() {
-  const { userId } = useAuth();
+  const { userId, hasPermission } = useAuth();
   const { searchQuery, setSearchQuery, setSearchPlaceholder } = useAdminSearch();
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
@@ -300,7 +300,7 @@ export function AdminSubmissions() {
                           <Eye className="w-4 h-4" />
                           View
                         </button>
-                        {(submission.status.toUpperCase() === "PENDING" || submission.status.toUpperCase() === "REQUESTED_CHANGE") && (
+                        {(submission.status.toUpperCase() === "PENDING" || submission.status.toUpperCase() === "REQUESTED_CHANGE") && hasPermission('UPDATE_SUBMISSIONS') && (
                           <>
                             <button
                               onClick={() => handleApprove(submission.submission_id)}
@@ -328,14 +328,16 @@ export function AdminSubmissions() {
                             </button>
                           </>
                         )}
-                        <button
-                          onClick={() => handleDeleteClick(submission.submission_id)}
-                          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-50 dark:bg-red-950/20 hover:bg-red-100 dark:hover:bg-red-950/40 text-red-600 dark:text-red-400 transition-colors text-sm font-semibold cursor-pointer"
-                          style={{ fontFamily: 'Open Sans, sans-serif' }}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                          Delete
-                        </button>
+                        {hasPermission('DELETE_SUBMISSIONS') && (
+                          <button
+                            onClick={() => handleDeleteClick(submission.submission_id)}
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-50 dark:bg-red-950/20 hover:bg-red-100 dark:hover:bg-red-950/40 text-red-600 dark:text-red-400 transition-colors text-sm font-semibold cursor-pointer"
+                            style={{ fontFamily: 'Open Sans, sans-serif' }}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            Delete
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -388,7 +390,7 @@ export function AdminSubmissions() {
                         <Eye className="w-3.5 h-3.5" />
                         View
                       </button>
-                      {(submission.status.toUpperCase() === "PENDING" || submission.status.toUpperCase() === "REQUESTED_CHANGE") && (
+                      {(submission.status.toUpperCase() === "PENDING" || submission.status.toUpperCase() === "REQUESTED_CHANGE") && hasPermission('UPDATE_SUBMISSIONS') && (
                         <>
                           <button
                             onClick={() => handleApprove(submission.submission_id)}
@@ -413,12 +415,14 @@ export function AdminSubmissions() {
                           </button>
                         </>
                       )}
-                      <button
-                        onClick={() => handleDeleteClick(submission.submission_id)}
-                        className="p-2 rounded-lg bg-red-50 dark:bg-red-950/20 hover:bg-red-150 dark:hover:bg-red-950/40 text-red-600 dark:text-red-400 transition-colors cursor-pointer"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      {hasPermission('DELETE_SUBMISSIONS') && (
+                        <button
+                          onClick={() => handleDeleteClick(submission.submission_id)}
+                          className="p-2 rounded-lg bg-red-50 dark:bg-red-950/20 hover:bg-red-150 dark:hover:bg-red-950/40 text-red-600 dark:text-red-400 transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                   </div>
                 </motion.div>

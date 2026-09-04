@@ -290,7 +290,7 @@ const sortMembersByHierarchy = (memberList: Member[]): Member[] => {
 import { useAdminSearch } from "../../context/AdminSearchContext";
 
 export function AdminMembers() {
-  const { userId, logout } = useAuth();
+  const { userId, logout, hasPermission } = useAuth();
   const { searchQuery, setSearchPlaceholder } = useAdminSearch();
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
@@ -930,7 +930,7 @@ export function AdminMembers() {
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
-            {selectedIds.length > 0 && (
+            {selectedIds.length > 0 && hasPermission('DELETE_MEMBERS') && (
               <button
                 onClick={handleBulkDelete}
                 className="flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-red-600 text-white hover:bg-red-700 transition-all shadow-lg shadow-red-500/30 text-xs sm:text-sm font-semibold"
@@ -939,13 +939,15 @@ export function AdminMembers() {
                 Delete Selected ({selectedIds.length})
               </button>
             )}
-            <button
-              onClick={() => openModal()}
-              className="flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-blue-900 to-purple-700 text-white hover:shadow-lg hover:shadow-purple-500/50 transition-all text-xs sm:text-sm font-semibold"
-            >
-              <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
-              Add Member
-            </button>
+            {hasPermission('WRITE_MEMBERS') && (
+              <button
+                onClick={() => openModal()}
+                className="flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-blue-900 to-purple-700 text-white hover:shadow-lg hover:shadow-purple-500/50 transition-all text-xs sm:text-sm font-semibold"
+              >
+                <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+                Add Member
+              </button>
+            )}
           </div>
         </div>
 
@@ -1028,8 +1030,12 @@ export function AdminMembers() {
                         <td className="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{member.member_urn}</td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex justify-end gap-2">
-                            <button onClick={() => openModal(member)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Edit2 className="w-4 h-4" /></button>
-                            <button onClick={() => handleDelete(member.member_id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
+                            {hasPermission('UPDATE_MEMBERS') && (
+                              <button onClick={() => openModal(member)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit Member"><Edit2 className="w-4 h-4" /></button>
+                            )}
+                            {hasPermission('DELETE_MEMBERS') && (
+                              <button onClick={() => handleDelete(member.member_id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete Member"><Trash2 className="w-4 h-4" /></button>
+                            )}
                           </div>
                         </td>
                       </tr>

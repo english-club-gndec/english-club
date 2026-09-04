@@ -28,6 +28,7 @@ import { Toaster } from "sonner";
 import { registrationService } from "../../../services/registrationService";
 import { eventService } from "../../../services/eventService";
 import { useAdminSearch } from "../../context/AdminSearchContext";
+import { useAuth } from "../../context/AuthContext";
 
 interface FilterOption {
   value: string;
@@ -228,6 +229,7 @@ const countAnswers = (answers?: Record<string, unknown>) => {
 };
 
 export function AdminRegistrations() {
+  const { hasPermission } = useAuth();
   const { searchQuery, setSearchQuery, setSearchPlaceholder } = useAdminSearch();
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [eventQuestionsMap, setEventQuestionsMap] = useState<Map<number, EventQuestion[]>>(new Map());
@@ -692,7 +694,7 @@ export function AdminRegistrations() {
             </p>
           </div>
           <div className="flex gap-3 items-center flex-wrap">
-            {selectedIds.length > 0 && (
+            {selectedIds.length > 0 && hasPermission('DELETE_REGISTRATIONS') && (
               <button
                 type="button"
                 onClick={promptDeleteSelected}
@@ -1177,14 +1179,16 @@ export function AdminRegistrations() {
                 >
                   Close
                 </button>
-                <button
-                  type="button"
-                  onClick={() => promptDeleteOne(viewingRegistration.participant_id)}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition-colors cursor-pointer"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Delete
-                </button>
+                {hasPermission('DELETE_REGISTRATIONS') && (
+                  <button
+                    type="button"
+                    onClick={() => promptDeleteOne(viewingRegistration.participant_id)}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition-colors cursor-pointer"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Delete
+                  </button>
+                )}
               </div>
             </motion.div>
           </motion.div>

@@ -67,7 +67,7 @@ interface InterviewFeedback {
 }
 
 export function AdminRecruitments() {
-  const { userId, logout, user } = useAuth();
+  const { userId, logout, user, hasPermission } = useAuth();
   const { searchQuery, setSearchPlaceholder } = useAdminSearch();
   const isInterviewee = user?.user_role === 'INTERVIEWEE';
 
@@ -904,7 +904,7 @@ export function AdminRecruitments() {
             </p>
           </div>
           <div className="flex gap-3 items-center flex-wrap">
-            {!isInterviewee && activeTab === 'applications' && selectedIds.length > 0 && (
+            {!isInterviewee && activeTab === 'applications' && selectedIds.length > 0 && hasPermission('DELETE_RECRUITMENTS') && (
               <button
                 onClick={promptDeleteSelected}
                 className="px-5 py-3 rounded-xl font-semibold text-white bg-red-600 hover:bg-red-700 transition-all shadow-lg shadow-red-500/30 flex items-center gap-2 hover:-translate-y-0.5 cursor-pointer"
@@ -925,7 +925,7 @@ export function AdminRecruitments() {
               </button>
             )}
 
-            {!isInterviewee && activeTab === 'applications' && (
+            {!isInterviewee && activeTab === 'applications' && hasPermission('DELETE_RECRUITMENTS') && (
               <button
                 onClick={() => setIsArchiveModalOpen(true)}
                 disabled={candidates.length === 0}
@@ -948,7 +948,7 @@ export function AdminRecruitments() {
               </button>
             )}
 
-            {!isInterviewee && activeTab === 'interview_feedback' && (
+            {!isInterviewee && activeTab === 'interview_feedback' && hasPermission('DELETE_RECRUITMENTS') && (
               <button
                 onClick={() => setIsClearFeedbackModalOpen(true)}
                 disabled={feedbackList.length === 0}
@@ -959,7 +959,7 @@ export function AdminRecruitments() {
               </button>
             )}
 
-            {!isInterviewee && activeTab === 'form_builder' && (
+            {!isInterviewee && activeTab === 'form_builder' && hasPermission('WRITE_RECRUITMENTS') && (
               <button
                 onClick={openAddQuestionModal}
                 className="px-5 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg shadow-blue-500/30 flex items-center gap-2 hover:-translate-y-0.5 cursor-pointer"

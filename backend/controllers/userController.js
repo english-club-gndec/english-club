@@ -2,6 +2,8 @@ const supabase = require('../config/supabase');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { logAuditEvent } = require('../utils/auditLogger');
+const { fetchRolePermissions } = require('../middleware/authMiddleware');
+const { SYSTEM_ROLES } = require('../utils/permissions');
 
 const userController = {
   // GET /api/users/:user_id/getUsers
@@ -79,12 +81,11 @@ const userController = {
         return res.status(400).json({ error: 'Member ID is required' });
       }
 
-      const validRoles = ['MASTER', 'ADMIN', 'MANAGER', 'INTERVIEWEE'];
-      if (!user_role || !validRoles.includes(user_role.toUpperCase())) {
-        return res.status(400).json({ error: 'Invalid or missing user role. Must be MASTER, ADMIN, MANAGER, or INTERVIEWEE' });
+      if (!user_role || !user_role.trim()) {
+        return res.status(400).json({ error: 'User role is required' });
       }
 
-      const role = user_role.toUpperCase();
+      const role = user_role.trim().toUpperCase();
 
       // Hash the password
       const hashedPassword = await bcrypt.hash(user_password, 10);
@@ -279,13 +280,17 @@ const userController = {
         return res.status(401).json({ error: 'Invalid username or password' });
       }
 
+      // Fetch role permissions
+      const permissions = await fetchRolePermissions(user.user_role);
+      user.permissions = permissions;
+
       // Generate JWT token
       if (!process.env.JWT_SECRET) {
         throw new Error('JWT_SECRET environment variable is not defined');
       }
 
       const token = jwt.sign(
-        { user_id: user.user_id, user_name: user.user_name, user_role: user.user_role },
+        { user_id: user.user_id, user_name: user.user_name, user_role: user.user_role, permissions },
         process.env.JWT_SECRET,
         { expiresIn: '1d' }
       );
@@ -347,6 +352,10 @@ const userController = {
       if (error || !user) {
         return res.status(404).json({ error: 'User not found' });
       }
+
+      const permissions = await fetchRolePermissions(user.user_role);
+      user.permissions = permissions;
+
       res.json({ user });
     } catch (err) {
       console.error('getMe error:', err);
@@ -435,6 +444,102 @@ const userController = {
       res.json({ message: 'User deleted successfully' });
     } catch (err) {
       console.error('deleteUser error:', err);
+      res.status(500).json({ error: err.message || 'Internal Server Error' });
+    }
+  },
+
+  // DELETE /api/user/:user_id/deleteMultipleUsers or /api/user/deleteMultiple
+  deleteMultipleUsers: async (req, res) => {
+    try {
+      let user_ids = req.body?.user_ids;
+      if (!user_ids && Array.isArray(req.body)) {
+        user_ids = req.body;
+      } else if (!user_ids && req.body?.ids) {
+        user_ids = req.body.ids;
+      }
+
+      if (!user_ids || !Array.isArray(user_ids) || user_ids.length === 0) {
+        return res.status(400).json({ error: 'user_ids array is required' });
+      }
+
+      const performerId = req.user?.user_id;
+
+      // Fetch existing users for audit log
+      const { data: existingUsers } = await supabase
+        .from('users')
+        .select('*')
+        .in('user_id', user_ids);
+
+      if (!existingUsers || existingUsers.length === 0) {
+        return res.status(404).json({ error: 'No matching user accounts found' });
+      }
+
+      // 1. Find fallback admin user ID
+      let fallbackUserId = performerId && !user_ids.map(String).includes(String(performerId)) ? performerId : null;
+
+      if (!fallbackUserId) {
+        const { data: fallbackUsers } = await supabase
+          .from('users')
+          .select('user_id')
+          .not('user_id', 'in', `(${user_ids.join(',')})`)
+          .in('user_role', ['MASTER', 'ADMIN'])
+          .limit(1);
+
+        if (fallbackUsers && fallbackUsers.length > 0) {
+          fallbackUserId = fallbackUsers[0].user_id;
+        }
+      }
+
+      // 2. Reassign created events
+      try {
+        await supabase
+          .from('events')
+          .update({ created_by: fallbackUserId || null })
+          .in('created_by', user_ids);
+      } catch (eventsErr) {
+        console.warn('Non-fatal: failed to update events created_by:', eventsErr);
+      }
+
+      // 3. Update candidates status_updated_by
+      try {
+        await supabase
+          .from('candidates')
+          .update({ status_updated_by: fallbackUserId || null })
+          .in('status_updated_by', user_ids);
+      } catch (candErr) {
+        console.warn('Non-fatal: failed to update candidates status_updated_by:', candErr);
+      }
+
+      // 4. Delete the users
+      const { data, error } = await supabase
+        .from('users')
+        .delete()
+        .in('user_id', user_ids)
+        .select();
+
+      if (error) throw error;
+
+      if (existingUsers && Array.isArray(existingUsers)) {
+        for (const u of existingUsers) {
+          delete u.user_password;
+          logAuditEvent({
+            serviceName: 'user_service',
+            tableName: 'users',
+            tablePrimaryKeyId: u.user_id,
+            eventName: 'USER_DELETED',
+            performedBy: performerId || req.params.user_id || 'system',
+            oldValue: u,
+            newValue: null
+          });
+        }
+      }
+
+      res.json({
+        message: `${data ? data.length : 0} user account(s) deleted successfully`,
+        deletedCount: data ? data.length : 0
+      });
+    } catch (err) {
+      console.error('deleteMultipleUsers error:', err);
       res.status(500).json({ error: err.message || 'Internal Server Error' });
     }
   }

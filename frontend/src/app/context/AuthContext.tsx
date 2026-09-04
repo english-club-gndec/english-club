@@ -5,6 +5,7 @@ export interface UserProfile {
   user_id: string;
   user_name: string;
   user_role: string;
+  permissions?: string[];
   member_id?: string | null;
   members?: any;
 }
@@ -14,6 +15,10 @@ interface AuthContextType {
   userId: string | null;
   user: UserProfile | null;
   isLoading: boolean;
+  isMasterOrAdmin: boolean;
+  isManager: boolean;
+  hasPermission: (permission: string) => boolean;
+  canAccessPanel: (panel: 'members' | 'events' | 'registrations' | 'recruitments' | 'submissions' | 'users' | 'settings' | 'vote') => boolean;
   login: (user: any) => void;
   logout: () => Promise<void>;
 }
@@ -57,9 +62,57 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const isAuthenticated = !!userId || !!user;
+  const roleUpper = String(user?.user_role || '').toUpperCase();
+  const isMasterOrAdmin = roleUpper === 'MASTER' || roleUpper === 'ADMIN';
+  const isManager = roleUpper === 'MANAGER';
+
+  const hasPermission = (permission: string): boolean => {
+    if (!user) return false;
+    // MASTER and ADMIN have universal access
+    if (isMasterOrAdmin) return true;
+    // MANAGER has access to all standard features
+    if (isManager) return true;
+    // Check custom role permissions array
+    const userPermissions = user.permissions || [];
+    return userPermissions.includes(permission);
+  };
+
+  const canAccessPanel = (panel: 'members' | 'events' | 'registrations' | 'recruitments' | 'submissions' | 'users' | 'settings' | 'vote'): boolean => {
+    if (!user) return false;
+
+    // Settings is open to all authenticated users
+    if (panel === 'settings') return true;
+
+    // User Accounts is strictly reserved for MASTER and ADMIN
+    if (panel === 'users') return isMasterOrAdmin;
+
+    // People's Choice voting panel
+    if (panel === 'vote') return roleUpper !== 'INTERVIEWEE';
+
+    // MASTER and ADMIN have universal panel access
+    if (isMasterOrAdmin) return true;
+
+    // MANAGER has access to all feature panels (except users)
+    if (isManager) return true;
+
+    // Specific panel read permissions
+    const panelPermMap: Record<string, string> = {
+      members: 'READ_MEMBERS',
+      events: 'READ_EVENTS',
+      registrations: 'READ_REGISTRATIONS',
+      recruitments: 'READ_RECRUITMENTS',
+      submissions: 'READ_SUBMISSIONS',
+    };
+
+    const requiredPerm = panelPermMap[panel];
+    if (requiredPerm) {
+      return hasPermission(requiredPerm);
+    }
+
+    return false;
+  };
 
   const login = (userData: any) => {
-    // If passed user_id directly or user object
     if (typeof userData === "object" && userData !== null) {
       setUser(userData);
       const stringId = String(userData.user_id);
@@ -86,7 +139,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, userId, user, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ 
+      isAuthenticated, 
+      userId, 
+      user, 
+      isLoading, 
+      isMasterOrAdmin, 
+      isManager, 
+      hasPermission, 
+      canAccessPanel, 
+      login, 
+      logout 
+    }}>
       {children}
     </AuthContext.Provider>
   );

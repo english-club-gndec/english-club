@@ -23,7 +23,7 @@ interface AdminSidebarProps {
 }
 
 export function AdminSidebar({ isMobileOpen: propMobileOpen, setIsMobileOpen: propSetMobileOpen }: AdminSidebarProps) {
-  const { user } = useAuth();
+  const { user, canAccessPanel } = useAuth();
   const [internalMobileOpen, setInternalMobileOpen] = useState(false);
   const isMobileOpen = propMobileOpen !== undefined ? propMobileOpen : internalMobileOpen;
   const setIsMobileOpen = propSetMobileOpen || setInternalMobileOpen;
@@ -32,20 +32,23 @@ export function AdminSidebar({ isMobileOpen: propMobileOpen, setIsMobileOpen: pr
   const isInterviewee = user?.user_role === "INTERVIEWEE";
 
   const allMenuItems = [
-    { path: "/admin", label: "Dashboard", icon: LayoutDashboard },
-    { path: "/admin/members", label: "Members", icon: Users },
-    { path: "/admin/users", label: "User Accounts", icon: ShieldCheck },
-    { path: "/admin/events", label: "Events", icon: Calendar },
-    { path: "/admin/registrations", label: "Registrations", icon: ClipboardList },
-    { path: "/admin/vote", label: "People's Choice", icon: Trophy },
-    { path: "/admin/recruitments", label: "Recruitments", icon: UserCircle },
-    { path: "/admin/submissions", label: "Submissions", icon: FileText },
-    { path: "/admin/settings", label: "Settings", icon: Settings },
+    { path: "/admin", label: "Dashboard", icon: LayoutDashboard, panel: "dashboard" as const },
+    { path: "/admin/members", label: "Members", icon: Users, panel: "members" as const },
+    { path: "/admin/users", label: "User Accounts", icon: ShieldCheck, panel: "users" as const },
+    { path: "/admin/events", label: "Events", icon: Calendar, panel: "events" as const },
+    { path: "/admin/registrations", label: "Registrations", icon: ClipboardList, panel: "registrations" as const },
+    { path: "/admin/vote", label: "People's Choice", icon: Trophy, panel: "vote" as const },
+    { path: "/admin/recruitments", label: "Recruitments", icon: UserCircle, panel: "recruitments" as const },
+    { path: "/admin/submissions", label: "Submissions", icon: FileText, panel: "submissions" as const },
+    { path: "/admin/settings", label: "Settings", icon: Settings, panel: "settings" as const },
   ];
 
-  const menuItems = isInterviewee
-    ? allMenuItems.filter(item => item.path === "/admin/recruitments" || item.path === "/admin/settings")
-    : allMenuItems;
+  const menuItems = allMenuItems.filter((item) => {
+    if (item.panel === "dashboard") {
+      return !isInterviewee;
+    }
+    return canAccessPanel(item.panel);
+  });
 
   const isActive = (path: string) => {
     if (path === "/admin") {
